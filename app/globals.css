@@ -1,0 +1,151 @@
+:root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+
+    /* System 7 window styling */
+    --system7-window-bg: #f0f0f0;
+    --system7-border: #000000;
+    --system7-title-bar: #000000;
+
+    /* Z-Index Hierarchy */
+    --z-background: 0;
+    --z-desktop-icons: 10;
+    --z-window-base: 100;
+    --z-window-increment: 10;
+    --z-menu-bar: 9000;
+    --z-dropdown-menus: 9100;
+    --z-context-menus: 9200;
+    --z-tooltips: 9300;
+    --z-popover-content: 9400;
+    --z-dialog-overlay: 10000;
+    --z-dialog-content: 10001;
+    --z-drawer-overlay: 10200;
+    --z-drawer-content: 10201;
+    --z-alert-overlay: 10300;
+    --z-alert-content: 10301;
+
+    /* Mobile-specific variables */
+    --mobile-menu-height: 36px;
+    --desktop-menu-height: 28px;
+    --touch-target-min: 44px;
+}
+
+/* Window-specific styles */
+.animate-window-open {
+  animation: window-open 0.2s ease-out;
+}
+
+@keyframes window-open {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* System 7 window background */
+.bg-system7-window-bg {
+  background-color: var(--system7-window-bg);
+}
+
+/* Mobile navigation enhancements */
+.mobile-menu-bar {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Touch-friendly buttons */
+.touch-optimized {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+}
+
+/* Prevent text selection on mobile */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Mobile dropdown improvements */
+@media (max-width: 768px) {
+  .mobile-dropdown {
+    animation: mobile-slide-down 0.2s ease-out;
+  }
+}
+
+@keyframes mobile-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --system7-window-bg: #f0f0f0;
+  --system7-border: #000000;
+  --system7-title-bar: #000000;
+  --z-desktop-icons: 10;
+  --z-dropdown-menus: 9100;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+@layer utilities {
+  .animate-window-open {
+    animation: windowOpen 0.2s ease-out;
+  }
+}
+
+@keyframes windowOpen {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

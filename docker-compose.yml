@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  web-ui:
+    build:
+      context: ./services/web-ui
+    ports:
+      - "3000:3000"
+    environment:
+      # These are passed to the Next.js frontend
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      # URLs for other backend services
+      - NEXT_PUBLIC_FINANCE_API_URL=http://finance-api:3001
+      - NEXT_PUBLIC_AI_CLOUD_API_URL=http://ai-cloud:3002
+      - NEXT_PUBLIC_CHAT_SERVER_URL=ws://chat-server:3003
+    depends_on:
+      - finance-api
+      - ai-cloud
+      - chat-server
+    networks:
+      - optimal-os-net
+
+  finance-api:
+    build:
+      context: ./services/finance-api
+    ports:
+      - "3001:3001"
+    environment:
+      # These are for the backend service, using more secure keys
+      - SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY} # Use a secure service role key here
+      - PORT=3001
+    networks:
+      - optimal-os-net
+
+  ai-cloud:
+    build:
+      context: ./services/ai-cloud
+    ports:
+      - "3002:3002"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY} # Example
+      - PORT=3002
+    networks:
+      - optimal-os-net
+
+  chat-server:
+    build:
+      context: ./services/chat-server
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+    networks:
+      - optimal-os-net
+
+networks:
+  optimal-os-net:
+    driver: bridge
