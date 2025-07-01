@@ -32,20 +32,20 @@
 
     /* Z-Index Hierarchy */
     --z-background: 0;
-    --z-desktop-icons: 10;
-    --z-window-base: 100;
-    --z-window-increment: 10;
-    --z-menu-bar: 9000;
-    --z-dropdown-menus: 9100;
-    --z-context-menus: 9200;
-    --z-tooltips: 9300;
-    --z-popover-content: 9400;
-    --z-dialog-overlay: 10000;
-    --z-dialog-content: 10001;
-    --z-drawer-overlay: 10200;
-    --z-drawer-content: 10201;
-    --z-alert-overlay: 10300;
-    --z-alert-content: 10301;
+    --z-desktop-icons: 1;
+    --z-window-base: 10;
+    --z-window-increment: 1;
+    --z-menu-bar: 30;
+    --z-dropdown-menus: 40;
+    --z-context-menus: 50;
+    --z-tooltips: 60;
+    --z-popover-content: 70;
+    --z-dialog-overlay: 80;
+    --z-dialog-content: 81;
+    --z-drawer-overlay: 90;
+    --z-drawer-content: 91;
+    --z-alert-overlay: 100;
+    --z-alert-content: 101;
 
     /* Mobile-specific variables */
     --mobile-menu-height: 36px;
@@ -120,8 +120,8 @@
   --system7-window-bg: #f0f0f0;
   --system7-border: #000000;
   --system7-title-bar: #000000;
-  --z-desktop-icons: 10;
-  --z-dropdown-menus: 9100;
+  --z-desktop-icons: 1;
+  --z-dropdown-menus: 40;
 }
 
 @layer base {

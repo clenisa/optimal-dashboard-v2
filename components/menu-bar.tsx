@@ -69,7 +69,7 @@ export function MenuBar() {
   return (
     <div
       ref={menuRef}
-      className="fixed top-0 left-0 right-0 h-7 bg-white border-b border-black flex items-center justify-between px-2 text-xs font-bold z-[9000]"
+      className="fixed top-0 left-0 right-0 h-7 bg-white border-b border-black flex items-center justify-between px-2 text-xs font-bold z-30"
       style={{ fontFamily: "Chicago, monospace" }}
     >
       {/* Left side - Menu items */}
@@ -84,7 +84,7 @@ export function MenuBar() {
             🍎
           </button>
           {activeMenu === "apple" && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-black shadow-lg min-w-48 z-[9100]">
+            <div className="absolute top-full left-0 mt-1 bg-white border border-black shadow-lg min-w-48 z-40">
               <button
                 onClick={() => openAppWindow("debug-console")}
                 className="block w-full text-left px-3 py-1 hover:bg-gray-100 border-b border-gray-200"

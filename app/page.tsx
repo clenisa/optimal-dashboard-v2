@@ -33,7 +33,7 @@ interface WindowState {
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
   const [windows, setWindows] = useState<WindowState[]>([])
-  const [highestZIndex, setHighestZIndex] = useState(1000)
+  const [highestZIndex, setHighestZIndex] = useState(20)
 
   useEffect(() => {
     const supabase = createClient()
@@ -342,7 +342,7 @@ export default function Home() {
         })}
 
         {/* Taskbar */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 px-4 py-2 z-[9000]">
+        <div className="absolute bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 px-4 py-2 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {windows.filter(w => w.isOpen).map(win => {
