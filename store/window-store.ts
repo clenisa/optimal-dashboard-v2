@@ -2,28 +2,28 @@ import { create } from "zustand"
 
 // Systematic z-index hierarchy for proper UI layering
 const Z_INDEX_HIERARCHY = {
-  // Base layers (0-99)
+  // Base layers
   BACKGROUND: 0,
-  DESKTOP_ICONS: 10,
-  
-  // Window layers (100-8999)
-  WINDOW_BASE: 100,
-  WINDOW_INCREMENT: 10, // Space between windows for potential overlays
-  
-  // UI overlays (9000-9999)
-  MENU_BAR: 9000,
-  DROPDOWN_MENUS: 9100,
-  CONTEXT_MENUS: 9200,
-  TOOLTIPS: 9300,
-  POPOVER_CONTENT: 9400,
-  
-  // Modal layers (10000+)
-  DIALOG_OVERLAY: 10000,
-  DIALOG_CONTENT: 10001,
-  DRAWER_OVERLAY: 10200,
-  DRAWER_CONTENT: 10201,
-  ALERT_OVERLAY: 10300,
-  ALERT_CONTENT: 10301,
+  DESKTOP_ICONS: 1,
+
+  // Window layers
+  WINDOW_BASE: 10,
+  WINDOW_INCREMENT: 1,
+
+  // UI overlays
+  MENU_BAR: 30,
+  DROPDOWN_MENUS: 40,
+  CONTEXT_MENUS: 50,
+  TOOLTIPS: 60,
+  POPOVER_CONTENT: 70,
+
+  // Modal layers
+  DIALOG_OVERLAY: 80,
+  DIALOG_CONTENT: 81,
+  DRAWER_OVERLAY: 90,
+  DRAWER_CONTENT: 91,
+  ALERT_OVERLAY: 100,
+  ALERT_CONTENT: 101,
   
   // Chart-specific layers (within window context)
   CHART_TOOLTIP: 50, // Relative to window

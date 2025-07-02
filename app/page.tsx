@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { DesktopIcon } from "@/components/desktop-icon"
 import { MenuBar } from "@/components/menu-bar"
-import { Clock } from "@/components/clock"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { createClient } from "@/lib/supabase-client"
@@ -34,7 +33,7 @@ interface WindowState {
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
   const [windows, setWindows] = useState<WindowState[]>([])
-  const [highestZIndex, setHighestZIndex] = useState(1000)
+  const [highestZIndex, setHighestZIndex] = useState(20)
 
   useEffect(() => {
     const supabase = createClient()
@@ -162,7 +161,6 @@ export default function Home() {
                   <DesktopIcon
                     key={app.id}
                     title={app.title}
-                    description={app.description}
                     onClick={() => {
                       if (app.requiresAuth && !user) {
                         openWindow("supabase-login")
@@ -170,7 +168,7 @@ export default function Home() {
                         openWindow(app.id)
                       }
                     }}
-                    iconSrc={`/images/${app.id}.png`}
+                    icon={`/images/${app.id}.png`}
                   />
                 ))}
               </div>
@@ -186,7 +184,6 @@ export default function Home() {
                   <DesktopIcon
                     key={app.id}
                     title={app.title}
-                    description={app.description}
                     onClick={() => {
                       if (app.requiresAuth && !user) {
                         openWindow("supabase-login")
@@ -194,7 +191,7 @@ export default function Home() {
                         openWindow(app.id)
                       }
                     }}
-                    iconSrc={`/images/${app.id}.png`}
+                    icon={`/images/${app.id}.png`}
                   />
                 ))}
               </div>
@@ -210,7 +207,6 @@ export default function Home() {
                   <DesktopIcon
                     key={app.id}
                     title={app.title}
-                    description={app.description}
                     onClick={() => {
                       if (app.requiresAuth && !user) {
                         openWindow("supabase-login")
@@ -218,7 +214,7 @@ export default function Home() {
                         openWindow(app.id)
                       }
                     }}
-                    iconSrc={`/images/${app.id}.png`}
+                    icon={`/images/${app.id}.png`}
                   />
                 ))}
               </div>
@@ -234,9 +230,8 @@ export default function Home() {
                   <DesktopIcon
                     key={app.id}
                     title={app.title}
-                    description={app.description}
                     onClick={() => openWindow(app.id)}
-                    iconSrc={`/images/${app.id}.png`}
+                    icon={`/images/${app.id}.png`}
                   />
                 ))}
               </div>
@@ -347,7 +342,7 @@ export default function Home() {
         })}
 
         {/* Taskbar */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 px-4 py-2">
+        <div className="absolute bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 px-4 py-2 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {windows.filter(w => w.isOpen).map(win => {
@@ -389,7 +384,6 @@ export default function Home() {
             
             <div className="flex items-center gap-4">
               <ThemeSwitcher />
-              <Clock />
               {user && (
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   Welcome, {user.email}
