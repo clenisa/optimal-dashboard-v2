@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
   // On error or if no code is present, redirect to home page.
   // The UI will handle showing the login window again.
-  const errorRedirectUrl = `${origin}/?error=auth_failed`
-  authLogger.error("Redirecting to home with error.", { url: errorRedirectUrl })
-  return NextResponse.redirect(errorRedirectUrl)
+  const homeRedirectUrl = `${origin}/`
+  authLogger.error("Redirecting to home.", { url: homeRedirectUrl })
+  return NextResponse.redirect(homeRedirectUrl)
 }

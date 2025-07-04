@@ -57,12 +57,12 @@ export function SupabaseLoginApp() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-4">
-      <h2 className="text-lg font-bold mb-4">Login / Sign Up</h2>
+    <div className="flex flex-col items-center justify-center h-full p-6 sm:p-4">
+      <h2 className="text-lg font-bold mb-6 sm:mb-4">Login / Sign Up</h2>
       <div className="w-full max-w-sm">
         <AuthForm onError={() => {}} />
       </div>
-      <div className="mt-4 text-xs text-gray-500 text-center">
+      <div className="mt-6 sm:mt-4 text-xs text-gray-500 text-center">
         <p>Redirect URL: {typeof window !== "undefined" ? window.location.origin + "/auth/callback" : "/auth/callback"}</p>
         <p>Environment: {process.env.NODE_ENV}</p>
       </div>

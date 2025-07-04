@@ -81,10 +81,15 @@ export function useWindowManager({ windowId, initialX, initialY, initialWidth, i
 
       if (isTitleBar) {
         // Prevent default only for title bar dragging
+        e.preventDefault()
+        e.stopPropagation()
+        
+        // Add body scroll lock on mobile to prevent page scrolling during drag
         if ("touches" in e) {
-          e.preventDefault()
-          e.stopPropagation()
+          document.body.style.overflow = "hidden"
+          document.body.style.touchAction = "none"
         }
+        
         isDragging.current = true
         const rect = windowRef.current.getBoundingClientRect()
         dragOffset.current = {
@@ -93,10 +98,15 @@ export function useWindowManager({ windowId, initialX, initialY, initialWidth, i
         }
       } else if (isResizeHandle) {
         // Prevent default only for resize handle
+        e.preventDefault()
+        e.stopPropagation()
+        
+        // Add body scroll lock on mobile
         if ("touches" in e) {
-          e.preventDefault()
-          e.stopPropagation()
+          document.body.style.overflow = "hidden"
+          document.body.style.touchAction = "none"
         }
+        
         isResizing.current = true
         resizeStart.current = { x: clientX, y: clientY }
         initialWindow.current = {
@@ -151,6 +161,10 @@ export function useWindowManager({ windowId, initialX, initialY, initialWidth, i
         wasDragging: isDragging.current,
         wasResizing: isResizing.current,
       })
+      
+      // Restore body scroll on mobile
+      document.body.style.overflow = ""
+      document.body.style.touchAction = ""
     }
     isDragging.current = false
     isResizing.current = false
