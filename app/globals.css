@@ -50,7 +50,9 @@
     /* Mobile-specific variables */
     --mobile-menu-height: 36px;
     --desktop-menu-height: 28px;
-    --touch-target-min: 44px;
+    --touch-target-min: 48px;
+    --mobile-window-title-height: 40px;
+    --desktop-window-title-height: 28px;
 }
 
 /* Window-specific styles */
@@ -99,6 +101,41 @@
 @media (max-width: 768px) {
   .mobile-dropdown {
     animation: mobile-slide-down 0.2s ease-out;
+  }
+  
+  /* Improved mobile window controls */
+  .window-title-bar {
+    height: var(--mobile-window-title-height) !important;
+    touch-action: manipulation;
+  }
+  
+  .window-title-bar button {
+    min-width: var(--touch-target-min) !important;
+    min-height: var(--touch-target-min) !important;
+    touch-action: manipulation;
+  }
+  
+  /* Better mobile auth form */
+  .supabase-auth-container input,
+  .supabase-auth-container button {
+    min-height: var(--touch-target-min) !important;
+    touch-action: manipulation;
+    -webkit-appearance: none;
+    border-radius: 8px !important;
+  }
+  
+  /* Prevent zoom on input focus */
+  input[type="email"],
+  input[type="password"],
+  input[type="text"] {
+    font-size: 16px !important;
+  }
+  
+  /* Improve window resize handle for mobile */
+  .window-resize-handle {
+    width: 20px !important;
+    height: 20px !important;
+    opacity: 0.7 !important;
   }
 }
 
