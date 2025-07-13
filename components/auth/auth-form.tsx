@@ -52,30 +52,14 @@ export function AuthForm({ onError }: AuthFormProps) {
       }
     }
 
-    const handleMouseDown = (e: Event) => {
-      const target = e.target as HTMLElement
-      const isInteractive = InteractionDetector.isInteractive(target, containerRef)
-      if (isInteractive) {
-        e.stopPropagation()
-      }
-    }
-
-    const handleTouchStart = (e: Event) => {
-      const target = e.target as HTMLElement
-      const isInteractive = InteractionDetector.isInteractive(target, containerRef)
-      if (isInteractive) {
-        e.stopPropagation()
-      }
-    }
+    // Previously this component stopped event propagation on mousedown/touchstart
+    // which prevented inputs from receiving focus. Those handlers have been
+    // removed to allow normal interaction.
 
     container.addEventListener("click", handleClick, { capture: true })
-    container.addEventListener("mousedown", handleMouseDown, { capture: true })
-    container.addEventListener("touchstart", handleTouchStart, { capture: true })
 
     return () => {
       container.removeEventListener("click", handleClick, { capture: true })
-      container.removeEventListener("mousedown", handleMouseDown, { capture: true })
-      container.removeEventListener("touchstart", handleTouchStart, { capture: true })
     }
   }, [])
 
