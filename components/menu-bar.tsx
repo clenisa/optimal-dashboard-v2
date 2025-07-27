@@ -5,7 +5,7 @@ import { Clock } from "@/components/clock"
 import { VolumeControl } from "@/components/volume-control"
 import { useWindowStore } from "@/store/window-store"
 import { useAuthState } from "@/hooks/use-auth-state"
-import { allAppDefinitions } from "@/lib/app-definitions"
+import { appDefinitions } from "@/lib/app-definitions"
 
 export function MenuBar() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
@@ -25,7 +25,7 @@ export function MenuBar() {
   }, [])
 
   const openAppWindow = (appId: string) => {
-    const appDef = allAppDefinitions.find((app) => app.id === appId)
+    const appDef = appDefinitions.find((app) => app.id === appId)
     if (!appDef) return
 
     const existingWindow = windows.find((w) => w.id === appId)

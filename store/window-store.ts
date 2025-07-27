@@ -1,4 +1,4 @@
-import { create } from "zustand"
+import { create, type StateCreator } from "zustand"
 
 // Systematic z-index hierarchy for proper UI layering
 const Z_INDEX_HIERARCHY = {
@@ -54,7 +54,7 @@ export interface WindowState {
   zIndex: number
 }
 
-interface WindowStore {
+export interface WindowStore {
   windows: WindowState[]
   activeWindowId: string | null // To track the currently focused/active window
   addWindow: (window: Omit<WindowState, "zIndex">) => void
@@ -68,17 +68,17 @@ interface WindowStore {
 export const useWindowStore = create<WindowStore>((set, get) => ({
   windows: [],
   activeWindowId: null,
-  addWindow: (newWindow) => {
-    set((state) => {
+  addWindow: (newWindow: Omit<WindowState, "zIndex">) => {
+    set((state: WindowStore) => {
       // Check if window already exists and is not minimized
-      const existingWindow = state.windows.find((w) => w.id === newWindow.id)
+      const existingWindow = state.windows.find((w: WindowState) => w.id === newWindow.id)
       if (existingWindow && !existingWindow.minimized) {
         // If it exists and is open, just focus it
         get().focusWindow(newWindow.id)
         return { windows: state.windows, activeWindowId: newWindow.id }
       } else if (existingWindow && existingWindow.minimized) {
         // If it exists and is minimized, restore and focus it
-        const updatedWindows = state.windows.map((w) =>
+        const updatedWindows = state.windows.map((w: WindowState) =>
           w.id === newWindow.id ? { ...w, ...newWindow, minimized: false, zIndex: getNextWindowZIndex() } : w,
         )
         return { windows: updatedWindows, activeWindowId: newWindow.id }
@@ -91,16 +91,16 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       }
     })
   },
-  removeWindow: (id) =>
-    set((state) => {
-      const newWindows = state.windows.filter((window) => window.id !== id)
+  removeWindow: (id: string) =>
+    set((state: WindowStore) => {
+      const newWindows = state.windows.filter((window: WindowState) => window.id !== id)
       let newActiveId: string | null = state.activeWindowId // Assume current active ID persists
 
       if (state.activeWindowId === id) {
         // If the closed window was active
         if (newWindows.length > 0) {
           // Find the window with the highest zIndex among the remaining ones to set as active
-          newActiveId = newWindows.reduce((prev, current) => (prev.zIndex > current.zIndex ? prev : current)).id
+          newActiveId = newWindows.reduce((prev: WindowState, current: WindowState) => (prev.zIndex > current.zIndex ? prev : current)).id
         } else {
           newActiveId = null // No windows left, so no active window
         }
@@ -110,17 +110,17 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       // If it was, and no windows remain, it's set to null.
       return { windows: newWindows, activeWindowId: newActiveId }
     }),
-  updateWindow: (id, updates) =>
-    set((state) => ({
-      windows: state.windows.map((window) => (window.id === id ? { ...window, ...updates } : window)),
+  updateWindow: (id: string, updates: Partial<WindowState>) =>
+    set((state: WindowStore) => ({
+      windows: state.windows.map((window: WindowState) => (window.id === id ? { ...window, ...updates } : window)),
     })),
-  focusWindow: (id) =>
-    set((state) => {
+  focusWindow: (id: string) =>
+    set((state: WindowStore) => {
       return {
-        windows: state.windows.map((window) => (window.id === id ? { ...window, zIndex: getNextWindowZIndex() } : window)),
+        windows: state.windows.map((window: WindowState) => (window.id === id ? { ...window, zIndex: getNextWindowZIndex() } : window)),
         activeWindowId: id, // Set the focused window as active
       }
     }),
   getHighestZIndex: () => windowZIndexCounter,
-  setActiveWindowId: (id) => set({ activeWindowId: id }),
+  setActiveWindowId: (id: string | null) => set({ activeWindowId: id }),
 }))
