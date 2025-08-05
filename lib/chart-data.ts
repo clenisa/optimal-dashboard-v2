@@ -81,6 +81,28 @@ const mockTransactions: TransactionData[] = [
   },
 ]
 
+// Function to check if categories table exists
+async function checkCategoriesTable(supabase: any): Promise<boolean> {
+  try {
+    console.log("🔍 [DEBUG] checkCategoriesTable: Checking if categories table exists")
+    
+    // Try to query the table to see if it exists
+    const { data, error } = await supabase.from("categories").select("count").limit(1)
+    
+    if (error) {
+      console.warn("⚠️ [DEBUG] checkCategoriesTable: Categories table doesn't exist")
+      console.warn("⚠️ [DEBUG] checkCategoriesTable: Error details:", error)
+      return false
+    }
+    
+    console.log("🔍 [DEBUG] checkCategoriesTable: Categories table exists")
+    return true
+  } catch (error) {
+    console.warn("⚠️ [DEBUG] checkCategoriesTable: Error checking table:", error)
+    return false
+  }
+}
+
 export async function fetchCategories(): Promise<CategoryData[]> {
   try {
     console.log("🔍 [DEBUG] fetchCategories: Starting to fetch categories from Supabase")
@@ -90,16 +112,48 @@ export async function fetchCategories(): Promise<CategoryData[]> {
       return mockCategories
     }
 
-    console.log("🔍 [DEBUG] fetchCategories: Supabase client created, querying categories table")
-    const { data, error } = await supabase.from("categories").select("*").order("name")
+    console.log("🔍 [DEBUG] fetchCategories: Supabase client created, checking categories table")
+    
+    // Check if the categories table exists
+    const tableExists = await checkCategoriesTable(supabase)
+    if (!tableExists) {
+      console.warn("⚠️ [DEBUG] fetchCategories: Categories table doesn't exist, using mock data")
+      console.warn("⚠️ [DEBUG] fetchCategories: To create the table, run this SQL in your Supabase dashboard:")
+      console.warn("⚠️ [DEBUG] fetchCategories: CREATE TABLE categories (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, amount DECIMAL(10,2) DEFAULT 0, count INTEGER DEFAULT 0, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW());")
+      return mockCategories
+    }
+    
+    console.log("🔍 [DEBUG] fetchCategories: Categories table exists, querying data")
+    
+    // Try to query the categories table
+    let data: any = null
+    let error: any = null
+    
+    try {
+      const result = await supabase.from("categories").select("*").order("name")
+      data = result.data
+      error = result.error
+      console.log("🔍 [DEBUG] fetchCategories: Query completed")
+    } catch (queryError) {
+      console.error("❌ [DEBUG] fetchCategories: Query failed with exception:", queryError)
+      error = queryError
+    }
 
     if (error) {
       console.error("❌ [DEBUG] Error fetching categories:", error)
+      console.error("❌ [DEBUG] Error details:", JSON.stringify(error, null, 2))
+      console.warn("⚠️ [DEBUG] fetchCategories: Using mock data due to error")
       return mockCategories
     }
 
     console.log("🔍 [DEBUG] fetchCategories: Raw data from Supabase:", data)
     console.log("🔍 [DEBUG] fetchCategories: Data length:", data?.length || 0)
+
+    // Check if data is null or undefined
+    if (!data) {
+      console.warn("⚠️ [DEBUG] fetchCategories: No data returned from Supabase, using mock data")
+      return mockCategories
+    }
 
     // Transform Supabase data to CategoryData format
     const categoryData: CategoryData[] =
@@ -124,6 +178,7 @@ export async function fetchCategories(): Promise<CategoryData[]> {
     return result
   } catch (error) {
     console.error("❌ [DEBUG] Error in fetchCategories:", error)
+    console.error("❌ [DEBUG] Error stack:", error instanceof Error ? error.stack : "No stack trace")
     return mockCategories
   }
 }
