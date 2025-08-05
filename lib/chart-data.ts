@@ -83,30 +83,47 @@ const mockTransactions: TransactionData[] = [
 
 export async function fetchCategories(): Promise<CategoryData[]> {
   try {
+    console.log("🔍 [DEBUG] fetchCategories: Starting to fetch categories from Supabase")
     const supabase = createClient()
     if (!supabase) {
-      console.warn("Supabase client not available, using mock data")
+      console.warn("⚠️ [DEBUG] Supabase client not available, using mock data")
       return mockCategories
     }
 
+    console.log("🔍 [DEBUG] fetchCategories: Supabase client created, querying categories table")
     const { data, error } = await supabase.from("categories").select("*").order("name")
 
     if (error) {
-      console.error("Error fetching categories:", error)
+      console.error("❌ [DEBUG] Error fetching categories:", error)
       return mockCategories
     }
 
+    console.log("🔍 [DEBUG] fetchCategories: Raw data from Supabase:", data)
+    console.log("🔍 [DEBUG] fetchCategories: Data length:", data?.length || 0)
+
     // Transform Supabase data to CategoryData format
     const categoryData: CategoryData[] =
-      data?.map((cat: any) => ({
-        category: cat.name || cat.category || "Unknown",
-        amount: cat.amount || cat.total_amount || 0,
-        count: cat.count || cat.transaction_count || 0,
-      })) || []
+      data?.map((cat: any) => {
+        console.log("🔍 [DEBUG] fetchCategories: Raw category object:", cat)
+        console.log("🔍 [DEBUG] fetchCategories: Available keys:", Object.keys(cat))
+        
+        const transformed = {
+          category: cat.name || cat.category || "Unknown",
+          amount: Number(cat.amount || cat.total_amount || cat.amount_spent || cat.value || 0),
+          count: Number(cat.count || cat.transaction_count || cat.transactions || 0),
+        }
+        console.log("🔍 [DEBUG] fetchCategories: Transformed category:", transformed)
+        return transformed
+      }) || []
 
-    return categoryData.length > 0 ? categoryData : mockCategories
+    console.log("🔍 [DEBUG] fetchCategories: Final transformed data:", categoryData)
+    console.log("🔍 [DEBUG] fetchCategories: Categories with amounts > 0:", categoryData.filter(cat => cat.amount > 0).length)
+
+    const result = categoryData.length > 0 ? categoryData : mockCategories
+    console.log("🔍 [DEBUG] fetchCategories: Returning result:", result)
+    return result
   } catch (error) {
-    console.error("Error in fetchCategories:", error)
+    console.error("❌ [DEBUG] Error in fetchCategories:", error)
     return mockCategories
   }
 }
