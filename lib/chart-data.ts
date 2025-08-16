@@ -21,27 +21,6 @@ export interface TransactionData {
   account: string
 }
 
-// Helper function to create sample data for testing
-function createSampleData(userId: string) {
-  console.log('[DEBUG] Creating sample data for user:', userId)
-  
-  const sampleCategories: CategoryData[] = [
-    { category: "Food & Dining", amount: 1250.75, count: 23 },
-    { category: "Transportation", amount: 890.50, count: 15 },
-    { category: "Shopping", amount: 2100.25, count: 31 },
-    { category: "Entertainment", amount: 650.00, count: 12 },
-    { category: "Bills & Utilities", amount: 1800.00, count: 8 },
-  ]
-
-  const sampleSources: PaymentSourceData[] = [
-    { source: "Checking Account", balance: 2500.75, transactions: 45 },
-    { source: "Credit Card", balance: -1850.25, transactions: 32 },
-    { source: "Savings Account", balance: 750.00, transactions: 8 },
-  ]
-
-  return { sampleCategories, sampleSources }
-}
-
 export async function fetchCategories(userId: string): Promise<CategoryData[]> {
   if (!userId) {
     console.error('[ERROR] fetchCategories: No user ID provided')
@@ -57,49 +36,37 @@ export async function fetchCategories(userId: string): Promise<CategoryData[]> {
       return []
     }
 
-    // First get all categories for the user
-    const { data: categoriesData, error: categoriesError } = await supabase
-      .from("categories")
-      .select("*")
-      .eq('user_id', userId)
-      .order("name")
-
-    if (categoriesError) {
-      console.error('[ERROR] fetchCategories: Categories query error:', categoriesError)
-      // Continue without categories - we'll extract them from transactions
-    }
-
-    // Then get all transactions to calculate totals
+    // Get all expense transactions to calculate category totals
     const { data: transactionsData, error: transactionsError } = await supabase
       .from("transactions")
-      .select("category, amount")
+      .select(`
+        amount,
+        type,
+        category_id,
+        categories!inner(name)
+      `)
       .eq('user_id', userId)
+      .eq('type', 'expense')
+      .eq('mode', 'actual')
 
     if (transactionsError) {
       console.error('[ERROR] fetchCategories: Transactions query error:', transactionsError)
-      // If no transactions exist, create sample data for testing
-      const { sampleCategories } = createSampleData(userId)
-      console.log('[DEBUG] fetchCategories: Using sample data:', sampleCategories)
-      return sampleCategories
+      return []
     }
 
-    // If no transactions exist, create sample data
     if (!transactionsData || transactionsData.length === 0) {
-      const { sampleCategories } = createSampleData(userId)
-      console.log('[DEBUG] fetchCategories: No transactions found, using sample data:', sampleCategories)
-      return sampleCategories
+      console.log('[DEBUG] fetchCategories: No expense transactions found')
+      return []
     }
 
-    console.log('[DEBUG] fetchCategories: Raw data:', { 
-      categories: categoriesData?.length, 
-      transactions: transactionsData?.length 
-    })
+    console.log('[DEBUG] fetchCategories: Processing', transactionsData.length, 'expense transactions')
+    console.log('[DEBUG] fetchCategories: Sample transactions:', transactionsData.slice(0, 5))
 
     // Calculate category totals from transactions
     const categoryTotals = new Map<string, { amount: number, count: number }>()
     
-    transactionsData?.forEach((txn: any) => {
-      const category = txn.category || 'Uncategorized'
+    transactionsData.forEach((txn: any) => {
+      const category = txn.categories?.name || 'Uncategorized'
       const amount = Math.abs(txn.amount || 0) // Use absolute value for spending
       
       if (!categoryTotals.has(category)) {
@@ -111,6 +78,8 @@ export async function fetchCategories(userId: string): Promise<CategoryData[]> {
       current.count += 1
     })
 
+    console.log('[DEBUG] fetchCategories: Category totals map:', Object.fromEntries(categoryTotals))
+
     // Transform to CategoryData format
     const categoryData: CategoryData[] = Array.from(categoryTotals.entries()).map(([category, totals]) => ({
       category,
@@ -118,7 +87,10 @@ export async function fetchCategories(userId: string): Promise<CategoryData[]> {
       count: totals.count
     }))
 
-    console.log('[DEBUG] fetchCategories: Calculated totals:', categoryData)
+    console.log('[DEBUG] fetchCategories: Final category data:', categoryData)
+    console.log('[DEBUG] fetchCategories: Category breakdown:', 
+      categoryData.map(cat => `${cat.category}: $${cat.amount.toFixed(2)} (${cat.count} transactions)`))
+    
     return categoryData
   } catch (error) {
     console.error('[ERROR] fetchCategories exception:', error)
@@ -141,68 +113,36 @@ export async function fetchSources(userId: string): Promise<PaymentSourceData[]>
       return []
     }
 
-    // First get all sources for the user
+    // Get all sources for the user
     const { data: sourcesData, error: sourcesError } = await supabase
       .from("sources")
-      .select("*")
+      .select("id, name, type, current_balance")
       .eq('user_id', userId)
-      .order("name")
 
     if (sourcesError) {
       console.error('[ERROR] fetchSources: Sources query error:', sourcesError)
-      // Continue without sources - we'll extract them from transactions
+      return []
     }
 
-    // Then get all transactions to calculate current balances
-    const { data: transactionsData, error: transactionsError } = await supabase
-      .from("transactions")
-      .select("account, amount")
-      .eq('user_id', userId)
-
-    if (transactionsError) {
-      console.error('[ERROR] fetchSources: Transactions query error:', transactionsError)
-      // If no transactions exist, create sample data for testing
-      const { sampleSources } = createSampleData(userId)
-      console.log('[DEBUG] fetchSources: Using sample data:', sampleSources)
-      return sampleSources
+    if (!sourcesData || sourcesData.length === 0) {
+      console.log('[DEBUG] fetchSources: No sources found')
+      return []
     }
 
-    // If no transactions exist, create sample data
-    if (!transactionsData || transactionsData.length === 0) {
-      const { sampleSources } = createSampleData(userId)
-      console.log('[DEBUG] fetchSources: No transactions found, using sample data:', sampleSources)
-      return sampleSources
-    }
-
-    console.log('[DEBUG] fetchSources: Raw data:', { 
-      sources: sourcesData?.length, 
-      transactions: transactionsData?.length 
-    })
-
-    // Calculate account balances from transactions
-    const accountBalances = new Map<string, { balance: number, transactions: number }>()
-    
-    transactionsData?.forEach((txn: any) => {
-      const account = txn.account || 'Unknown Account'
-      const amount = txn.amount || 0
-      
-      if (!accountBalances.has(account)) {
-        accountBalances.set(account, { balance: 0, transactions: 0 })
-      }
-      
-      const current = accountBalances.get(account)!
-      current.balance += amount // Add/subtract based on transaction type
-      current.transactions += 1
-    })
+    console.log('[DEBUG] fetchSources: Processing', sourcesData.length, 'sources')
+    console.log('[DEBUG] fetchSources: Sources data:', sourcesData)
 
     // Transform to PaymentSourceData format
-    const sourceData: PaymentSourceData[] = Array.from(accountBalances.entries()).map(([source, data]) => ({
-      source,
-      balance: data.balance,
-      transactions: data.transactions
+    const sourceData: PaymentSourceData[] = sourcesData.map((source: any) => ({
+      source: source.name,
+      balance: source.current_balance || 0,
+      transactions: 0 // We could count transactions per source if needed
     }))
 
-    console.log('[DEBUG] fetchSources: Calculated balances:', sourceData)
+    console.log('[DEBUG] fetchSources: Final source data:', sourceData)
+    console.log('[DEBUG] fetchSources: Source breakdown:', 
+      sourceData.map(acc => `${acc.source}: $${acc.balance.toFixed(2)}`))
+    
     return sourceData
   } catch (error) {
     console.error('[ERROR] fetchSources exception:', error)
@@ -227,8 +167,19 @@ export async function fetchTransactions(userId: string): Promise<TransactionData
 
     const { data, error } = await supabase
       .from("transactions")
-      .select("*")
+      .select(`
+        id,
+        date,
+        description,
+        amount,
+        type,
+        category_id,
+        source_id,
+        categories(name),
+        sources(name)
+      `)
       .eq('user_id', userId)
+      .eq('mode', 'actual')
       .order("date", { ascending: false })
 
     if (error) {
@@ -245,8 +196,8 @@ export async function fetchTransactions(userId: string): Promise<TransactionData
         date: txn.date || new Date().toISOString().split("T")[0],
         description: txn.description || "Unknown Transaction",
         amount: txn.amount || 0,
-        category: txn.category || "Uncategorized",
-        account: txn.account || txn.source || "Unknown Account",
+        category: txn.categories?.name || "Uncategorized",
+        account: txn.sources?.name || "Unknown Account",
       })) || []
 
     console.log('[DEBUG] fetchTransactions: Fetched', transactionData.length, 'transactions')

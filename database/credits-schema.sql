@@ -14,6 +14,21 @@ CREATE TABLE IF NOT EXISTS user_credits (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Financial transactions table (for charts and financial data)
+CREATE TABLE IF NOT EXISTS transactions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    date DATE NOT NULL DEFAULT CURRENT_DATE,
+    description TEXT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL, -- Positive for income, negative for expenses
+    category VARCHAR(100) NOT NULL DEFAULT 'Uncategorized',
+    account VARCHAR(100) NOT NULL DEFAULT 'Unknown Account',
+    source VARCHAR(100), -- Alternative to account field
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Credit transactions table (for tracking credit purchases/usage)
 CREATE TABLE IF NOT EXISTS credit_transactions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -53,6 +68,9 @@ CREATE TABLE IF NOT EXISTS ai_logs (
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_user_credits_user_id ON user_credits(user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category, user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account, user_id);
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_user ON credit_transactions(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_type ON credit_transactions(type, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_ai_conversations_user ON ai_conversations(user_id, last_message_at DESC);
@@ -60,6 +78,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_logs_user ON ai_logs(user_id, created_at DESC)
 
 -- Row Level Security Policies
 ALTER TABLE user_credits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE credit_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_logs ENABLE ROW LEVEL SECURITY;
@@ -67,6 +86,19 @@ ALTER TABLE ai_logs ENABLE ROW LEVEL SECURITY;
 -- User credits policies
 CREATE POLICY "Users can view their own credits" ON user_credits
     FOR ALL USING (auth.uid() = user_id);
+
+-- Financial transactions policies
+CREATE POLICY "Users can view their own transactions" ON transactions
+    FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own transactions" ON transactions
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own transactions" ON transactions
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own transactions" ON transactions
+    FOR DELETE USING (auth.uid() = user_id);
 
 -- Credit transactions policies
 CREATE POLICY "Users can view their own credit transactions" ON credit_transactions
@@ -91,6 +123,9 @@ $$ language 'plpgsql';
 
 -- Triggers for updated_at
 CREATE TRIGGER update_user_credits_updated_at BEFORE UPDATE ON user_credits
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON transactions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_ai_conversations_updated_at BEFORE UPDATE ON ai_conversations
@@ -165,4 +200,27 @@ SELECT
 FROM auth.users u
 LEFT JOIN user_credits uc ON u.id = uc.user_id
 ORDER BY uc.created_at DESC;
+
+-- Financial analytics views
+CREATE OR REPLACE VIEW financial_summary AS
+SELECT 
+    user_id,
+    DATE_TRUNC('month', date) as month,
+    category,
+    COUNT(*) as transaction_count,
+    SUM(ABS(amount)) as total_amount,
+    AVG(ABS(amount)) as avg_amount
+FROM transactions
+GROUP BY user_id, DATE_TRUNC('month', date), category
+ORDER BY month DESC, total_amount DESC;
+
+CREATE OR REPLACE VIEW account_balance_summary AS
+SELECT 
+    user_id,
+    account,
+    COUNT(*) as transaction_count,
+    SUM(amount) as current_balance
+FROM transactions
+GROUP BY user_id, account
+ORDER BY current_balance DESC;
 
