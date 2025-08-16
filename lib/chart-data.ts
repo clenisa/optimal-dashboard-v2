@@ -213,5 +213,3 @@ export function generateSourceBalanceData(sources: PaymentSourceData[], threshol
     ],
   }
 }
-
-}
