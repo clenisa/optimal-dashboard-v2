@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { processCsvFile, type ParsedTransaction } from "@/lib/csv-parser"
 import { createClient } from "@/lib/supabase-client"
+import { useAuthState } from "@/hooks/use-auth-state"
 
 export function CsvParserApp() {
   const [file, setFile] = useState<File | null>(null)
@@ -17,6 +18,7 @@ export function CsvParserApp() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const { user } = useAuthState()
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
@@ -56,11 +58,17 @@ export function CsvParserApp() {
       return
     }
 
+    if (!user?.id) {
+      setError("You must be logged in to upload transactions")
+      return
+    }
+
     setLoading(true)
     setError(null)
     setSuccess(null)
 
     try {
+      console.log('[DEBUG] CSV Parser: Starting upload for user', user.id)
       const supabase = createClient()
       if (!supabase) {
         throw new Error("Supabase client not available")
@@ -68,6 +76,7 @@ export function CsvParserApp() {
 
       const { data, error: uploadError } = await supabase.from("transactions").insert(
         transactions.map((txn) => ({
+          user_id: user.id, // Add user context
           date: txn.date,
           description: txn.description,
           amount: txn.amount,
@@ -77,9 +86,11 @@ export function CsvParserApp() {
       )
 
       if (uploadError) {
+        console.error('[ERROR] CSV Parser: Upload error:', uploadError)
         throw uploadError
       }
 
+      console.log('[DEBUG] CSV Parser: Successfully uploaded', transactions.length, 'transactions')
       setSuccess(`Successfully uploaded ${transactions.length} transactions to Supabase`)
       setTransactions([])
       setFile(null)
@@ -88,6 +99,16 @@ export function CsvParserApp() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!user) {
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertDescription>Please log in to use the CSV Parser</AlertDescription>
+        </Alert>
+      </div>
+    )
   }
 
   return (

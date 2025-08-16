@@ -12,28 +12,21 @@ import {
   Tooltip,
   Legend,
 } from "chart.js"
-import { fetchCategories, type CategoryData } from "@/lib/chart-data"
+import { useFinancialData } from "@/hooks/useFinancialData"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 export default function CategoryLineChart() {
-  const [categoryData, setCategoryData] = useState<CategoryData[]>([])
-  const [loading, setLoading] = useState(true)
+  const { categories, loading, error } = useFinancialData()
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await fetchCategories()
-        setCategoryData(data)
-      } catch (error) {
-        console.error("Error loading category data:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadData()
-  }, [])
+    console.log('[DEBUG] CategoryLineChart: Component mounted, user data:', { 
+      categoriesCount: categories.length,
+      loading,
+      error,
+      categoriesData: categories
+    })
+  }, [categories, loading, error])
 
   if (loading) {
     return (
@@ -43,18 +36,41 @@ export default function CategoryLineChart() {
     )
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-sm text-red-500">Error: {error}</div>
+      </div>
+    )
+  }
+
+  if (categories.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-sm text-gray-500">No category data available</div>
+      </div>
+    )
+  }
+
+  // Debug: Log the exact data being used for the chart
   const chartData = {
-    labels: categoryData.map((item) => item.category),
+    labels: categories.map((item) => item.category),
     datasets: [
       {
         label: "Spending Amount ($)",
-        data: categoryData.map((item) => item.amount),
+        data: categories.map((item) => item.amount),
         borderColor: "rgb(75, 192, 192)",
         backgroundColor: "rgba(75, 192, 192, 0.2)",
         tension: 0.1,
       },
     ],
   }
+
+  console.log('[DEBUG] CategoryLineChart: Chart data prepared:', {
+    labels: chartData.labels,
+    data: chartData.datasets[0].data,
+    rawCategories: categories
+  })
 
   const options = {
     responsive: true,
