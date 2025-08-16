@@ -21,80 +21,33 @@ export interface TransactionData {
   account: string
 }
 
-// Mock data fallback
-const mockCategories: CategoryData[] = [
-  { category: "Food & Dining", amount: 1250.75, count: 23 },
-  { category: "Transportation", amount: 890.5, count: 15 },
-  { category: "Shopping", amount: 2100.25, count: 31 },
-  { category: "Entertainment", amount: 650.0, count: 12 },
-  { category: "Bills & Utilities", amount: 1800.0, count: 8 },
-  { category: "Healthcare", amount: 450.25, count: 5 },
-]
+export async function fetchCategories(userId: string): Promise<CategoryData[]> {
+  if (!userId) {
+    console.error('[ERROR] fetchCategories: No user ID provided')
+    return []
+  }
 
-const mockSources: PaymentSourceData[] = [
-  { source: "Checking Account", balance: 2500.75, transactions: 45 },
-  { source: "Credit Card", balance: 1850.25, transactions: 32 },
-  { source: "Savings Account", balance: 750.0, transactions: 8 },
-  { source: "Debit Card", balance: 1200.5, transactions: 28 },
-]
-
-const mockTransactions: TransactionData[] = [
-  {
-    id: "1",
-    date: "2024-01-15",
-    description: "Grocery Store",
-    amount: -85.5,
-    category: "Food & Dining",
-    account: "Checking Account",
-  },
-  {
-    id: "2",
-    date: "2024-01-14",
-    description: "Gas Station",
-    amount: -45.0,
-    category: "Transportation",
-    account: "Credit Card",
-  },
-  {
-    id: "3",
-    date: "2024-01-13",
-    description: "Online Shopping",
-    amount: -120.75,
-    category: "Shopping",
-    account: "Credit Card",
-  },
-  {
-    id: "4",
-    date: "2024-01-12",
-    description: "Restaurant",
-    amount: -65.25,
-    category: "Food & Dining",
-    account: "Debit Card",
-  },
-  {
-    id: "5",
-    date: "2024-01-11",
-    description: "Electric Bill",
-    amount: -150.0,
-    category: "Bills & Utilities",
-    account: "Checking Account",
-  },
-]
-
-export async function fetchCategories(): Promise<CategoryData[]> {
   try {
+    console.log('[DEBUG] fetchCategories: Starting fetch for user', userId)
     const supabase = createClient()
+    
     if (!supabase) {
-      console.warn("Supabase client not available, using mock data")
-      return mockCategories
+      console.error('[ERROR] fetchCategories: Failed to initialize Supabase client')
+      return []
     }
 
-    const { data, error } = await supabase.from("categories").select("*").order("name")
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .eq('user_id', userId)
+      .order("name")
 
     if (error) {
-      console.error("Error fetching categories:", error)
-      return mockCategories
+      console.error('[ERROR] fetchCategories: Database error:', error)
+      return []
     }
+
+    console.log('[DEBUG] fetchCategories: Query result:', { data: data?.length, error })
 
     // Transform Supabase data to CategoryData format
     const categoryData: CategoryData[] =
@@ -104,27 +57,41 @@ export async function fetchCategories(): Promise<CategoryData[]> {
         count: cat.count || cat.transaction_count || 0,
       })) || []
 
-    return categoryData.length > 0 ? categoryData : mockCategories
+    console.log('[DEBUG] fetchCategories: Fetched', categoryData.length, 'categories')
+    return categoryData
   } catch (error) {
-    console.error("Error in fetchCategories:", error)
-    return mockCategories
+    console.error('[ERROR] fetchCategories exception:', error)
+    return []
   }
 }
 
-export async function fetchSources(): Promise<PaymentSourceData[]> {
+export async function fetchSources(userId: string): Promise<PaymentSourceData[]> {
+  if (!userId) {
+    console.error('[ERROR] fetchSources: No user ID provided')
+    return []
+  }
+
   try {
+    console.log('[DEBUG] fetchSources: Starting fetch for user', userId)
     const supabase = createClient()
+    
     if (!supabase) {
-      console.warn("Supabase client not available, using mock data")
-      return mockSources
+      console.error('[ERROR] fetchSources: Failed to initialize Supabase client')
+      return []
     }
 
-    const { data, error } = await supabase.from("sources").select("*").order("name")
+    const { data, error } = await supabase
+      .from("sources")
+      .select("*")
+      .eq('user_id', userId)
+      .order("name")
 
     if (error) {
-      console.error("Error fetching sources:", error)
-      return mockSources
+      console.error('[ERROR] fetchSources: Database error:', error)
+      return []
     }
+
+    console.log('[DEBUG] fetchSources: Query result:', { data: data?.length, error })
 
     // Transform Supabase data to PaymentSourceData format
     const sourceData: PaymentSourceData[] =
@@ -134,27 +101,41 @@ export async function fetchSources(): Promise<PaymentSourceData[]> {
         transactions: source.transactions || source.transaction_count || 0,
       })) || []
 
-    return sourceData.length > 0 ? sourceData : mockSources
+    console.log('[DEBUG] fetchSources: Fetched', sourceData.length, 'sources')
+    return sourceData
   } catch (error) {
-    console.error("Error in fetchSources:", error)
-    return mockSources
+    console.error('[ERROR] fetchSources exception:', error)
+    return []
   }
 }
 
-export async function fetchTransactions(): Promise<TransactionData[]> {
+export async function fetchTransactions(userId: string): Promise<TransactionData[]> {
+  if (!userId) {
+    console.error('[ERROR] fetchTransactions: No user ID provided')
+    return []
+  }
+
   try {
+    console.log('[DEBUG] fetchTransactions: Starting fetch for user', userId)
     const supabase = createClient()
+    
     if (!supabase) {
-      console.warn("Supabase client not available, using mock data")
-      return mockTransactions
+      console.error('[ERROR] fetchTransactions: Failed to initialize Supabase client')
+      return []
     }
 
-    const { data, error } = await supabase.from("transactions").select("*").order("date", { ascending: false })
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("*")
+      .eq('user_id', userId)
+      .order("date", { ascending: false })
 
     if (error) {
-      console.error("Error fetching transactions:", error)
-      return mockTransactions
+      console.error('[ERROR] fetchTransactions: Database error:', error)
+      return []
     }
+
+    console.log('[DEBUG] fetchTransactions: Query result:', { data: data?.length, error })
 
     // Transform Supabase data to TransactionData format
     const transactionData: TransactionData[] =
@@ -167,10 +148,11 @@ export async function fetchTransactions(): Promise<TransactionData[]> {
         account: txn.account || txn.source || "Unknown Account",
       })) || []
 
-    return transactionData.length > 0 ? transactionData : mockTransactions
+    console.log('[DEBUG] fetchTransactions: Fetched', transactionData.length, 'transactions')
+    return transactionData
   } catch (error) {
-    console.error("Error in fetchTransactions:", error)
-    return mockTransactions
+    console.error('[ERROR] fetchTransactions exception:', error)
+    return []
   }
 }
 
@@ -230,4 +212,6 @@ export function generateSourceBalanceData(sources: PaymentSourceData[], threshol
       },
     ],
   }
+}
+
 }
