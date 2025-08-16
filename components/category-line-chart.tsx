@@ -23,7 +23,8 @@ export default function CategoryLineChart() {
     console.log('[DEBUG] CategoryLineChart: Component mounted, user data:', { 
       categoriesCount: categories.length,
       loading,
-      error 
+      error,
+      categoriesData: categories
     })
   }, [categories, loading, error])
 
@@ -51,6 +52,7 @@ export default function CategoryLineChart() {
     )
   }
 
+  // Debug: Log the exact data being used for the chart
   const chartData = {
     labels: categories.map((item) => item.category),
     datasets: [
@@ -63,6 +65,12 @@ export default function CategoryLineChart() {
       },
     ],
   }
+
+  console.log('[DEBUG] CategoryLineChart: Chart data prepared:', {
+    labels: chartData.labels,
+    data: chartData.datasets[0].data,
+    rawCategories: categories
+  })
 
   const options = {
     responsive: true,

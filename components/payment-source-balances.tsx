@@ -16,7 +16,8 @@ export function PaymentSourceBalances() {
     console.log('[DEBUG] PaymentSourceBalances: Component mounted, user data:', { 
       sourcesCount: sources.length,
       loading,
-      error 
+      error,
+      sourcesData: sources
     })
   }, [sources, loading, error])
 
@@ -46,6 +47,7 @@ export function PaymentSourceBalances() {
 
   const filteredData = sources.filter((item) => item.balance >= threshold[0])
 
+  // Debug: Log the exact data being used for the chart
   const chartData = {
     labels: filteredData.map((item) => item.source),
     datasets: [
@@ -74,6 +76,13 @@ export function PaymentSourceBalances() {
       },
     ],
   }
+
+  console.log('[DEBUG] PaymentSourceBalances: Chart data prepared:', {
+    labels: chartData.labels,
+    data: chartData.datasets[0].data,
+    rawSources: sources,
+    filteredData: filteredData
+  })
 
   const options = {
     responsive: true,
