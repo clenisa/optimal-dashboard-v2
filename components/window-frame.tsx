@@ -85,13 +85,13 @@ export function WindowFrame({
         }}
       >
         {/* Title Bar */}
-        <div className="window-title-bar flex justify-between items-center bg-black text-white px-3 py-2 cursor-grab active:cursor-grabbing select-none touch-manipulation h-10 sm:h-7 rounded-t-md">
-          <span className="text-xs sm:text-xs font-mono pointer-events-none truncate flex-1 mr-2">{title}</span>
+        <div className="window-title-bar flex justify-between items-center bg-black text-white px-3 py-2 cursor-grab active:cursor-grabbing select-none touch-manipulation h-12 sm:h-10 md:h-8 rounded-t-md draggable-area">
+          <span className="text-xs sm:text-sm font-mono pointer-events-none truncate flex-1 mr-2">{title}</span>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-red-600 rounded touch-manipulation flex items-center justify-center w-8 h-8 sm:w-5 sm:h-5 text-xs flex-shrink-0"
+            className="p-2 hover:bg-red-600 rounded touch-manipulation flex items-center justify-center w-10 h-10 sm:w-8 sm:h-8 md:w-6 md:h-6 text-xs flex-shrink-0 touch-optimized"
             aria-label="Close window"
-            style={{ touchAction: "manipulation", cursor: "pointer", minWidth: "44px", minHeight: "44px" }}
+            style={{ touchAction: "manipulation", cursor: "pointer" }}
           >
             <X size={16} />
           </button>
@@ -99,7 +99,7 @@ export function WindowFrame({
 
         {/* Content Area */}
         <div
-          className="flex-grow p-3 sm:p-4 overflow-auto text-black"
+          className="flex-grow p-2 sm:p-3 md:p-4 overflow-auto text-black"
           style={{
             pointerEvents: "auto",
             isolation: "isolate",
@@ -118,7 +118,7 @@ export function WindowFrame({
         </div>
 
         {/* Resize Handle */}
-        <div className="window-resize-handle absolute bottom-0 right-0 w-4 h-4 bg-black cursor-nwse-resize touch-manipulation opacity-50 hover:opacity-100 transition-opacity" />
+        <div className="window-resize-handle absolute bottom-0 right-0 w-6 h-6 sm:w-5 sm:h-5 md:w-4 md:h-4 bg-black cursor-nwse-resize touch-manipulation opacity-50 hover:opacity-100 transition-opacity touch-optimized" />
       </div>
     </div>
   )

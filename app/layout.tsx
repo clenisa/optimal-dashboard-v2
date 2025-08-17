@@ -10,6 +10,12 @@ export const metadata: Metadata = {
   title: "Optimal OS",
   description: "Optimal OS - A revolutionary web-based desktop environment.",
   generator: "v0.dev",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
   icons: {
     icon: "/images/optimal-os.png",
     shortcut: "/images/optimal-os.png",

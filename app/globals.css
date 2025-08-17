@@ -53,6 +53,67 @@
     --touch-target-min: 48px;
     --mobile-window-title-height: 40px;
     --desktop-window-title-height: 28px;
+    
+    /* Responsive scaling variables */
+    --scale-factor: 1;
+    --base-font-size: 16px;
+}
+
+/* Responsive scaling for different screen sizes */
+@media (max-width: 640px) {
+  :root {
+    --scale-factor: 0.9;
+    --base-font-size: 14px;
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    --scale-factor: 1.1;
+    --base-font-size: 18px;
+  }
+}
+
+@media (min-width: 2560px) {
+  :root {
+    --scale-factor: 1.25;
+    --base-font-size: 20px;
+  }
+}
+
+@media (min-width: 3840px) {
+  :root {
+    --scale-factor: 1.5;
+    --base-font-size: 24px;
+  }
+}
+
+/* Touch handling and gesture prevention */
+.draggable-area {
+  touch-action: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  cursor: grab;
+}
+
+.draggable-area:active {
+  cursor: grabbing;
+}
+
+.touch-optimized {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  touch-action: manipulation;
+}
+
+/* Hide scrollbars for mobile optimization */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
 }
 
 /* Window-specific styles */
@@ -80,12 +141,6 @@
 .mobile-menu-bar {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-}
-
-/* Touch-friendly buttons */
-.touch-optimized {
-  min-height: var(--touch-target-min);
-  min-width: var(--touch-target-min);
 }
 
 /* Prevent text selection on mobile */

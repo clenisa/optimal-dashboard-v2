@@ -19,6 +19,7 @@ import { ServiceApp } from "@/components/service-app"
 import { DebugConsole } from "@/components/debug-console"
 import { AboutThisDesktopApp } from "@/components/about-this-desktop-app"
 import { WindowFrame } from "@/components/window-frame" // Keep this import
+import { ResponsiveDebug } from "@/components/responsive-debug" // Add this import
 import { useWindowStore, WindowState, WindowStore } from "@/store/window-store" // Import WindowState, WindowStore and useWindowStore
 
 import { appDefinitions, type AppId, getFinancialApps, getAIApps, getSystemApps, getToolApps } from "@/lib/app-definitions"
@@ -35,6 +36,7 @@ import { appDefinitions, type AppId, getFinancialApps, getAIApps, getSystemApps,
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
+  const [isDebugOpen, setIsDebugOpen] = useState(false)
   // Remove local window state management
   // const [windows, setWindows] = useState<WindowState[]>([])
   // const [highestZIndex, setHighestZIndex] = useState(20)
@@ -140,15 +142,24 @@ export default function Home() {
         {/* Menu Bar */}
         <MenuBar />
 
+        {/* Debug Button */}
+        <button
+          onClick={() => setIsDebugOpen(true)}
+          className="absolute top-4 right-4 z-50 px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 touch-optimized shadow-lg"
+          aria-label="Debug Screen"
+        >
+          Debug Screen
+        </button>
+
         {/* Desktop Icons */}
-        <div className="absolute inset-0 p-4 pt-16">
-          <div className="grid grid-cols-1 gap-4 w-fit">
+        <div className="absolute inset-0 p-2 sm:p-4 pt-16">
+          <div className="grid grid-cols-1 gap-1 sm:gap-2 w-fit">
             {/* AI & Communication Section */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
+            <div className="space-y-1 sm:space-y-2">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
                 🤖 AI Assistant
               </h3>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 gap-1 sm:gap-2">
                 {getAIApps().map(app => (
                   <DesktopIcon
                     key={app.id}
@@ -168,11 +179,11 @@ export default function Home() {
             </div>
 
             {/* Financial Apps Section */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
+            <div className="space-y-1 sm:space-y-2">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
                 💰 Financial Management
               </h3>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 gap-1 sm:gap-2">
                 {getFinancialApps().map(app => (
                   <DesktopIcon
                     key={app.id}
@@ -192,11 +203,11 @@ export default function Home() {
             </div>
 
             {/* Tools Section */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
+            <div className="space-y-1 sm:space-y-2">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
                 🔧 Tools
               </h3>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 gap-1 sm:gap-2">
                 {getToolApps().map(app => (
                   <DesktopIcon
                     key={app.id}
@@ -216,11 +227,11 @@ export default function Home() {
             </div>
 
             {/* System Apps Section */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
+            <div className="space-y-1 sm:space-y-2">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
                 ⚙️ System
               </h3>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 gap-1 sm:gap-2">
                 {getSystemApps().map(app => (
                   <DesktopIcon
                     key={app.id}
@@ -356,9 +367,9 @@ export default function Home() {
         })}
 
         {/* Taskbar */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 px-4 py-2 z-10">
+        <div className="absolute bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 px-2 sm:px-4 py-2 z-10">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-hide flex-1">
               {windows.filter((w: WindowState) => !w.minimized).map((win: WindowState) => { // Filter for open and non-minimized windows
                 const appDef = appDefinitions.find(app => app.id === (win.id as AppId))
                 if (!appDef) return null
@@ -370,7 +381,7 @@ export default function Home() {
                       // Use focusWindow, which also unminimizes if needed
                       focusWindow(win.id)
                     }}
-                    className={`px-3 py-1 rounded text-sm flex items-center gap-2 ${
+                    className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0 touch-optimized ${
                       activeWindowId === win.id // Highlight if it's the active window
                         ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
                         : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
@@ -379,21 +390,21 @@ export default function Home() {
                     <img 
                       src={`/images/${win.id}.png`} 
                       alt={appDef.title}
-                      className="w-4 h-4"
+                      className="w-3 h-3 sm:w-4 sm:h-4"
                       onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
                         e.currentTarget.style.display = 'none'
                       }}
                     />
-                    {appDef.title}
+                    <span className="hidden sm:inline">{appDef.title}</span>
                   </button>
                 )
               })}
             </div>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
               <ThemeSwitcher />
               {user && (
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden sm:block">
                   Welcome, {user.email}
                 </div>
               )}
@@ -401,6 +412,9 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Responsive Debug Component */}
+      <ResponsiveDebug isOpen={isDebugOpen} onClose={() => setIsDebugOpen(false)} />
     </ThemeProvider>
   )
 }
