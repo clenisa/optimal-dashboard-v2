@@ -4,6 +4,7 @@ export interface ParsedTransaction {
   amount: number
   category: string
   account: string
+  type: string
 }
 
 // Parse CSV string into an array of transaction objects.
@@ -21,8 +22,9 @@ export function parseCSV(csvContent: string): ParsedTransaction[] {
         date: values[0] || new Date().toISOString().split("T")[0],
         description: values[1] || "Unknown Transaction",
         amount: Number.parseFloat(values[2]) || 0,
-        category: values[3] || "Uncategorized",
-        account: values[4] || "Unknown Account",
+        type: values[3] || "expense",
+        category: values[4] || "Uncategorized",
+        account: values[5] || "Unknown Account",
       }
 
       transactions.push(transaction)
