@@ -3,7 +3,6 @@ export interface ParsedTransaction {
   description: string
   amount: number
   category: string
-  account: string
   type: string
 }
 
@@ -17,14 +16,13 @@ export function parseCSV(csvContent: string): ParsedTransaction[] {
   for (let i = 1; i < lines.length; i++) {
     const values = lines[i].split(",").map((v) => v.trim())
 
-    if (values.length >= 4) {
+    if (values.length >= 5) {
       const transaction: ParsedTransaction = {
         date: values[0] || new Date().toISOString().split("T")[0],
         description: values[1] || "Unknown Transaction",
         amount: Number.parseFloat(values[2]) || 0,
         type: values[3] || "expense",
         category: values[4] || "Uncategorized",
-        account: values[5] || "Unknown Account",
       }
 
       transactions.push(transaction)

@@ -34,7 +34,7 @@ The Enhanced CSV Parser has been successfully implemented following the implemen
 The parser expects CSV files with the following column structure:
 
 ```csv
-date,description,amount,type,category,account
+date,description,amount,type,category
 ```
 
 ### Column Details
@@ -43,26 +43,21 @@ date,description,amount,type,category,account
 - **amount**: Transaction amount (numeric, cannot be zero)
 - **type**: Transaction type (must be: income, expense, or transfer)
 - **category**: Transaction category (optional, max 100 characters)
-- **account**: Account name (optional, max 100 characters)
 
 ### Example CSV
 ```csv
-date,description,amount,type,category,account
-2025-01-15,Coffee Shop,5.50,expense,Food & Dining,Checking Account
-2025-01-16,Salary Deposit,2500.00,income,Salary,Checking Account
-2025-01-17,Transfer to Savings,500.00,transfer,Transfer,Savings Account
+date,description,amount,type,category
+2025-01-15,Coffee Shop,5.50,expense,Food & Dining
+2025-01-16,Salary Deposit,2500.00,income,Salary
+2025-01-17,Transfer to Savings,500.00,transfer,Transfer
 ```
 
 ## Database Schema
 
-The enhanced parser requires a `type` field in the transactions table. Run the migration script to add this field:
+The enhanced parser works with the existing database schema. The transactions table has the following structure:
 
 ```sql
--- Run the migration script: database/add-transaction-type-migration.sql
-```
-
-### Updated Transactions Table Structure
-```sql
+-- The actual transactions table structure from your database
 CREATE TABLE transactions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -70,14 +65,27 @@ CREATE TABLE transactions (
     description TEXT NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
     type VARCHAR(20) NOT NULL DEFAULT 'expense' CHECK (type IN ('income', 'expense', 'transfer')),
-    category VARCHAR(100) NOT NULL DEFAULT 'Uncategorized',
-    account VARCHAR(100) NOT NULL DEFAULT 'Unknown Account',
-    source VARCHAR(100),
-    metadata JSONB DEFAULT '{}',
+    category_id INTEGER REFERENCES categories(id), -- References categories table
+    mode VARCHAR(20) DEFAULT 'actual', -- Transaction mode
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ```
+
+### Categories Table
+The parser automatically creates categories if they don't exist:
+
+```sql
+CREATE TABLE categories (
+    id SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    color VARCHAR(7) DEFAULT '#000000',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+**Note**: The CSV parser automatically handles category creation and mapping, so you don't need to run any additional migrations.
 
 ## Usage
 
