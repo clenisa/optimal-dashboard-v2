@@ -291,14 +291,52 @@ export function CsvParserApp() {
 
       setDebugInfo(prev => [...prev, "Starting upload to Supabase..."])
 
-      // Prepare transactions for upload
+      // First, get or create categories for the transactions
+      const uniqueCategories = [...new Set(transactions.map(txn => txn.category).filter(Boolean))]
+      const categoryMap = new Map<string, number>()
+      
+      for (const categoryName of uniqueCategories) {
+        if (categoryName) {
+          // Try to find existing category
+          const { data: existingCategory } = await supabase
+            .from("categories")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("name", categoryName)
+            .single()
+          
+          if (existingCategory) {
+            categoryMap.set(categoryName, existingCategory.id)
+          } else {
+            // Create new category if it doesn't exist
+            const { data: newCategory, error: createError } = await supabase
+              .from("categories")
+              .insert({
+                user_id: user.id,
+                name: categoryName,
+                color: `#${Math.floor(Math.random()*16777215).toString(16)}` // Random color
+              })
+              .select("id")
+              .single()
+            
+            if (createError) {
+              throw new Error(`Failed to create category '${categoryName}': ${createError.message}`)
+            }
+            
+            categoryMap.set(categoryName, newCategory.id)
+          }
+        }
+      }
+
+      // Prepare transactions for upload - match the actual database schema
       const transactionsToUpload = transactions.map(txn => ({
         user_id: user.id,
         date: txn.date,
         description: txn.description,
-        amount: txn.amount,
-        category: txn.category,
-        account: txn.account,
+        amount: parseFloat(txn.amount.toString()),
+        type: txn.type,
+        category_id: txn.category ? categoryMap.get(txn.category) : null,
+        mode: 'actual' // Default mode for CSV imports
       }))
 
       // Upload in batches to avoid timeout
