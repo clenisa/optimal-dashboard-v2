@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react"
 import { DesktopIcon } from "@/components/desktop-icon"
 import { MenuBar } from "@/components/menu-bar"
-import { ThemeProvider } from "@/components/theme-provider"
-import { ThemeSwitcher } from "@/components/theme-switcher"
+import { ThemeProvider } from "@/components/theme-manager"
+import { ThemeSwitcher } from "@/components/theme-manager"
 import { createClient } from "@/lib/supabase-client"
 import { User, AuthChangeEvent, Session } from "@supabase/supabase-js"
 

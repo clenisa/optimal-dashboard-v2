@@ -13,6 +13,9 @@ import {
   Legend,
 } from "chart.js"
 import { useFinancialData } from "@/hooks/useFinancialData"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Info, TrendingUp, TrendingDown, Target } from "lucide-react"
 
 // Register Chart.js components
 ChartJS.register(
@@ -24,6 +27,18 @@ ChartJS.register(
   Tooltip,
   Legend
 )
+
+// Chart Descriptions and Insights
+const CHART_DESCRIPTIONS = {
+  title: "Spending Trends by Category",
+  description: "Track how your spending in different categories changes over time. Look for patterns, seasonal variations, and opportunities to optimize your budget.",
+  insights: [
+    "Identify categories with increasing spending trends",
+    "Spot seasonal patterns in your expenses",
+    "Compare current month vs previous months",
+    "Set category-specific budget goals"
+  ]
+}
 
 export default function CategoryLineChart() {
   const { categories, loading, error } = useFinancialData()
@@ -226,10 +241,73 @@ export default function CategoryLineChart() {
   console.log('[DEBUG] CategoryLineChart: About to render chart with data:', chartData)
   
   return (
-    <div className="w-full h-full p-4">
-      <div style={{ position: 'relative', height: '400px', width: '100%' }}>
-        <Line data={chartData} options={options} />
-      </div>
+    <div className="w-full h-full p-4 space-y-6">
+      {/* Chart Description and Insights */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            {CHART_DESCRIPTIONS.title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-gray-600 dark:text-gray-300">
+            {CHART_DESCRIPTIONS.description}
+          </p>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Key Insights */}
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <Target className="h-4 w-4 text-blue-600" />
+                Key Insights
+              </h4>
+              <ul className="space-y-2 text-sm">
+                {CHART_DESCRIPTIONS.insights.map((insight, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5">•</span>
+                    <span>{insight}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            {/* Chart Statistics */}
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <Info className="h-4 w-4 text-green-600" />
+                Chart Statistics
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                  <div className="text-lg font-bold text-blue-600">
+                    {validCategories.length}
+                  </div>
+                  <div className="text-xs text-gray-500">Categories</div>
+                </div>
+                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                  <div className="text-lg font-bold text-green-600">
+                    ${validCategories.reduce((sum, cat) => sum + Number(cat.amount), 0).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">Total Amount</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Spending Trends Visualization</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div style={{ position: 'relative', height: '400px', width: '100%' }}>
+            <Line data={chartData} options={options} />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
