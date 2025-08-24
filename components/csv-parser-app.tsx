@@ -13,6 +13,25 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { processCsvFile, type ParsedTransaction } from "@/lib/csv-parser"
 import { createClient } from "@/lib/supabase-client"
 import { useAuthState } from "@/hooks/use-auth-state"
+import { Upload, FileText, CheckCircle, AlertCircle, Info } from "lucide-react"
+
+// CSV Upload Instructions and Requirements
+const CSV_UPLOAD_INSTRUCTIONS = {
+  title: "Financial Data CSV Upload",
+  description: "Upload your financial transaction data in CSV format to visualize spending patterns and insights.",
+  requirements: [
+    "File must be in CSV format (.csv)",
+    "Required columns: Date, Amount, Description, Category",
+    "Date format: YYYY-MM-DD or MM/DD/YYYY",
+    "Amount should be numeric (negative for expenses, positive for income)",
+    "Maximum file size: 10MB"
+  ],
+  examples: [
+    "Date,Amount,Description,Category",
+    "2024-01-15,-45.67,Grocery Store,Food",
+    "2024-01-16,2500.00,Salary Deposit,Income"
+  ]
+}
 
 interface ValidationResult {
   isValid: boolean
@@ -396,6 +415,54 @@ export function CsvParserApp() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Instructions and Requirements Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            {CSV_UPLOAD_INSTRUCTIONS.title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-gray-600 dark:text-gray-300">
+            {CSV_UPLOAD_INSTRUCTIONS.description}
+          </p>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Requirements */}
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                Requirements
+              </h4>
+              <ul className="space-y-2 text-sm">
+                {CSV_UPLOAD_INSTRUCTIONS.requirements.map((req, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">•</span>
+                    <span>{req}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            {/* Example Format */}
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <Info className="h-4 w-4 text-blue-600" />
+                Example Format
+              </h4>
+              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm font-mono">
+                {CSV_UPLOAD_INSTRUCTIONS.examples.map((line, index) => (
+                  <div key={index} className="text-gray-700 dark:text-gray-300">
+                    {line}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>CSV Transaction Parser</CardTitle>
@@ -406,8 +473,12 @@ export function CsvParserApp() {
           <div className="space-y-2">
             <Label htmlFor="csv-file">Select CSV File</Label>
             <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                loading ? 'border-gray-300 bg-gray-50' : 'border-gray-300 hover:border-gray-400'
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
+                loading 
+                  ? 'border-gray-300 bg-gray-50 dark:bg-gray-800' 
+                  : file
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                    : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'
               }`}
               onDragOver={handleDragOver}
               onDragEnter={handleDragEnter}
@@ -424,16 +495,24 @@ export function CsvParserApp() {
               />
               <Label htmlFor="csv-file" className="cursor-pointer">
                 {file ? (
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium">{file.name}</div>
-                    <div className="text-xs text-gray-500">
+                  <div className="space-y-3">
+                    <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
+                    <div className="text-lg font-medium text-green-800 dark:text-green-200">{file.name}</div>
+                    <div className="text-sm text-green-600 dark:text-green-400">
                       {(file.size / 1024).toFixed(2)} KB
                     </div>
+                    <div className="text-xs text-green-500">File selected successfully!</div>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <div className="text-sm">Click to select or drag and drop a CSV file</div>
-                    <div className="text-xs text-gray-500">Maximum file size: 10MB</div>
+                  <div className="space-y-3">
+                    <Upload className="h-12 w-12 text-gray-400 mx-auto" />
+                    <div className="text-lg font-medium">Click to select or drag and drop a CSV file</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Supports .csv files up to 10MB
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      Drag your file here or click to browse
+                    </div>
                   </div>
                 )}
               </Label>

@@ -7,9 +7,28 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Mic, Send, Square, CreditCard, DollarSign, AlertCircle, Wifi, WifiOff } from 'lucide-react'
+import { Mic, Send, Square, CreditCard, DollarSign, AlertCircle, Wifi, WifiOff, Bot, Lightbulb, MessageSquare } from 'lucide-react'
 import { createClient } from "@/lib/supabase-client"
 import { User } from "@supabase/supabase-js"
+
+// AI Chat Welcome Message and Capabilities
+const AI_CHAT_WELCOME = {
+  title: "AI Financial Assistant",
+  description: "Ask questions about your financial data, get insights, and receive personalized recommendations.",
+  capabilities: [
+    "Analyze spending patterns and trends",
+    "Provide budget recommendations",
+    "Answer questions about your transactions",
+    "Generate financial reports and summaries",
+    "Suggest ways to optimize your finances"
+  ],
+  exampleQueries: [
+    "What did I spend the most on last month?",
+    "Show me my dining out trends",
+    "How can I reduce my monthly expenses?",
+    "What's my average monthly income?"
+  ]
+}
 
 interface ChatMessage {
   id: string
@@ -417,11 +436,46 @@ export function AIChatConsole() {
           <div className="space-y-4">
             {messages.length === 0 && (
               <div className="text-center text-gray-500 py-8">
-                <DollarSign className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium mb-2">AI Financial Assistant</p>
-                <p className="text-sm">Connected to your local ElectronConsole with Ollama</p>
-                <div className="mt-4 text-xs text-gray-400">
-                  Try: "Analyze my spending patterns" or "What's my credit utilization?"
+                <Bot className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-medium mb-2">{AI_CHAT_WELCOME.title}</p>
+                <p className="text-sm mb-4">{AI_CHAT_WELCOME.description}</p>
+                
+                <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                  {/* Capabilities */}
+                  <div className="text-left">
+                    <h4 className="font-medium flex items-center gap-2 mb-3 text-gray-700">
+                      <Lightbulb className="h-4 w-4 text-yellow-600" />
+                      What I can help with:
+                    </h4>
+                    <ul className="space-y-2 text-sm">
+                      {AI_CHAT_WELCOME.capabilities.map((capability, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <span className="text-blue-500 mt-0.5">•</span>
+                          <span>{capability}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  {/* Example Queries */}
+                  <div className="text-left">
+                    <h4 className="font-medium flex items-center gap-2 mb-3 text-gray-700">
+                      <MessageSquare className="h-4 w-4 text-green-600" />
+                      Try asking:
+                    </h4>
+                    <ul className="space-y-2 text-sm">
+                      {AI_CHAT_WELCOME.exampleQueries.map((query, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <span className="text-green-500 mt-0.5">•</span>
+                          <span className="italic">"{query}"</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="mt-6 text-xs text-gray-400">
+                  Connected to your local ElectronConsole with Ollama
                 </div>
               </div>
             )}

@@ -13,6 +13,9 @@ import {
 } from "chart.js"
 import { Slider } from "@/components/ui/slider"
 import { useFinancialData } from "@/hooks/useFinancialData"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Info, Wallet, TrendingUp, AlertTriangle } from "lucide-react"
 
 // Register Chart.js components
 ChartJS.register(
@@ -23,6 +26,18 @@ ChartJS.register(
   Tooltip,
   Legend
 )
+
+// Balance Descriptions and Features
+const BALANCE_DESCRIPTIONS = {
+  title: "Account Balances Overview",
+  description: "Monitor your account balances across different payment sources and financial institutions.",
+  features: [
+    "Real-time balance updates",
+    "Historical balance trends",
+    "Account performance comparison",
+    "Low balance alerts"
+  ]
+}
 
 export function PaymentSourceBalances() {
   const { sources, loading, error } = useFinancialData()
@@ -274,14 +289,77 @@ export function PaymentSourceBalances() {
   console.log('[DEBUG] PaymentSourceBalances: About to render chart with data:', chartData)
 
   return (
-    <div className="w-full h-full p-4 space-y-4">
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Minimum Balance Threshold: ${threshold[0]}</label>
-        <Slider value={threshold} onValueChange={setThreshold} max={3000} min={0} step={50} className="w-full" />
-      </div>
-      <div className="flex-1" style={{ position: 'relative', height: '400px', width: '100%' }}>
-        <Bar data={chartData} options={options} />
-      </div>
+    <div className="w-full h-full p-4 space-y-6">
+      {/* Balance Description and Features */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="h-5 w-5" />
+            {BALANCE_DESCRIPTIONS.title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-gray-600 dark:text-gray-300">
+            {BALANCE_DESCRIPTIONS.description}
+          </p>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Key Features */}
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-green-600" />
+                Key Features
+              </h4>
+              <ul className="space-y-2 text-sm">
+                {BALANCE_DESCRIPTIONS.features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">•</span>
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            {/* Balance Statistics */}
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <Info className="h-4 w-4 text-blue-600" />
+                Balance Statistics
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                  <div className="text-lg font-bold text-blue-600">
+                    {validSources.length}
+                  </div>
+                  <div className="text-xs text-gray-500">Accounts</div>
+                </div>
+                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                  <div className="text-lg font-bold text-green-600">
+                    ${validSources.reduce((sum, source) => sum + Number(source.balance), 0).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">Total Balance</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Chart Controls and Visualization */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Balance Visualization</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Minimum Balance Threshold: ${threshold[0]}</label>
+            <Slider value={threshold} onValueChange={setThreshold} max={3000} min={0} step={50} className="w-full" />
+          </div>
+          <div className="flex-1" style={{ position: 'relative', height: '400px', width: '100%' }}>
+            <Bar data={chartData} options={options} />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

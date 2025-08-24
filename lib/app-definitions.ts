@@ -17,6 +17,7 @@ export interface AppDefinition {
   requiresAuth?: boolean
   category?: 'financial' | 'ai' | 'tools' | 'system'
   description?: string
+  developmentOnly?: boolean
 }
 
 export const appDefinitions: AppDefinition[] = [
@@ -94,7 +95,8 @@ export const appDefinitions: AppDefinition[] = [
     defaultWidth: 700,
     defaultHeight: 500,
     category: 'system',
-    description: "Development and debugging tools"
+    description: "Development and debugging tools",
+    developmentOnly: true
   },
   {
     id: "about-this-desktop",
@@ -123,7 +125,12 @@ export function getAIApps(): AppDefinition[] {
 }
 
 export function getSystemApps(): AppDefinition[] {
-  return getAppsByCategory('system')
+  const systemApps = getAppsByCategory('system')
+  // Filter out development-only apps in production
+  if (process.env.NODE_ENV === 'production') {
+    return systemApps.filter(app => !app.developmentOnly)
+  }
+  return systemApps
 }
 
 export function getToolApps(): AppDefinition[] {
