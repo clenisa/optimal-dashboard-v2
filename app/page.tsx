@@ -13,6 +13,7 @@ import { SupabaseLoginApp } from "@/components/supabase-login-app"
 import { CsvParserApp } from "@/components/csv-parser-app"
 import { CategoryLineChart } from "@/components/category-line-chart"
 import { PaymentSourceBalances } from "@/components/payment-source-balances"
+import { TransactionManager } from "@/components/transaction-manager"
 import { AIChatConsole } from "@/components/ai-chat-console"
 import { CreditsManager } from "@/components/credits-manager"
 import { ServiceApp } from "@/components/service-app"
@@ -119,6 +120,8 @@ export default function Home() {
         return <CategoryLineChart />
       case "payment-source-balances":
         return <PaymentSourceBalances />
+      case "transaction-manager":
+        return <TransactionManager />
       case "ai-chat-console":
         return <AIChatConsole />
       case "credits-manager":

@@ -3,6 +3,7 @@ export type AppId =
   | "csv-parser"
   | "category-line-chart"
   | "payment-source-balances"
+  | "transaction-manager"
   | "ai-chat-console"
   | "credits-manager"
   | "service-app"
@@ -59,6 +60,15 @@ export const appDefinitions: AppDefinition[] = [
     requiresAuth: true,
     category: 'financial',
     description: "Payment source balances with threshold filtering"
+  },
+  {
+    id: "transaction-manager",
+    title: "Transaction Manager",
+    defaultWidth: 900,
+    defaultHeight: 600,
+    requiresAuth: true,
+    category: 'financial',
+    description: "Manage and view financial transactions"
   },
   
   // Tools
