@@ -8,15 +8,27 @@ interface TransactionSummaryProps {
 }
 
 export function TransactionSummary({ transactions }: TransactionSummaryProps) {
-  const totalIncome = transactions
-    .filter((t) => t.amount > 0)
-    .reduce((acc, t) => acc + t.amount, 0)
+  const hasType = transactions.some(t => typeof (t as any).type === 'string')
 
-  const totalExpenses = transactions
-    .filter((t) => t.amount < 0)
-    .reduce((acc, t) => acc + t.amount, 0)
+  const totalIncome = hasType
+    ? transactions
+        .filter((t) => (t as any).type === 'income')
+        .reduce((acc, t) => acc + t.amount, 0)
+    : transactions
+        .filter((t) => t.amount > 0)
+        .reduce((acc, t) => acc + t.amount, 0)
 
-  const netBalance = totalIncome + totalExpenses
+  const totalExpenses = hasType
+    ? transactions
+        .filter((t) => (t as any).type === 'expense')
+        .reduce((acc, t) => acc + t.amount, 0)
+    : transactions
+        .filter((t) => t.amount < 0)
+        .reduce((acc, t) => acc + Math.abs(t.amount), 0)
+
+  const netBalance = hasType
+    ? totalIncome - totalExpenses
+    : totalIncome - totalExpenses
 
   return (
     <Card>
