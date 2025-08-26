@@ -12,6 +12,15 @@ body {
   }
 }
 
+/* Example CSS to improve inline editing form */
+.inline-edit-form input,
+.inline-edit-form select {
+  width: 100%;
+  padding: 8px;
+  margin: 4px 0;
+  box-sizing: border-box;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

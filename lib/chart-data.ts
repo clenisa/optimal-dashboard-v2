@@ -19,7 +19,7 @@ export interface TransactionData {
   amount: number
   category: string
   account: string
-  type?: 'income' | 'expense'
+  type: string
 }
 
 export async function fetchCategories(userId: string): Promise<CategoryData[]> {
@@ -199,7 +199,7 @@ export async function fetchTransactions(userId: string): Promise<TransactionData
         amount: txn.amount || 0,
         category: txn.categories?.name || "Uncategorized",
         account: txn.sources?.name || "Unknown Account",
-        type: txn.type as 'income' | 'expense' | undefined,
+        type: txn.type || "",
       })) || []
 
     console.log('[DEBUG] fetchTransactions: Fetched', transactionData.length, 'transactions')
