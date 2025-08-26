@@ -58,7 +58,12 @@ export function TransactionManager() {
                 </p>
               </div>
             ) : (
-              <TransactionTable transactions={filteredTransactions} />
+              <TransactionTable 
+                transactions={filteredTransactions} 
+                onTransactionUpdated={(updated) => {
+                  setFilteredTransactions(prev => prev.map(t => t.id === updated.id ? { ...t, ...updated } : t))
+                }}
+              />
             )}
           </div>
         </div>
