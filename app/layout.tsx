@@ -27,9 +27,11 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/images/optimal-os.png" sizes="any" />
       </head>
-      <body className={`${inter.className} optimal-background`}>
+      <body className={`${inter.className}`}>
         <ThemeProvider>
-          {children}
+          <div className="optimal-background min-h-screen">
+            {children}
+          </div>
         </ThemeProvider>
       </body>
     </html>

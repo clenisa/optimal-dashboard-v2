@@ -52,7 +52,7 @@ interface UserCredits {
   last_daily_credit: string
 }
 
-export function AIChatConsole() {
+export function AiChatConsole() {
   const [user, setUser] = useState<User | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
@@ -592,5 +592,6 @@ export function AIChatConsole() {
   )
 }
 
-export default AIChatConsole
+export default AiChatConsole
+export { AiChatConsole }
 
