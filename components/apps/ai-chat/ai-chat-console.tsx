@@ -592,3 +592,5 @@ export function AIChatConsole() {
   )
 }
 
+export default AIChatConsole
+

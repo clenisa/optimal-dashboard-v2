@@ -200,4 +200,6 @@ export function TransactionTable({ transactions, onTransactionUpdated }: Transac
   )
 }
 
+export default TransactionTable
+
 

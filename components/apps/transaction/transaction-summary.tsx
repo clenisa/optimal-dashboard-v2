@@ -55,4 +55,6 @@ export function TransactionSummary({ transactions }: TransactionSummaryProps) {
   )
 }
 
+export default TransactionSummary
+
 

@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { useAuthState } from '@/hooks/use-auth-state'
 import { useFinancialData } from '@/hooks/useFinancialData'
 import { TransactionData } from '@/lib/chart-data'
-import { TransactionTable } from '@/components/transaction-table'
-import { TransactionFilters } from '@/components/transaction-filters'
-import { TransactionSummary } from '@/components/transaction-summary'
+import TransactionTable from './transaction-table'
+import TransactionFilters from './transaction-filters'
+import TransactionSummary from './transaction-summary'
 
 export function TransactionManager() {
   const { user } = useAuthState()
@@ -74,5 +74,7 @@ export function TransactionManager() {
     </div>
   )
 }
+
+export default TransactionManager
 
 

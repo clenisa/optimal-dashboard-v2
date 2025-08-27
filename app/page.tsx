@@ -1,25 +1,25 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { DesktopIcon } from "@/components/desktop-icon"
-import { MenuBar } from "@/components/menu-bar"
-import { ThemeProvider } from "@/components/theme-manager"
-import { ThemeSwitcher } from "@/components/theme-manager"
+import { DesktopIcon } from "@/components/layout/desktop-icon"
+import { MenuBar } from "@/components/layout/menu-bar"
+import { ThemeProvider } from "@/components/shared/theme-manager"
+import { ThemeSwitcher } from "@/components/shared/theme-manager"
 import { createClient } from "@/lib/supabase-client"
 import { User, AuthChangeEvent, Session } from "@supabase/supabase-js"
 
 // Import all components
-import { SupabaseLoginApp } from "@/components/supabase-login-app"
-import { CsvParserApp } from "@/components/csv-parser-app"
+import SupabaseLoginApp from "@/components/apps/auth"
+import CsvParserApp from "@/components/apps/csv-parser"
 import { CategoryLineChart } from "@/components/category-line-chart"
 import { PaymentSourceBalances } from "@/components/payment-source-balances"
-import { TransactionManager } from "@/components/transaction-manager"
-import { AIChatConsole } from "@/components/ai-chat-console"
-import { CreditsManager } from "@/components/credits-manager"
+import { TransactionManager } from "@/components/apps/transaction"
+import AiChatConsole from "@/components/apps/ai-chat"
+import { CreditsManager } from "@/components/shared/credits-manager"
 import { ServiceApp } from "@/components/service-app"
 import { DebugConsole } from "@/components/debug-console"
-import { AboutThisDesktopApp } from "@/components/about-this-desktop-app"
-import { WindowFrame } from "@/components/window-frame" // Keep this import
+import { AboutThisDesktopApp } from "@/components/shared/about-this-desktop-app"
+import { WindowFrame } from "@/components/layout/window-frame" // Keep this import
 import { useWindowStore, WindowState, WindowStore } from "@/store/window-store" // Import WindowState, WindowStore and useWindowStore
 
 import { appDefinitions, type AppId, getFinancialApps, getAIApps, getSystemApps, getToolApps } from "@/lib/app-definitions"

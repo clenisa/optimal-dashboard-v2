@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Clock } from "@/components/clock"
-import { VolumeControl } from "@/components/volume-control"
+import { Clock } from "@/components/shared/clock"
+import { VolumeControl } from "@/components/shared/volume-control"
 import { useWindowStore } from "@/store/window-store"
 import { useAuthState } from "@/hooks/use-auth-state"
 import { appDefinitions } from "@/lib/app-definitions"
