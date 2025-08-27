@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react"
 import { useVibration } from "@/hooks/use-vibration"
 import { useAuthState } from "@/hooks/use-auth-state"
-import { AuthForm } from "./auth/auth-form"
+import { AuthForm } from "../../auth/auth-form"
 import { createClient } from "@/lib/supabase-client"
 
 export function SupabaseLoginApp() {
@@ -69,3 +69,5 @@ export function SupabaseLoginApp() {
     </div>
   )
 }
+
+export default SupabaseLoginApp

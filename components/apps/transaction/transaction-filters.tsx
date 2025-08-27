@@ -63,4 +63,6 @@ export function TransactionFilters({ allTransactions, setFilteredTransactions }:
   )
 }
 
+export default TransactionFilters
+
 

@@ -716,3 +716,5 @@ export function CsvParserApp() {
     </div>
   )
 }
+
+export default CsvParserApp
