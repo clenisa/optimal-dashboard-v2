@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import CategoryLineChart from "./category-line-chart"
 import { PaymentSourceBalances } from "./payment-source-balances"
-import { CsvParserApp } from "./csv-parser-app"
+import { CsvParserApp } from "./apps/csv-parser/csv-parser-app"
 
 interface ServiceAppProps {
   serviceName: string
