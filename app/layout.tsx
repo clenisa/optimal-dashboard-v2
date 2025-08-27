@@ -27,8 +27,8 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/images/optimal-os.png" sizes="any" />
       </head>
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+      <body className={`${inter.className} optimal-background`}>
+        <ThemeProvider>
           {children}
         </ThemeProvider>
       </body>
