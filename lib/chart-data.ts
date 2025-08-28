@@ -1,5 +1,13 @@
 import { createClient } from "./supabase-client"
 
+// Color palette for category line charts
+export const categoryColors = [
+  "#4ecdc4", "#ff6b6b", "#45b7d1", "#96ceb4", "#feca57", "#ff9ff3",
+  "#54a0ff", "#5f27cd", "#00d2d3", "#ff9f43", "#10ac84", "#ee5a24",
+  "#0984e3", "#6c5ce7", "#a29bfe", "#fd79a8", "#fdcb6e", "#6c5ce7",
+  "#74b9ff", "#00b894",
+]
+
 export interface CategoryData {
   category: string
   amount: number
@@ -225,6 +233,70 @@ export function generateCategoryData(categories: CategoryData[], transactions: T
         tension: 0.1,
       },
     ],
+  }
+}
+
+// Generate multi-category monthly datasets for a line chart
+export function generateMultiCategoryData(
+  transactions: TransactionData[],
+  categories: CategoryData[]
+) {
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ]
+
+  const categoryData: Record<string, number[]> = {}
+
+  // Initialize data arrays for each category name
+  categories.forEach((cat) => {
+    categoryData[cat.category] = new Array(12).fill(0)
+  })
+
+  // Process transactions: aggregate absolute expense amounts by month and category name
+  transactions.forEach((txn) => {
+    if (!txn?.date) return
+    const date = new Date(txn.date)
+    const monthIndex = date.getMonth()
+    if (Number.isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) return
+
+    const amount = Math.abs(Number(txn.amount) || 0)
+    const categoryName = txn.category || "Uncategorized"
+
+    if (categoryData[categoryName]) {
+      categoryData[categoryName][monthIndex] += amount
+    }
+  })
+
+  // Create datasets for each category with distinct colors
+  const datasets = categories.map((category, index) => {
+    const color = categoryColors[index % categoryColors.length]
+    return {
+      label: category.category.toUpperCase(),
+      data: categoryData[category.category],
+      borderColor: color,
+      backgroundColor: `${color}20`,
+      borderWidth: 2,
+      tension: 0.4,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      fill: false,
+    }
+  })
+
+  return {
+    labels: months,
+    datasets,
   }
 }
 
