@@ -41,8 +41,65 @@ const BALANCE_DESCRIPTIONS = {
 
 export function PaymentSourceBalances() {
   const { sources, loading, error } = useFinancialData()
-  const [threshold, setThreshold] = useState([500])
+  const [threshold, setThreshold] = useState(500)
   const [useTestData, setUseTestData] = useState(false)
+  const [paydownNeeded, setPaydownNeeded] = useState(0)
+  const [sourcesAboveThreshold, setSourcesAboveThreshold] = useState(0)
+  const [chartData, setChartData] = useState<any | null>(null)
+
+  function calculatePaydownNeeded(currentSources: { source: string; balance: number }[], currentThreshold: number) {
+    const above = currentSources.filter((s) => typeof s.balance === 'number' && s.balance > currentThreshold)
+    const paydown = above.reduce((sum, s) => sum + (Number(s.balance) - currentThreshold), 0)
+    setPaydownNeeded(paydown)
+    setSourcesAboveThreshold(above.length)
+  }
+
+  function generateChartData(currentSources: { source: string; balance: number }[], currentThreshold: number) {
+    const labels = currentSources.map((item) => item.source)
+    const utilization = currentSources.map((item) => {
+      if (!currentThreshold || currentThreshold <= 0) return 0
+      const pct = (Number(item.balance) / currentThreshold) * 100
+      return Math.round(pct)
+    })
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Utilization (%)",
+          data: utilization,
+          backgroundColor: [
+            "rgba(255, 99, 132, 0.8)",
+            "rgba(54, 162, 235, 0.8)",
+            "rgba(255, 205, 86, 0.8)",
+            "rgba(75, 192, 192, 0.8)",
+            "rgba(153, 102, 255, 0.8)",
+            "rgba(255, 159, 64, 0.8)",
+            "rgba(199, 199, 199, 0.8)",
+          ],
+          borderColor: [
+            "rgba(255, 99, 132, 1)",
+            "rgba(54, 162, 235, 1)",
+            "rgba(255, 205, 86, 1)",
+            "rgba(75, 192, 192, 1)",
+            "rgba(153, 102, 255, 1)",
+            "rgba(255, 159, 64, 1)",
+            "rgba(199, 199, 199, 1)",
+          ],
+          borderWidth: 1,
+        },
+        {
+          type: "line" as const,
+          label: "Threshold (100%)",
+          data: Array(labels.length).fill(100),
+          borderColor: "rgba(255, 0, 0, 0.8)",
+          backgroundColor: "rgba(255, 0, 0, 0.1)",
+          borderWidth: 2,
+          pointRadius: 0,
+        },
+      ],
+    }
+  }
 
   // Debug: Validate data structure
   useEffect(() => {
@@ -127,8 +184,8 @@ export function PaymentSourceBalances() {
         {useTestData && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Minimum Balance Threshold: ${threshold[0]}</label>
-              <Slider value={threshold} onValueChange={setThreshold} max={3000} min={0} step={50} className="w-full" />
+              <label className="text-sm font-medium">Minimum Balance Threshold: ${threshold}</label>
+              <Slider value={[threshold]} onValueChange={(v) => setThreshold(v[0] ?? 0)} max={3000} min={0} step={50} className="w-full" />
             </div>
             <div style={{ position: 'relative', height: '400px', width: '100%' }}>
               <Bar data={testData} options={{
@@ -177,8 +234,8 @@ export function PaymentSourceBalances() {
         {useTestData && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Minimum Balance Threshold: ${threshold[0]}</label>
-              <Slider value={threshold} onValueChange={setThreshold} max={3000} min={0} step={50} className="w-full" />
+              <label className="text-sm font-medium">Minimum Balance Threshold: ${threshold}</label>
+              <Slider value={[threshold]} onValueChange={(v) => setThreshold(v[0] ?? 0)} max={3000} min={0} step={50} className="w-full" />
             </div>
             <div style={{ position: 'relative', height: '400px', width: '100%' }}>
               <Bar data={testData} options={{
@@ -206,61 +263,13 @@ export function PaymentSourceBalances() {
     )
   }
 
-  const filteredData = validSources.filter((item) => item.balance >= threshold[0])
-
-  if (filteredData.length === 0) {
-    console.log('[DEBUG] PaymentSourceBalances: No data above threshold:', threshold[0])
-    return (
-      <div className="w-full h-full p-4 space-y-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Minimum Balance Threshold: ${threshold[0]}</label>
-          <Slider value={threshold} onValueChange={setThreshold} max={3000} min={0} step={50} className="w-full" />
-        </div>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-sm text-gray-500">No payment sources above ${threshold[0]} threshold</div>
-        </div>
-      </div>
-    )
-  }
-
-  // Debug: Log the exact data being used for the chart
-  const chartData = {
-    labels: filteredData.map((item) => item.source),
-    datasets: [
-      {
-        label: "Balance ($)",
-        data: filteredData.map((item) => Number(item.balance)),
-        backgroundColor: [
-          "rgba(255, 99, 132, 0.8)",
-          "rgba(54, 162, 235, 0.8)",
-          "rgba(255, 205, 86, 0.8)",
-          "rgba(75, 192, 192, 0.8)",
-          "rgba(153, 102, 255, 0.8)",
-          "rgba(255, 159, 64, 0.8)",
-          "rgba(199, 199, 199, 0.8)",
-        ],
-        borderColor: [
-          "rgba(255, 99, 132, 1)",
-          "rgba(54, 162, 235, 1)",
-          "rgba(255, 205, 86, 1)",
-          "rgba(75, 192, 192, 1)",
-          "rgba(153, 102, 255, 1)",
-          "rgba(255, 159, 64, 1)",
-          "rgba(199, 199, 199, 1)",
-        ],
-        borderWidth: 1,
-      },
-    ],
-  }
-
-  console.log('[DEBUG] PaymentSourceBalances: Chart data prepared:', {
-    labels: chartData.labels,
-    data: chartData.datasets[0].data,
-    rawSources: sources,
-    validSources: validSources,
-    filteredData: filteredData,
-    threshold: threshold[0]
-  })
+  // Calculate KPIs and chart data when valid sources or threshold change
+  useEffect(() => {
+    calculatePaydownNeeded(validSources, threshold)
+    const data = generateChartData(validSources, threshold)
+    setChartData(data)
+    console.log('[DEBUG] PaymentSourceBalances: Chart data prepared (utilization):', data)
+  }, [validSources, threshold])
 
   const options = {
     responsive: true,
@@ -271,7 +280,7 @@ export function PaymentSourceBalances() {
       },
       title: {
         display: true,
-        text: "Payment Source Balances",
+        text: "Payment Source Utilization",
       },
     },
     scales: {
@@ -279,7 +288,7 @@ export function PaymentSourceBalances() {
         beginAtZero: true,
         ticks: {
           callback: function(value: any) {
-            return "$" + value.toLocaleString()
+            return value + "%"
           },
         },
       },
@@ -352,11 +361,25 @@ export function PaymentSourceBalances() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Minimum Balance Threshold: ${threshold[0]}</label>
-            <Slider value={threshold} onValueChange={setThreshold} max={3000} min={0} step={50} className="w-full" />
+            <label className="text-sm font-medium">Minimum Balance Threshold: ${threshold}</label>
+            <Slider value={[threshold]} onValueChange={(v) => setThreshold(v[0] ?? 0)} max={3000} min={0} step={50} className="w-full" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
+              <div className="text-lg font-bold text-amber-600">
+                ${paydownNeeded.toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-500">Paydown Needed</div>
+            </div>
+            <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
+              <div className="text-lg font-bold text-purple-600">
+                {sourcesAboveThreshold}
+              </div>
+              <div className="text-xs text-gray-500">Sources Above Threshold</div>
+            </div>
           </div>
           <div className="flex-1" style={{ position: 'relative', height: '400px', width: '100%' }}>
-            <Bar data={chartData} options={options} />
+            {chartData && <Bar data={chartData} options={options} />}
           </div>
         </CardContent>
       </Card>
