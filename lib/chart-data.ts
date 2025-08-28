@@ -17,7 +17,8 @@ export interface CategoryData {
 export interface PaymentSourceData {
   source: string
   balance: number
-  transactions: number
+  max_balance: number
+  type: 'credit' | 'debit'
 }
 
 export interface TransactionData {
@@ -125,7 +126,7 @@ export async function fetchSources(userId: string): Promise<PaymentSourceData[]>
     // Get all sources for the user
     const { data: sourcesData, error: sourcesError } = await supabase
       .from("sources")
-      .select("id, name, type, current_balance")
+      .select("id, name, type, current_balance, credit_limit")
       .eq('user_id', userId)
 
     if (sourcesError) {
@@ -144,8 +145,9 @@ export async function fetchSources(userId: string): Promise<PaymentSourceData[]>
     // Transform to PaymentSourceData format
     const sourceData: PaymentSourceData[] = sourcesData.map((source: any) => ({
       source: source.name,
-      balance: source.current_balance || 0,
-      transactions: 0 // We could count transactions per source if needed
+      balance: Number(source.current_balance) || 0,
+      max_balance: Number(source.credit_limit) || 0,
+      type: source.type === 'credit' ? 'credit' : 'debit'
     }))
 
     console.log('[DEBUG] fetchSources: Final source data:', sourceData)
