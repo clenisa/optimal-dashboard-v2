@@ -13,6 +13,7 @@ import {
   Legend,
 } from "chart.js"
 import { useFinancialData } from "@/hooks/useFinancialData"
+import { generateMultiCategoryData } from "@/lib/chart-data"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Info, TrendingUp, TrendingDown, Target } from "lucide-react"
@@ -41,7 +42,7 @@ const CHART_DESCRIPTIONS = {
 }
 
 export default function CategoryLineChart() {
-  const { categories, loading, error } = useFinancialData()
+  const { categories, transactions, loading, error } = useFinancialData()
   const [useTestData, setUseTestData] = useState(false)
 
   // Debug: Validate data structure
@@ -145,10 +146,8 @@ export default function CategoryLineChart() {
     )
   }
 
-  // Validate data before rendering
-  const validCategories = categories.filter(cat => 
-    cat.category && typeof cat.amount === 'number' && cat.amount > 0
-  )
+  // Prepare multi-category monthly datasets
+  const validCategories = categories.filter(cat => cat.category)
 
   if (validCategories.length === 0) {
     console.log('[DEBUG] CategoryLineChart: No valid category data found')
@@ -189,22 +188,8 @@ export default function CategoryLineChart() {
     )
   }
 
-  // Debug: Log the exact data being used for the chart
-  const chartData = {
-    labels: validCategories.map((item) => item.category),
-    datasets: [
-      {
-        label: "Spending Amount ($)",
-        data: validCategories.map((item) => Number(item.amount)),
-        borderColor: "rgb(75, 192, 192)",
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
-        tension: 0.1,
-        fill: false,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-      },
-    ],
-  }
+  // Build monthly multi-category line data
+  const chartData = generateMultiCategoryData(transactions, validCategories)
 
   console.log('[DEBUG] CategoryLineChart: Chart data prepared:', {
     labels: chartData.labels,
@@ -218,23 +203,54 @@ export default function CategoryLineChart() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: "top" as const,
-      },
       title: {
         display: true,
-        text: "Category Breakdown - Line View",
+        text: 'Category Analysis - actual mode',
+        color: '#111827',
+        font: { size: 16, weight: 'bold' },
+      },
+      legend: {
+        display: true,
+        position: 'top' as const,
+        labels: {
+          color: '#111827',
+          font: { size: 12 },
+          usePointStyle: true,
+          pointStyle: 'line' as const,
+          padding: 20,
+        },
+      },
+      tooltip: {
+        mode: 'index' as const,
+        intersect: false,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#ffffff',
+        bodyColor: '#ffffff',
+        borderColor: '#4ecdc4',
+        borderWidth: 1,
       },
     },
     scales: {
+      x: {
+        grid: { color: 'rgba(0, 0, 0, 0.05)', drawBorder: false },
+        ticks: { color: '#111827', font: { size: 11 } },
+      },
       y: {
-        beginAtZero: true,
+        grid: { color: 'rgba(0, 0, 0, 0.05)', drawBorder: false },
         ticks: {
+          color: '#111827',
+          font: { size: 11 },
           callback: function(value: any) {
-            return "$" + value.toLocaleString()
+            return '$' + Number(value).toLocaleString()
           },
         },
+        beginAtZero: true,
       },
+    },
+    interaction: {
+      mode: 'nearest' as const,
+      axis: 'x' as const,
+      intersect: false,
     },
   }
 
