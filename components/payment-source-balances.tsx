@@ -101,6 +101,11 @@ export function PaymentSourceBalances() {
     }
   }
 
+  // Validate data before rendering (computed early so hooks can run above returns)
+  const validSources = sources.filter(source => 
+    source.source && typeof source.balance === 'number'
+  )
+
   // Debug: Validate data structure
   useEffect(() => {
     console.log('[DEBUG] PaymentSourceBalances: Data validation:', {
@@ -129,6 +134,17 @@ export function PaymentSourceBalances() {
     sourcesLength: sources?.length || 0,
     useTestData
   })
+
+  // Calculate KPIs and chart data when sources or threshold change
+  useEffect(() => {
+    const currentValid = sources.filter(source => 
+      source.source && typeof source.balance === 'number'
+    )
+    calculatePaydownNeeded(currentValid, threshold)
+    const data = generateChartData(currentValid, threshold)
+    setChartData(data)
+    console.log('[DEBUG] PaymentSourceBalances: Chart data prepared (utilization):', data)
+  }, [sources, threshold])
 
   // Temporary test data to verify Chart.js works
   const testData = {
@@ -213,11 +229,6 @@ export function PaymentSourceBalances() {
     )
   }
 
-  // Validate data before rendering
-  const validSources = sources.filter(source => 
-    source.source && typeof source.balance === 'number'
-  )
-
   if (validSources.length === 0) {
     console.log('[DEBUG] PaymentSourceBalances: No valid source data found')
     return (
@@ -262,14 +273,6 @@ export function PaymentSourceBalances() {
       </div>
     )
   }
-
-  // Calculate KPIs and chart data when valid sources or threshold change
-  useEffect(() => {
-    calculatePaydownNeeded(validSources, threshold)
-    const data = generateChartData(validSources, threshold)
-    setChartData(data)
-    console.log('[DEBUG] PaymentSourceBalances: Chart data prepared (utilization):', data)
-  }, [validSources, threshold])
 
   const options = {
     responsive: true,
