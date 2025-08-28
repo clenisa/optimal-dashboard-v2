@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Line } from "react-chartjs-2"
+import { useEffect, useState, useRef } from "react"
+import { Line, Bar } from "react-chartjs-2"
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -24,6 +25,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -44,6 +46,9 @@ const CHART_DESCRIPTIONS = {
 export default function CategoryLineChart() {
   const { categories, transactions, loading, error } = useFinancialData()
   const [useTestData, setUseTestData] = useState(false)
+  const [chartType, setChartType] = useState<'line' | 'bar' | 'source'>('line')
+  const [allVisible, setAllVisible] = useState(true)
+  const chartRef = useRef<any>(null)
 
   // Debug: Validate data structure
   useEffect(() => {
@@ -188,8 +193,12 @@ export default function CategoryLineChart() {
     )
   }
 
-  // Build monthly multi-category line data
-  const chartData = generateMultiCategoryData(transactions, validCategories)
+  // Build chart data based on selected type
+  const chartData = chartType === 'line' 
+    ? generateMultiCategoryData(transactions, validCategories)
+    : chartType === 'bar'
+    ? generateMultiCategoryData(transactions, validCategories)
+    : { labels: ['Source Analysis'], datasets: [{ label: 'Coming Soon', data: [0] }] }
 
   console.log('[DEBUG] CategoryLineChart: Chart data prepared:', {
     labels: chartData.labels,
@@ -199,7 +208,7 @@ export default function CategoryLineChart() {
     chartDataObject: chartData
   })
 
-  const options = {
+  const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -221,13 +230,24 @@ export default function CategoryLineChart() {
         },
       },
       tooltip: {
-        mode: 'index' as const,
-        intersect: false,
+        mode: 'point' as const,
+        intersect: true,
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
         titleColor: '#ffffff',
         bodyColor: '#ffffff',
         borderColor: '#4ecdc4',
         borderWidth: 1,
+        callbacks: {
+          title: function(context: any) {
+            const datasetLabel = context[0].dataset.label
+            const month = context[0].label
+            return `${datasetLabel} - ${month}`
+          },
+          label: function(context: any) {
+            const value = context.parsed.y
+            return `Amount: $${Number(value).toLocaleString()}`
+          }
+        }
       },
     },
     scales: {
@@ -248,10 +268,21 @@ export default function CategoryLineChart() {
       },
     },
     interaction: {
-      mode: 'nearest' as const,
-      axis: 'x' as const,
-      intersect: false,
+      mode: 'point' as const,
+      intersect: true,
     },
+  }
+
+  const toggleAllCategories = () => {
+    if (chartRef.current) {
+      const chart = chartRef.current
+      const newVisibility = !allVisible
+      chart.data.datasets.forEach((_: any, index: number) => {
+        chart.setDatasetVisibility(index, newVisibility)
+      })
+      chart.update()
+      setAllVisible(newVisibility)
+    }
   }
 
   console.log('[DEBUG] CategoryLineChart: About to render chart with data:', chartData)
@@ -319,8 +350,42 @@ export default function CategoryLineChart() {
           <CardTitle>Spending Trends Visualization</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Chart Type Selector and All Toggle */}
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <label htmlFor="chart-type-select" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Visualization Type:
+              </label>
+              <select
+                id="chart-type-select"
+                value={chartType}
+                onChange={(e) => setChartType(e.target.value as 'line' | 'bar' | 'source')}
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="line">Category Breakdown (Line)</option>
+                <option value="bar">Category Breakdown (Bar)</option>
+                <option value="source">Source Analysis</option>
+              </select>
+            </div>
+            {chartType !== 'source' && (
+              <button
+                onClick={toggleAllCategories}
+                className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                {allVisible ? 'Hide All' : 'Show All'}
+              </button>
+            )}
+          </div>
           <div style={{ position: 'relative', height: '400px', width: '100%' }}>
-            <Line data={chartData} options={options} />
+            {chartType === 'line' ? (
+              <Line ref={chartRef} data={chartData} options={chartOptions} />
+            ) : chartType === 'bar' ? (
+              <Bar ref={chartRef} data={chartData} options={chartOptions} />
+            ) : (
+              <div className="flex items-center justify-center h-64 text-gray-500">
+                Source Analysis - Coming Soon
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
