@@ -41,44 +41,31 @@ const BALANCE_DESCRIPTIONS = {
 
 export function PaymentSourceBalances() {
   const { sources, loading, error } = useFinancialData()
-  const [threshold, setThreshold] = useState(30)
+  const [threshold, setThreshold] = useState(500)
   const [useTestData, setUseTestData] = useState(false)
   const [paydownNeeded, setPaydownNeeded] = useState(0)
   const [sourcesAboveThreshold, setSourcesAboveThreshold] = useState(0)
   const [chartData, setChartData] = useState<any | null>(null)
 
-  function calculatePaydownNeeded(currentSources: { source: string; balance: number; max_balance: number; type: string }[], currentThreshold: number) {
-    let totalPaydown = 0
-    let aboveThresholdCount = 0
-    currentSources.forEach(source => {
-      if (source.type === 'credit' && source.max_balance && source.balance) {
-        const targetBalance = Number(source.max_balance) * (currentThreshold / 100)
-        const paydown = Math.max(0, Number(source.balance) - targetBalance)
-        if (paydown > 0) {
-          totalPaydown += paydown
-          aboveThresholdCount++
-        }
-      }
-    })
-    setPaydownNeeded(totalPaydown)
-    setSourcesAboveThreshold(aboveThresholdCount)
+  function calculatePaydownNeeded(currentSources: { source: string; balance: number }[], currentThreshold: number) {
+    const above = currentSources.filter((s) => typeof s.balance === 'number' && s.balance > currentThreshold)
+    const paydown = above.reduce((sum, s) => sum + (Number(s.balance) - currentThreshold), 0)
+    setPaydownNeeded(paydown)
+    setSourcesAboveThreshold(above.length)
   }
 
-  function generateChartData(currentSources: { source: string; balance: number; max_balance: number; type: string }[], currentThreshold: number) {
+  function generateChartData(currentSources: { source: string; balance: number }[], currentThreshold: number) {
     const labels = currentSources.map((item) => item.source)
     const utilization = currentSources.map((item) => {
-      if (item.type === 'credit' && item.max_balance && item.max_balance > 0) {
-        const pct = (Number(item.balance) / Number(item.max_balance)) * 100
-        return Math.round(pct)
-      }
-      return 0
+      // For now, show balances until max_balance is available
+      return Number(item.balance)
     })
 
     return {
       labels,
       datasets: [
         {
-          label: "Utilization (%)",
+          label: "Balance ($)",
           data: utilization,
           backgroundColor: [
             "rgba(255, 99, 132, 0.8)",
@@ -99,15 +86,6 @@ export function PaymentSourceBalances() {
             "rgba(199, 199, 199, 1)",
           ],
           borderWidth: 1,
-        },
-        {
-          type: "line" as const,
-          label: "Warning Threshold",
-          data: Array(labels.length).fill(currentThreshold),
-          borderColor: "rgba(255, 0, 0, 0.8)",
-          backgroundColor: "rgba(255, 0, 0, 0.1)",
-          borderWidth: 2,
-          pointRadius: 0,
         },
       ],
     }
@@ -212,8 +190,8 @@ export function PaymentSourceBalances() {
         {useTestData && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Warning Threshold: {threshold}%</label>
-              <Slider value={[threshold]} onValueChange={(v) => setThreshold(v[0] ?? 30)} max={100} min={0} step={5} className="w-full" />
+              <label className="text-sm font-medium">Minimum Balance Threshold: ${threshold}</label>
+              <Slider value={[threshold]} onValueChange={(v) => setThreshold(v[0] ?? 0)} max={3000} min={0} step={50} className="w-full" />
             </div>
             <div style={{ position: 'relative', height: '400px', width: '100%' }}>
               <Bar data={testData} options={{
@@ -257,8 +235,8 @@ export function PaymentSourceBalances() {
         {useTestData && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Warning Threshold: {threshold}%</label>
-              <Slider value={[threshold]} onValueChange={(v) => setThreshold(v[0] ?? 30)} max={100} min={0} step={5} className="w-full" />
+              <label className="text-sm font-medium">Minimum Balance Threshold: ${threshold}</label>
+              <Slider value={[threshold]} onValueChange={(v) => setThreshold(v[0] ?? 0)} max={3000} min={0} step={50} className="w-full" />
             </div>
             <div style={{ position: 'relative', height: '400px', width: '100%' }}>
               <Bar data={testData} options={{
@@ -295,7 +273,7 @@ export function PaymentSourceBalances() {
       },
       title: {
         display: true,
-        text: "Payment Source Utilization",
+        text: "Payment Source Balances",
       },
     },
     scales: {
@@ -303,7 +281,7 @@ export function PaymentSourceBalances() {
         beginAtZero: true,
         ticks: {
           callback: function(value: any) {
-            return value + "%"
+            return "$" + value.toLocaleString()
           },
         },
       },
@@ -376,8 +354,8 @@ export function PaymentSourceBalances() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Warning Threshold: {threshold}%</label>
-            <Slider value={[threshold]} onValueChange={(v) => setThreshold(v[0] ?? 30)} max={100} min={0} step={5} className="w-full" />
+            <label className="text-sm font-medium">Minimum Balance Threshold: ${threshold}</label>
+            <Slider value={[threshold]} onValueChange={(v) => setThreshold(v[0] ?? 0)} max={3000} min={0} step={50} className="w-full" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
