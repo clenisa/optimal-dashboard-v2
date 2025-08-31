@@ -1,3 +1,5 @@
+import { APP_DIMENSIONS } from './constants'
+
 export type AppId = 
   | "supabase-login"
   | "csv-parser"
@@ -26,8 +28,8 @@ export const appDefinitions: AppDefinition[] = [
   {
     id: "ai-chat-console",
     title: "AI Assistant",
-    defaultWidth: 600,
-    defaultHeight: 700,
+    defaultWidth: APP_DIMENSIONS.MEDIUM.width,
+    defaultHeight: APP_DIMENSIONS.LARGE.height,
     requiresAuth: true,
     category: 'ai',
     description: "Chat with AI via your local ElectronConsole with Ollama"
@@ -35,8 +37,8 @@ export const appDefinitions: AppDefinition[] = [
   {
     id: "credits-manager",
     title: "Credits & Billing",
-    defaultWidth: 800,
-    defaultHeight: 600,
+    defaultWidth: APP_DIMENSIONS.LARGE.width,
+    defaultHeight: APP_DIMENSIONS.LARGE.height,
     requiresAuth: true,
     category: 'ai',
     description: "Manage AI credits and purchase additional credits"
@@ -46,8 +48,8 @@ export const appDefinitions: AppDefinition[] = [
   {
     id: "category-line-chart",
     title: "Category Trends",
-    defaultWidth: 800,
-    defaultHeight: 500,
+    defaultWidth: APP_DIMENSIONS.LARGE.width,
+    defaultHeight: APP_DIMENSIONS.MEDIUM.height,
     requiresAuth: true,
     category: 'financial',
     description: "Spending trends by category over time"
@@ -55,8 +57,8 @@ export const appDefinitions: AppDefinition[] = [
   {
     id: "payment-source-balances",
     title: "Account Balances",
-    defaultWidth: 700,
-    defaultHeight: 500,
+    defaultWidth: APP_DIMENSIONS.LARGE.width,
+    defaultHeight: APP_DIMENSIONS.LARGE.height,
     requiresAuth: true,
     category: 'financial',
     description: "Payment source balances with threshold filtering"
@@ -64,8 +66,8 @@ export const appDefinitions: AppDefinition[] = [
   {
     id: "transaction-manager",
     title: "Transaction Manager",
-    defaultWidth: 900,
-    defaultHeight: 600,
+    defaultWidth: APP_DIMENSIONS.XLARGE.width,
+    defaultHeight: APP_DIMENSIONS.LARGE.height,
     requiresAuth: true,
     category: 'financial',
     description: "Manage and view financial transactions"
@@ -75,8 +77,8 @@ export const appDefinitions: AppDefinition[] = [
   {
     id: "csv-parser",
     title: "CSV Parser",
-    defaultWidth: 600,
-    defaultHeight: 400,
+    defaultWidth: APP_DIMENSIONS.LARGE.width,
+    defaultHeight: APP_DIMENSIONS.LARGE.height,
     requiresAuth: true,
     category: 'tools',
     description: "Parse and analyze CSV files"
@@ -94,16 +96,16 @@ export const appDefinitions: AppDefinition[] = [
   {
     id: "service-app",
     title: "Services",
-    defaultWidth: 500,
-    defaultHeight: 400,
+    defaultWidth: APP_DIMENSIONS.MEDIUM.width,
+    defaultHeight: APP_DIMENSIONS.MEDIUM.height,
     category: 'system',
     description: "System services and configuration"
   },
   {
     id: "debug-console",
     title: "Debug Console",
-    defaultWidth: 700,
-    defaultHeight: 500,
+    defaultWidth: APP_DIMENSIONS.LARGE.width,
+    defaultHeight: APP_DIMENSIONS.MEDIUM.height,
     category: 'system',
     description: "Development and debugging tools",
     developmentOnly: true
@@ -111,8 +113,8 @@ export const appDefinitions: AppDefinition[] = [
   {
     id: "about-this-desktop",
     title: "About",
-    defaultWidth: 500,
-    defaultHeight: 400,
+    defaultWidth: APP_DIMENSIONS.MEDIUM.width,
+    defaultHeight: APP_DIMENSIONS.SMALL.height,
     category: 'system',
     description: "About this desktop application"
   }
