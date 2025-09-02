@@ -11,12 +11,15 @@ INSERT INTO public.categories (user_id, name, color) VALUES
 ('00000000-0000-0000-0000-000000000001', 'Healthcare', '#DDA0DD')
 ON CONFLICT (user_id, name) DO NOTHING;
 
--- Insert sample sources
-INSERT INTO public.sources (user_id, name, type, current_balance, interest_rate) VALUES
-('00000000-0000-0000-0000-000000000001', 'Main Checking', 'debit', 2500.00, NULL),
-('00000000-0000-0000-0000-000000000001', 'Savings Account', 'debit', 15000.00, 2.50),
-('00000000-0000-0000-0000-000000000001', 'Credit Card', 'credit', -1250.75, 18.99),
-('00000000-0000-0000-0000-000000000001', 'Investment Account', 'debit', 45000.00, NULL)
+-- Insert sample sources with proper max_balance for credit cards
+INSERT INTO sources (user_id, name, type, current_balance, max_balance, interest_rate) VALUES
+  ('00000000-0000-0000-0000-000000000000', 'Main Checking', 'debit', 2500.00, NULL, 0.01),
+  ('00000000-0000-0000-0000-000000000000', 'Savings Account', 'debit', 15000.00, NULL, 2.50),
+  ('00000000-0000-0000-0000-000000000000', 'Chase 7245', 'credit', 1250.75, 5000.00, 18.99),
+  ('00000000-0000-0000-0000-000000000000', 'Discover', 'credit', 1200.00, 3000.00, 16.49),
+  ('00000000-0000-0000-0000-000000000000', 'BestBuy', 'credit', 800.00, 1500.00, 24.99),
+  ('00000000-0000-0000-0000-000000000000', 'Synchrony', 'credit', 1800.00, 2000.00, 26.99),
+  ('00000000-0000-0000-0000-000000000000', 'CreditOne', 'credit', 450.00, 1000.00, 29.99)
 ON CONFLICT (id) DO NOTHING;
 
 -- Insert sample transactions

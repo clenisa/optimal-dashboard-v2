@@ -224,3 +224,21 @@ FROM transactions
 GROUP BY user_id, account
 ORDER BY current_balance DESC;
 
+
+-- Financial sources table (for Account Balances module)
+CREATE TABLE IF NOT EXISTS sources (
+    id uuid NOT NULL DEFAULT extensions.uuid_generate_v4 (),
+    created_at timestamp with time zone NULL DEFAULT timezone('utc'::text, now()),
+    name text NOT NULL,
+    type text NOT NULL,
+    interest_rate numeric(5, 2) NULL,
+    user_id uuid NULL,
+    current_balance numeric(10, 2) NULL DEFAULT 0,
+    max_balance numeric(10, 2) NULL DEFAULT 0,
+    CONSTRAINT sources_pkey PRIMARY KEY (id),
+    CONSTRAINT sources_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users (id),
+    CONSTRAINT sources_type_check CHECK (((type = ANY (ARRAY['credit'::text, 'debit'::text]))))
+) TABLESPACE pg_default;
+
+-- Index for performance
+CREATE INDEX IF NOT EXISTS idx_sources_user_id ON sources(user_id);

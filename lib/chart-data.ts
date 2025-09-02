@@ -19,6 +19,8 @@ export interface PaymentSourceData {
   source: string
   balance: number
   transactions: number
+  max_balance?: number
+  type?: 'credit' | 'debit'
 }
 
 export interface TransactionData {
@@ -123,10 +125,10 @@ export async function fetchSources(userId: string): Promise<PaymentSourceData[]>
       return []
     }
 
-    // Get all sources for the user
+    // Get all sources for the user with required fields for utilization calculations
     const { data: sourcesData, error: sourcesError } = await supabase
       .from("sources")
-      .select("id, name, type, current_balance")
+      .select("id, name, type, current_balance, max_balance, interest_rate, created_at")
       .eq('user_id', userId)
 
     if (sourcesError) {
@@ -145,8 +147,10 @@ export async function fetchSources(userId: string): Promise<PaymentSourceData[]>
     // Transform to PaymentSourceData format
     const sourceData: PaymentSourceData[] = sourcesData.map((source: any) => ({
       source: source.name,
-      balance: source.current_balance || 0,
-      transactions: 0 // We could count transactions per source if needed
+      balance: Number(source.current_balance) || 0,
+      transactions: 0, // We could count transactions per source if needed
+      max_balance: source.max_balance != null ? Number(source.max_balance) : undefined,
+      type: source.type === 'credit' || source.type === 'debit' ? source.type : undefined,
     }))
 
     logger.debug('ChartData', 'fetchSources: Final source data', sourceData)
