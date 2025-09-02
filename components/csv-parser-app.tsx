@@ -14,24 +14,10 @@ import { processCsvFile, type ParsedTransaction } from "@/lib/csv-parser"
 import { createClient } from "@/lib/supabase-client"
 import { useAuthState } from "@/hooks/use-auth-state"
 import { Upload, FileText, CheckCircle, AlertCircle, Info } from "lucide-react"
+import { CONTENT } from "@/lib/content"
+import { validateCsvFile, validateCsvHeaders, logCsvProcessing } from "@/lib/csv-utils"
 
-// CSV Upload Instructions and Requirements
-const CSV_UPLOAD_INSTRUCTIONS = {
-  title: "Financial Data CSV Upload",
-  description: "Upload your financial transaction data in CSV format to visualize spending patterns and insights.",
-  requirements: [
-    "File must be in CSV format (.csv)",
-    "Required columns: Date, Amount, Description, Category",
-    "Date format: YYYY-MM-DD or MM/DD/YYYY",
-    "Amount should be numeric (negative for expenses, positive for income)",
-    "Maximum file size: 10MB"
-  ],
-  examples: [
-    "Date,Amount,Description,Category",
-    "2024-01-15,-45.67,Grocery Store,Food",
-    "2024-01-16,2500.00,Salary Deposit,Income"
-  ]
-}
+// CSV Upload Instructions and Requirements are provided by CONTENT.csvUpload
 
 interface ValidationResult {
   isValid: boolean
@@ -160,7 +146,7 @@ export function CsvParserApp() {
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
     if (!selectedFile) {
-      setError("No file selected")
+      setError(CONTENT.csvUpload.messages.noFile)
       return
     }
 
@@ -174,14 +160,14 @@ export function CsvParserApp() {
 
     // File type validation
     if (!selectedFile.type.includes('csv') && !selectedFile.name.toLowerCase().endsWith('.csv')) {
-      setError("Please select a valid CSV file")
+      setError(CONTENT.csvUpload.messages.invalidFormat)
       return
     }
 
     // File size validation (10MB limit)
     const maxSize = 10 * 1024 * 1024
     if (selectedFile.size > maxSize) {
-      setError("File size exceeds 10MB limit. Please select a smaller file.")
+      setError(CONTENT.csvUpload.messages.fileTooLarge)
       return
     }
 
@@ -193,6 +179,7 @@ export function CsvParserApp() {
       `Last modified: ${new Date(selectedFile.lastModified).toLocaleString()}`
     ]
     setDebugInfo(fileInfo)
+    logCsvProcessing('File selected', { fileName: selectedFile.name, size: selectedFile.size })
     setFile(selectedFile)
   }, [])
 
@@ -221,14 +208,14 @@ export function CsvParserApp() {
       // Simulate file input change event
       const fakeEvent = {
         target: { files: [file] }
-      } as React.ChangeEvent<HTMLInputElement>
+      } as unknown as React.ChangeEvent<HTMLInputElement>
       handleFileChange(fakeEvent)
     }
   }, [handleFileChange])
 
   const handleParse = useCallback(async () => {
     if (!file) {
-      setError("Please select a file first")
+      setError(CONTENT.csvUpload.messages.noFile)
       return
     }
 
@@ -241,14 +228,16 @@ export function CsvParserApp() {
     
     try {
       // Add debug information
-      setDebugInfo(prev => [...prev, "Starting CSV parsing..."])
+      setDebugInfo(prev => [...prev, CONTENT.csvUpload.messages.loading])
       
       // Parse the CSV file
       const parsedTransactions = await processCsvFile(file)
+      logCsvProcessing('Processing complete', { rowCount: parsedTransactions.length })
       
       setDebugInfo(prev => [...prev, `Parsed ${parsedTransactions.length} rows from CSV`])
       
       // Validate all transactions
+      logCsvProcessing('Validation started')
       const validation = validateAllTransactions(parsedTransactions)
       setValidationResult(validation)
       
@@ -265,7 +254,7 @@ export function CsvParserApp() {
       
       if (validation.isValid) {
         setTransactions(parsedTransactions)
-        setSuccess(`Successfully parsed ${validation.processedCount} transactions`)
+        setSuccess(CONTENT.csvUpload.messages.success)
         setDebugInfo(prev => [...prev, `Validation completed: ${validation.processedCount} valid transactions`])
       } else {
         setError(`Validation failed: ${validation.errors.length} errors found`)
@@ -274,7 +263,7 @@ export function CsvParserApp() {
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
-      setError(`Error parsing CSV file: ${errorMessage}`)
+      setError(CONTENT.csvUpload.messages.error)
       setDebugInfo(prev => [...prev, `Parsing error: ${errorMessage}`])
     } finally {
       setLoading(false)
@@ -420,12 +409,12 @@ export function CsvParserApp() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            {CSV_UPLOAD_INSTRUCTIONS.title}
+            {CONTENT.csvUpload.title}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-gray-600 dark:text-gray-300">
-            {CSV_UPLOAD_INSTRUCTIONS.description}
+            {CONTENT.csvUpload.description}
           </p>
           
           <div className="grid md:grid-cols-2 gap-6">
@@ -436,7 +425,7 @@ export function CsvParserApp() {
                 Requirements
               </h4>
               <ul className="space-y-2 text-sm">
-                {CSV_UPLOAD_INSTRUCTIONS.requirements.map((req, index) => (
+                {CONTENT.csvUpload.requirements.map((req, index) => (
                   <li key={index} className="flex items-start gap-2">
                     <span className="text-green-500 mt-0.5">•</span>
                     <span>{req}</span>
@@ -452,7 +441,7 @@ export function CsvParserApp() {
                 Example Format
               </h4>
               <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm font-mono">
-                {CSV_UPLOAD_INSTRUCTIONS.examples.map((line, index) => (
+                {CONTENT.csvUpload.examples.map((line, index) => (
                   <div key={index} className="text-gray-700 dark:text-gray-300">
                     {line}
                   </div>

@@ -1,5 +1,6 @@
 // lib/sounds.ts
 type SoundName = "window-move" | "window-resize"
+import { logger } from "@/lib/logger"
 
 const sounds: Record<SoundName, HTMLAudioElement | null> = {
   "window-move": null,
@@ -28,7 +29,7 @@ export const playSound = (name: SoundName, loop = false) => {
       currentPlayingLoop.pause()
       currentPlayingLoop.currentTime = 0
     }
-    sound.play().catch((e) => console.error("Error playing sound:", e))
+    sound.play().catch((e) => logger.error("Sounds", "Error playing sound", e))
     if (loop) {
       currentPlayingLoop = sound
     }

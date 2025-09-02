@@ -39,7 +39,7 @@ export function VolumeControl() {
 
   // Apply volume to actual audio elements if needed (not implemented here)
   useEffect(() => {
-    // console.log("Volume changed to:", volume, "Muted:", isMuted);
+    // Volume state changed; hook for integrating with actual audio elements
     // Example: document.querySelectorAll('audio').forEach(audio => audio.volume = volume / 100);
   }, [volume, isMuted])
 

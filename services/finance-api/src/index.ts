@@ -1,6 +1,7 @@
-import express from "express"
+import express, { Request, Response, NextFunction } from "express"
 import cors from "cors"
-import { createClient } from "./lib/supabase-client"
+import { createSupabaseAdmin } from "./lib/supabase-client"
+import { logger } from "@/lib/logger"
 
 const app = express()
 const port = process.env.PORT || 3001
@@ -8,12 +9,12 @@ const port = process.env.PORT || 3001
 app.use(cors())
 app.use(express.json())
 
-const supabase = createClient()
+const supabase = createSupabaseAdmin()
 
 // Middleware to check for API key or user session in the future
-const authMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Placeholder for future auth logic (e.g., checking JWT from Supabase)
-  console.log("Auth middleware hit for:", req.path)
+  logger.debug("FinanceAPI", "Auth middleware hit", { path: req.path })
   next()
 }
 
@@ -61,5 +62,5 @@ app.get("/credit/status", authMiddleware, async (req, res) => {
 })
 
 app.listen(port, () => {
-  console.log(`Finance API service listening on port ${port}`)
+  logger.info("FinanceAPI", "Service listening", { port })
 })

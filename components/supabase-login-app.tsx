@@ -5,6 +5,7 @@ import { useVibration } from "@/hooks/use-vibration"
 import { useAuthState } from "@/hooks/use-auth-state"
 import { AuthForm } from "./auth/auth-form"
 import { createClient } from "@/lib/supabase-client"
+import { logger } from "@/lib/logger"
 
 export function SupabaseLoginApp() {
   const { user, loading } = useAuthState()
@@ -22,9 +23,11 @@ export function SupabaseLoginApp() {
   useEffect(() => {
     if (!hasLoggedInitialization.current) {
       setTimeout(() => {
-        console.log("SupabaseLoginApp: Initializing...")
-        console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
-        console.log("Supabase Key exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+        logger.debug("SupabaseLoginApp", "Initializing")
+        logger.debug("SupabaseLoginApp", "Supabase env", {
+          url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+          hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        })
       }, 0)
       hasLoggedInitialization.current = true
     }
