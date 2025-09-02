@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-manager"
 import { ThemeSwitcher } from "@/components/theme-manager"
 import { createClient } from "@/lib/supabase-client"
 import { User, AuthChangeEvent, Session } from "@supabase/supabase-js"
+import { logger } from "@/lib/logger"
 
 // Import all components
 import { SupabaseLoginApp } from "@/components/supabase-login-app"
@@ -63,7 +64,7 @@ export default function Home() {
 
       return () => subscription.unsubscribe()
     } else {
-      console.warn("Supabase client not available - authentication features will be disabled")
+      logger.warn("HomePage", "Supabase client not available - authentication features will be disabled")
       setUser(null)
     }
   }, [])

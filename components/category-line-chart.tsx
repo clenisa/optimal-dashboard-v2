@@ -18,6 +18,7 @@ import { generateMultiCategoryData } from "@/lib/chart-data"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Info, TrendingUp, TrendingDown, Target } from "lucide-react"
+import { logger } from "@/lib/logger"
 
 // Register Chart.js components
 ChartJS.register(
@@ -52,7 +53,7 @@ export default function CategoryLineChart() {
 
   // Debug: Validate data structure
   useEffect(() => {
-    console.log('[DEBUG] CategoryLineChart: Data validation:', {
+    logger.debug('CategoryLineChart', 'Data validation', {
       categoriesLength: categories.length,
       categoriesData: categories,
       hasValidData: categories.length > 0 && categories.every(cat => 
@@ -63,15 +64,13 @@ export default function CategoryLineChart() {
 
   // Debug: Verify Chart.js registration
   useEffect(() => {
-    console.log('[DEBUG] CategoryLineChart: Chart.js registered components:', {
+    logger.debug('CategoryLineChart', 'Chart.js registered components', {
       registry: ChartJS.registry,
-      plugins: ChartJS.registry.plugins?.items || 'No plugins found',
-      scales: ChartJS.registry.scales?.items || 'No scales found'
     })
   }, [])
 
   // Debug: Log every time the component renders
-  console.log('[DEBUG] CategoryLineChart: Render triggered with:', {
+  logger.debug('CategoryLineChart', 'Render triggered', {
     categories,
     loading,
     error,
@@ -95,7 +94,7 @@ export default function CategoryLineChart() {
   }
 
   if (loading) {
-    console.log('[DEBUG] CategoryLineChart: Showing loading state')
+    logger.debug('CategoryLineChart', 'Showing loading state')
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-sm text-gray-500">Loading chart data...</div>
@@ -104,7 +103,7 @@ export default function CategoryLineChart() {
   }
 
   if (error) {
-    console.log('[DEBUG] CategoryLineChart: Showing error state:', error)
+    logger.debug('CategoryLineChart', 'Showing error state', error)
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-sm text-red-500">Error: {error}</div>
@@ -113,7 +112,7 @@ export default function CategoryLineChart() {
   }
 
   if (!categories || categories.length === 0) {
-    console.log('[DEBUG] CategoryLineChart: Showing no data state - categories:', categories)
+    logger.debug('CategoryLineChart', 'Showing no data state', { categories })
     return (
       <div className="w-full h-full p-4 space-y-4">
         <div className="flex items-center space-x-4">
@@ -155,7 +154,7 @@ export default function CategoryLineChart() {
   const validCategories = categories.filter(cat => cat.category)
 
   if (validCategories.length === 0) {
-    console.log('[DEBUG] CategoryLineChart: No valid category data found')
+    logger.debug('CategoryLineChart', 'No valid category data found')
     return (
       <div className="w-full h-full p-4 space-y-4">
         <div className="flex items-center space-x-4">
@@ -200,7 +199,7 @@ export default function CategoryLineChart() {
     ? generateMultiCategoryData(transactions, validCategories)
     : { labels: ['Source Analysis'], datasets: [{ label: 'Coming Soon', data: [0] }] }
 
-  console.log('[DEBUG] CategoryLineChart: Chart data prepared:', {
+  logger.debug('CategoryLineChart', 'Chart data prepared', {
     labels: chartData.labels,
     data: chartData.datasets[0].data,
     rawCategories: categories,
@@ -208,7 +207,7 @@ export default function CategoryLineChart() {
     chartDataObject: chartData
   })
 
-  const chartOptions = {
+  const chartOptions: any = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -216,7 +215,7 @@ export default function CategoryLineChart() {
         display: true,
         text: 'Category Analysis - actual mode',
         color: '#111827',
-        font: { size: 16, weight: 'bold' },
+        font: { size: 16, weight: 'bold' as const },
       },
       legend: {
         display: true,
@@ -285,7 +284,7 @@ export default function CategoryLineChart() {
     }
   }
 
-  console.log('[DEBUG] CategoryLineChart: About to render chart with data:', chartData)
+  logger.debug('CategoryLineChart', 'About to render chart', { chartData })
   
   return (
     <div className="w-full h-full p-4 space-y-6">

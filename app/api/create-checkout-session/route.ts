@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { logger } from '@/lib/logger'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20'
+  apiVersion: '2023-10-16'
 })
 
-const creditPackages = {
+type CreditPackage = { name: string; credits: number; price: number; bonus?: number }
+const creditPackages: Record<string, CreditPackage> = {
   starter: { name: 'Starter Pack', credits: 50, price: 4.99 },
   popular: { name: 'Popular Pack', credits: 150, price: 12.99, bonus: 25 },
   power: { name: 'Power User', credits: 300, price: 24.99, bonus: 75 },
@@ -31,7 +33,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const totalCredits = selectedPackage.credits + (selectedPackage.bonus || 0)
+    const totalCredits = selectedPackage.credits + (selectedPackage.bonus ?? 0)
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
@@ -64,7 +66,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ sessionId: session.id })
 
   } catch (error) {
-    console.error('Error creating checkout session:', error)
+    logger.error('CreateCheckoutSession', 'Error creating checkout session', error)
     return NextResponse.json(
       { error: 'Failed to create checkout session' },
       { status: 500 }

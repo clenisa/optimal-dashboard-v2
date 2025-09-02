@@ -10,6 +10,7 @@ import { CreditCard, DollarSign, Gift, History, AlertCircle, CheckCircle } from 
 import { createClient } from "@/lib/supabase-client"
 import { User } from "@supabase/supabase-js"
 import { loadStripe } from '@stripe/stripe-js'
+import { logger } from "@/lib/logger"
 
 interface UserCredits {
   current_credits: number
@@ -78,7 +79,7 @@ export function CreditsManager() {
   useEffect(() => {
     const supabase = createClient()
     if (supabase) {
-      supabase.auth.getUser().then(({ data: { user } }) => {
+      supabase.auth.getUser().then(({ data: { user } }: { data: { user: User | null } }) => {
         setUser(user)
         if (user) {
           loadUserCredits(user.id)
@@ -88,7 +89,7 @@ export function CreditsManager() {
 
       const {
         data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
+      } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
         const newUser = session?.user ?? null
         setUser(newUser)
         if (newUser) {
@@ -113,7 +114,7 @@ export function CreditsManager() {
         .single()
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error loading credits:', error)
+        logger.error('CreditsManager', 'Error loading credits', error)
         return
       }
 
@@ -137,7 +138,7 @@ export function CreditsManager() {
         }
       }
     } catch (err) {
-      console.error('Error loading user credits:', err)
+      logger.error('CreditsManager', 'Error loading user credits', err)
     }
   }
 
@@ -157,7 +158,7 @@ export function CreditsManager() {
         setTransactions(data)
       }
     } catch (err) {
-      console.error('Error loading credit transactions:', err)
+      logger.error('CreditsManager', 'Error loading credit transactions', err)
     }
   }
 

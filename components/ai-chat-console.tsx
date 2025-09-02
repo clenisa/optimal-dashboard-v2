@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mic, Send, Square, CreditCard, DollarSign, AlertCircle, Wifi, WifiOff, Bot, Lightbulb, MessageSquare } from 'lucide-react'
 import { createClient } from "@/lib/supabase-client"
 import { User } from "@supabase/supabase-js"
+import { logger } from "@/lib/logger"
 
 // AI Chat Welcome Message and Capabilities
 const AI_CHAT_WELCOME = {
@@ -70,7 +71,7 @@ export function AIChatConsole() {
   useEffect(() => {
     const supabase = createClient()
     if (supabase) {
-      supabase.auth.getUser().then(({ data: { user } }) => {
+      supabase.auth.getUser().then(({ data: { user } }: { data: { user: User | null } }) => {
         setUser(user)
         if (user) {
           loadUserCredits(user.id)
@@ -80,7 +81,7 @@ export function AIChatConsole() {
 
       const {
         data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
+      } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
         const newUser = session?.user ?? null
         setUser(newUser)
         if (newUser) {
@@ -131,7 +132,7 @@ export function AIChatConsole() {
         .single()
 
       if (error && error.code !== 'PGRST116') { // Not found error
-        console.error('Error loading credits:', error)
+        logger.error('AIChatConsole', 'Error loading credits', error)
         return
       }
 
@@ -155,7 +156,7 @@ export function AIChatConsole() {
         }
       }
     } catch (err) {
-      console.error('Error loading user credits:', err)
+      logger.error('AIChatConsole', 'Error loading user credits', err)
     }
   }
 
@@ -200,7 +201,7 @@ export function AIChatConsole() {
         }
       }
     } catch (err) {
-      console.error('Error checking daily credits:', err)
+      logger.error('AIChatConsole', 'Error checking daily credits', err)
     }
   }
 
@@ -238,7 +239,7 @@ export function AIChatConsole() {
       
       return false
     } catch (err) {
-      console.error('Error deducting credit:', err)
+      logger.error('AIChatConsole', 'Error deducting credit', err)
       return false
     }
   }
@@ -313,7 +314,7 @@ export function AIChatConsole() {
       setMessages(prev => [...prev, assistantMessage])
 
     } catch (err) {
-      console.error('Error communicating with ElectronConsole:', err)
+      logger.error('AIChatConsole', 'Error communicating with ElectronConsole', err)
       
       // Refund the credit on error
       if (credits) {
@@ -335,7 +336,7 @@ export function AIChatConsole() {
       const errorMessage: ChatMessage = {
         id: `msg_${Date.now()}_error`,
         role: 'assistant',
-        content: `I couldn't connect to the AI console. Error: ${err instanceof Error ? err.message : 'Unknown error'}. Make sure ElectronConsole is running on your PC.`,
+        content: `I couldn't connect to the AI console — error: ${err instanceof Error ? err.message : 'Unknown error'}. Make sure ElectronConsole is running on your PC.`,
         timestamp: new Date(),
         metadata: { error: true }
       }

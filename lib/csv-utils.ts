@@ -15,7 +15,7 @@ export function validateCsvFile(file: File): ValidationResult {
   }
   
   // Check file extension
-  const extension = '.' + file.name.split('.').pop()?.toLowerCase()
+  const extension = ('.' + (file.name.split('.').pop() || '').toLowerCase()) as typeof CSV_UPLOAD.ALLOWED_EXTENSIONS[number]
   if (!CSV_UPLOAD.ALLOWED_EXTENSIONS.includes(extension)) {
     errors.push('Invalid file format. Please upload a CSV file.')
   }

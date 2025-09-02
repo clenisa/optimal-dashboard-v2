@@ -22,7 +22,7 @@ const TEST_SOURCES: PaymentSource[] = [
 
 export function PaymentSourceBalances() {
   const { sources, loading, error } = useFinancialData()
-  const [threshold, setThreshold] = useState(UI_CONSTANTS.DEFAULT_THRESHOLD_PERCENTAGE)
+  const [threshold, setThreshold] = useState<number>(UI_CONSTANTS.DEFAULT_THRESHOLD_PERCENTAGE)
   const [useTestData, setUseTestData] = useState(false)
   const [kpiData, setKpiData] = useState<KpiData>({ 
     paydownNeeded: 0, 
@@ -105,7 +105,7 @@ export function PaymentSourceBalances() {
         <CardContent>
           <ThresholdControl
             threshold={threshold}
-            onThresholdChange={setThreshold}
+            onThresholdChange={(value: number) => setThreshold(value)}
             useTestData={useTestData}
             onToggleTestData={() => setUseTestData(!useTestData)}
           />

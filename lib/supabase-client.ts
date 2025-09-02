@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr"
+import { logger } from "@/lib/logger"
 
 let supabaseInstance: any = null
 
@@ -11,7 +12,7 @@ export function createClient() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("[ERROR] Missing Supabase environment variables:", {
+    logger.error("SupabaseClient", "Missing Supabase environment variables", {
       hasUrl: !!supabaseUrl,
       hasKey: !!supabaseAnonKey,
       nodeEnv: process.env.NODE_ENV
@@ -20,12 +21,12 @@ export function createClient() {
   }
 
   try {
-    console.log('[DEBUG] Supabase client: Initializing with URL:', supabaseUrl)
+    logger.debug('SupabaseClient', 'Initializing', { url: supabaseUrl })
     supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey)
-    console.log('[DEBUG] Supabase client: Successfully created')
+    logger.debug('SupabaseClient', 'Successfully created')
     return supabaseInstance
   } catch (error) {
-    console.error("[ERROR] Error creating Supabase client:", error)
+    logger.error("SupabaseClient", "Error creating Supabase client", error)
     return null
   }
 }
