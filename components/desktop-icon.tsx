@@ -4,6 +4,7 @@ import Image from "next/image"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase-client"
 import { useVibration } from "@/hooks/use-vibration"
+import { logger } from "@/lib/logger"
 
 interface DesktopIconProps {
   id: string
@@ -32,7 +33,7 @@ export function DesktopIcon({ id, title, icon, onClick, requiresAuth = false }: 
         setIsAuthenticated(!!session)
         setLoading(false)
       } catch (error) {
-        console.error("Auth check error:", error)
+        logger.error("DesktopIcon", "Auth check error", error)
         setLoading(false)
       }
     }

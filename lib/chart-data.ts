@@ -1,4 +1,5 @@
 import { createClient } from "./supabase-client"
+import { logger } from "@/lib/logger"
 
 // Color palette for category line charts
 export const categoryColors = [
@@ -32,16 +33,16 @@ export interface TransactionData {
 
 export async function fetchCategories(userId: string): Promise<CategoryData[]> {
   if (!userId) {
-    console.error('[ERROR] fetchCategories: No user ID provided')
+    logger.error('ChartData', 'fetchCategories: No user ID provided')
     return []
   }
 
   try {
-    console.log('[DEBUG] fetchCategories: Starting fetch for user', userId)
+    logger.debug('ChartData', 'fetchCategories: Starting fetch', { userId })
     const supabase = createClient()
     
     if (!supabase) {
-      console.error('[ERROR] fetchCategories: Failed to initialize Supabase client')
+      logger.error('ChartData', 'fetchCategories: Failed to initialize Supabase client')
       return []
     }
 
@@ -59,17 +60,17 @@ export async function fetchCategories(userId: string): Promise<CategoryData[]> {
       .eq('mode', 'actual')
 
     if (transactionsError) {
-      console.error('[ERROR] fetchCategories: Transactions query error:', transactionsError)
+      logger.error('ChartData', 'fetchCategories: Transactions query error', transactionsError)
       return []
     }
 
     if (!transactionsData || transactionsData.length === 0) {
-      console.log('[DEBUG] fetchCategories: No expense transactions found')
+      logger.debug('ChartData', 'fetchCategories: No expense transactions found')
       return []
     }
 
-    console.log('[DEBUG] fetchCategories: Processing', transactionsData.length, 'expense transactions')
-    console.log('[DEBUG] fetchCategories: Sample transactions:', transactionsData.slice(0, 5))
+    logger.debug('ChartData', 'fetchCategories: Processing expense transactions', { count: transactionsData.length })
+    logger.debug('ChartData', 'fetchCategories: Sample transactions', { sample: transactionsData.slice(0, 5) })
 
     // Calculate category totals from transactions
     const categoryTotals = new Map<string, { amount: number, count: number }>()
@@ -87,7 +88,7 @@ export async function fetchCategories(userId: string): Promise<CategoryData[]> {
       current.count += 1
     })
 
-    console.log('[DEBUG] fetchCategories: Category totals map:', Object.fromEntries(categoryTotals))
+    logger.debug('ChartData', 'fetchCategories: Category totals map', Object.fromEntries(categoryTotals))
 
     // Transform to CategoryData format
     const categoryData: CategoryData[] = Array.from(categoryTotals.entries()).map(([category, totals]) => ({
@@ -96,29 +97,29 @@ export async function fetchCategories(userId: string): Promise<CategoryData[]> {
       count: totals.count
     }))
 
-    console.log('[DEBUG] fetchCategories: Final category data:', categoryData)
-    console.log('[DEBUG] fetchCategories: Category breakdown:', 
+    logger.debug('ChartData', 'fetchCategories: Final category data', categoryData)
+    logger.debug('ChartData', 'fetchCategories: Category breakdown', 
       categoryData.map(cat => `${cat.category}: $${cat.amount.toFixed(2)} (${cat.count} transactions)`))
     
     return categoryData
   } catch (error) {
-    console.error('[ERROR] fetchCategories exception:', error)
+    logger.error('ChartData', 'fetchCategories exception', error)
     return []
   }
 }
 
 export async function fetchSources(userId: string): Promise<PaymentSourceData[]> {
   if (!userId) {
-    console.error('[ERROR] fetchSources: No user ID provided')
+    logger.error('ChartData', 'fetchSources: No user ID provided')
     return []
   }
 
   try {
-    console.log('[DEBUG] fetchSources: Starting fetch for user', userId)
+    logger.debug('ChartData', 'fetchSources: Starting fetch', { userId })
     const supabase = createClient()
     
     if (!supabase) {
-      console.error('[ERROR] fetchSources: Failed to initialize Supabase client')
+      logger.error('ChartData', 'fetchSources: Failed to initialize Supabase client')
       return []
     }
 
@@ -129,17 +130,17 @@ export async function fetchSources(userId: string): Promise<PaymentSourceData[]>
       .eq('user_id', userId)
 
     if (sourcesError) {
-      console.error('[ERROR] fetchSources: Sources query error:', sourcesError)
+      logger.error('ChartData', 'fetchSources: Sources query error', sourcesError)
       return []
     }
 
     if (!sourcesData || sourcesData.length === 0) {
-      console.log('[DEBUG] fetchSources: No sources found')
+      logger.debug('ChartData', 'fetchSources: No sources found')
       return []
     }
 
-    console.log('[DEBUG] fetchSources: Processing', sourcesData.length, 'sources')
-    console.log('[DEBUG] fetchSources: Sources data:', sourcesData)
+    logger.debug('ChartData', 'fetchSources: Processing sources', { count: sourcesData.length })
+    logger.debug('ChartData', 'fetchSources: Sources data', sourcesData)
 
     // Transform to PaymentSourceData format
     const sourceData: PaymentSourceData[] = sourcesData.map((source: any) => ({
@@ -148,29 +149,29 @@ export async function fetchSources(userId: string): Promise<PaymentSourceData[]>
       transactions: 0 // We could count transactions per source if needed
     }))
 
-    console.log('[DEBUG] fetchSources: Final source data:', sourceData)
-    console.log('[DEBUG] fetchSources: Source breakdown:', 
+    logger.debug('ChartData', 'fetchSources: Final source data', sourceData)
+    logger.debug('ChartData', 'fetchSources: Source breakdown', 
       sourceData.map(acc => `${acc.source}: $${acc.balance.toFixed(2)}`))
     
     return sourceData
   } catch (error) {
-    console.error('[ERROR] fetchSources exception:', error)
+    logger.error('ChartData', 'fetchSources exception', error)
     return []
   }
 }
 
 export async function fetchTransactions(userId: string): Promise<TransactionData[]> {
   if (!userId) {
-    console.error('[ERROR] fetchTransactions: No user ID provided')
+    logger.error('ChartData', 'fetchTransactions: No user ID provided')
     return []
   }
 
   try {
-    console.log('[DEBUG] fetchTransactions: Starting fetch for user', userId)
+    logger.debug('ChartData', 'fetchTransactions: Starting fetch', { userId })
     const supabase = createClient()
     
     if (!supabase) {
-      console.error('[ERROR] fetchTransactions: Failed to initialize Supabase client')
+      logger.error('ChartData', 'fetchTransactions: Failed to initialize Supabase client')
       return []
     }
 
@@ -192,11 +193,11 @@ export async function fetchTransactions(userId: string): Promise<TransactionData
       .order("date", { ascending: false })
 
     if (error) {
-      console.error('[ERROR] fetchTransactions: Database error:', error)
+      logger.error('ChartData', 'fetchTransactions: Database error', error)
       return []
     }
 
-    console.log('[DEBUG] fetchTransactions: Query result:', { data: data?.length, error })
+    logger.debug('ChartData', 'fetchTransactions: Query result', { data: data?.length, error })
 
     // Transform Supabase data to TransactionData format
     const transactionData: TransactionData[] =
@@ -210,10 +211,10 @@ export async function fetchTransactions(userId: string): Promise<TransactionData
         type: txn.type || "",
       })) || []
 
-    console.log('[DEBUG] fetchTransactions: Fetched', transactionData.length, 'transactions')
+    logger.debug('ChartData', 'fetchTransactions: Fetched transactions', { count: transactionData.length })
     return transactionData
   } catch (error) {
-    console.error('[ERROR] fetchTransactions exception:', error)
+    logger.error('ChartData', 'fetchTransactions exception', error)
     return []
   }
 }

@@ -208,7 +208,7 @@ export function CsvParserApp() {
       // Simulate file input change event
       const fakeEvent = {
         target: { files: [file] }
-      } as React.ChangeEvent<HTMLInputElement>
+      } as unknown as React.ChangeEvent<HTMLInputElement>
       handleFileChange(fakeEvent)
     }
   }, [handleFileChange])

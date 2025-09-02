@@ -64,6 +64,27 @@ A modern, desktop-style financial dashboard application built with Next.js, feat
    STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
    ```
 
+## Configuration
+
+The application uses environment variables for configuration. Copy `.env.example` to `.env.local` and update the values:
+
+### Required Configuration
+- `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+- `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
+
+### Optional Configuration
+- `NODE_ENV`: Set to 'development' to enable debug logging
+- `NEXT_PUBLIC_ELECTRON_CONSOLE_URL`: URL for ElectronConsole integration
+
+### Development vs Production
+- Debug logging is automatically enabled in development mode
+- Console logs are suppressed in production builds
+- All configuration is centralized in `lib/config.ts`
+- UI constants are defined in `lib/constants.ts`
+- Theme settings are in `lib/theme.ts`
+- Content strings are managed in `lib/content.ts`
+
 4. **Database Setup**
    Run the SQL scripts in the `database/` folder to set up your database schema.
 

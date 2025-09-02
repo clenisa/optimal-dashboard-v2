@@ -1,4 +1,6 @@
 // Simple, centralized logger for authentication and UI events
+import { logger } from '@/lib/logger'
+
 export class AuthLogger {
   private static instance: AuthLogger
   private logQueue: string[] = []
@@ -20,25 +22,25 @@ export class AuthLogger {
   log(message: string, data?: any) {
     if (!this.isEnabled) return
     const formatted = this.formatMessage("LOG", message, data)
-    setTimeout(() => console.log(formatted), 0)
+    logger.info('Auth', formatted)
   }
 
   warn(message: string, data?: any) {
     if (!this.isEnabled) return
     const formatted = this.formatMessage("WARN", message, data)
-    setTimeout(() => console.warn(formatted), 0)
+    logger.warn('Auth', formatted)
   }
 
   error(message: string, data?: any) {
     if (!this.isEnabled) return
     const formatted = this.formatMessage("ERROR", message, data)
-    setTimeout(() => console.error(formatted), 0)
+    logger.error('Auth', formatted)
   }
 
   interaction(element: string, event: string, data?: any) {
     if (!this.isEnabled) return
     const formatted = this.formatMessage("INTERACTION", `${element} ${event}`, data)
-    setTimeout(() => console.log(formatted), 0)
+    logger.debug('Auth', formatted)
   }
 
   disable() {
