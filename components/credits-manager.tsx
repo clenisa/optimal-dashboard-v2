@@ -75,6 +75,9 @@ export function CreditsManager() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [isClaiming, setIsClaiming] = useState(false)
+  const [canClaim, setCanClaim] = useState(false)
+  const [timeToNextClaim, setTimeToNextClaim] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
@@ -101,6 +104,60 @@ export function CreditsManager() {
       return () => subscription.unsubscribe()
     }
   }, [])
+
+  useEffect(() => {
+    if (credits) {
+      const todayEST = new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York' })
+      const lastClaimDateEST = credits.last_daily_credit
+        ? new Date(credits.last_daily_credit).toLocaleDateString('en-US', { timeZone: 'America/New_York' })
+        : null
+      setCanClaim(lastClaimDateEST !== todayEST)
+
+      const getMsUntilNextMidnightEST = () => {
+        const nowUtcMs = Date.now()
+        const now = new Date(nowUtcMs)
+        const parts = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/New_York',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+          timeZoneName: 'shortOffset'
+        }).formatToParts(now)
+
+        const get = (type: string) => parts.find(p => p.type === type)?.value || ''
+        const year = Number(get('year'))
+        const month = Number(get('month'))
+        const day = Number(get('day'))
+        const tzName = get('timeZoneName') // e.g., GMT-4 or GMT-5
+
+        const offsetMatch = tzName.match(/GMT([+-])(\d{1,2})/)
+        const sign = offsetMatch?.[1] === '-' ? -1 : 1
+        const offsetHours = Number(offsetMatch?.[2] || 0)
+        const totalOffsetHours = sign * offsetHours // e.g., New York: -4 or -5
+
+        // Next midnight in EST local time is (year, month-1, day+1) at 00:00 EST
+        // Convert that local midnight to UTC by subtracting the timezone offset hours
+        const nextMidnightUtcMs = Date.UTC(year, month - 1, day + 1, -totalOffsetHours, 0, 0)
+        return Math.max(0, nextMidnightUtcMs - nowUtcMs)
+      }
+
+      const interval = setInterval(() => {
+        const diff = getMsUntilNextMidnightEST()
+        const hours = Math.floor(diff / (1000 * 60 * 60))
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+        setTimeToNextClaim(`${hours}h ${minutes}m ${seconds}s`)
+      }, 1000)
+
+      return () => clearInterval(interval)
+    } else {
+      setCanClaim(false)
+    }
+  }, [credits])
 
   const loadUserCredits = async (userId: string) => {
     try {
@@ -208,54 +265,26 @@ export function CreditsManager() {
     }
   }
 
-  const claimDailyCredits = async () => {
-    if (!user || !credits) return
-
-    const today = new Date().toISOString().split('T')[0]
-    if (credits.last_daily_credit === today) {
-      setError('Daily credits already claimed today')
-      return
-    }
-
-    setLoading(true)
+  const handleClaimCredits = async () => {
+    setIsClaiming(true)
     setError(null)
-
     try {
-      const supabase = createClient()
-      if (!supabase) return
-
-      const { data, error } = await supabase
-        .from('user_credits')
-        .update({
-          current_credits: credits.current_credits + 5,
-          total_earned: credits.total_earned + 5,
-          last_daily_credit: today
-        })
-        .eq('user_id', user.id)
-        .select()
-        .single()
-
-      if (!error && data) {
-        setCredits(data)
-        setSuccess('Daily credits claimed! +5 credits added.')
-        
-        // Log the transaction
-        await supabase
-          .from('credit_transactions')
-          .insert({
-            user_id: user.id,
-            type: 'daily_bonus',
-            amount: 5,
-            description: 'Daily login bonus'
-          })
-
-        // Reload transactions
-        loadCreditTransactions(user.id)
+      const response = await fetch('/api/claim-daily-credits', { method: 'POST' })
+      const data = await response.json()
+      if (response.ok) {
+        setCanClaim(false)
+        if (user) {
+          await loadUserCredits(user.id)
+          await loadCreditTransactions(user.id)
+        }
+        setSuccess('Daily credits claimed! +50 credits added.')
+      } else {
+        setError(data.error || 'Failed to claim daily credits')
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to claim daily credits')
     } finally {
-      setLoading(false)
+      setIsClaiming(false)
     }
   }
 
@@ -307,9 +336,6 @@ export function CreditsManager() {
     )
   }
 
-  const today = new Date().toISOString().split('T')[0]
-  const canClaimDaily = credits && credits.last_daily_credit !== today
-
   return (
     <div className="space-y-6">
       {/* Credits Overview */}
@@ -345,20 +371,22 @@ export function CreditsManager() {
             
             <div className="text-center">
               <Button 
-                onClick={claimDailyCredits}
-                disabled={!canClaimDaily || loading}
-                variant={canClaimDaily ? "default" : "secondary"}
+                onClick={handleClaimCredits}
+                disabled={!canClaim || isClaiming}
+                variant={canClaim ? "default" : "secondary"}
                 className="w-full"
               >
-                {canClaimDaily ? (
+                {isClaiming ? (
+                  'Claiming...'
+                ) : canClaim ? (
                   <>
                     <Gift className="w-4 h-4 mr-2" />
-                    Claim Daily +5
+                    Claim 50 Free Credits
                   </>
                 ) : (
                   <>
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Claimed Today
+                    Next claim in {timeToNextClaim}
                   </>
                 )}
               </Button>
