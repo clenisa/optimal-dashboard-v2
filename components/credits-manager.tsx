@@ -107,57 +107,51 @@ export function CreditsManager() {
 
   useEffect(() => {
     if (credits) {
-      const todayEST = new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York' })
-      const lastClaimDateEST = credits.last_daily_credit
-        ? new Date(credits.last_daily_credit).toLocaleDateString('en-US', { timeZone: 'America/New_York' })
-        : null
-      setCanClaim(lastClaimDateEST !== todayEST)
+      // Simplified EST date comparison
+      const now = new Date();
+      const estNow = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+      const todayEST = estNow.toISOString().split('T')[0];
 
-      const getMsUntilNextMidnightEST = () => {
-        const nowUtcMs = Date.now()
-        const now = new Date(nowUtcMs)
-        const parts = new Intl.DateTimeFormat('en-US', {
-          timeZone: 'America/New_York',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false,
-          timeZoneName: 'shortOffset'
-        }).formatToParts(now)
+      const lastClaimDate = credits.last_daily_credit 
+        ? new Date(credits.last_daily_credit).toISOString().split('T')[0]
+        : null;
 
-        const get = (type: string) => parts.find(p => p.type === type)?.value || ''
-        const year = Number(get('year'))
-        const month = Number(get('month'))
-        const day = Number(get('day'))
-        const tzName = get('timeZoneName') // e.g., GMT-4 or GMT-5
+      console.log('Today EST:', todayEST);
+      console.log('Last claim date:', lastClaimDate);
 
-        const offsetMatch = tzName.match(/GMT([+-])(\d{1,2})/)
-        const sign = offsetMatch?.[1] === '-' ? -1 : 1
-        const offsetHours = Number(offsetMatch?.[2] || 0)
-        const totalOffsetHours = sign * offsetHours // e.g., New York: -4 or -5
+      const canClaimToday = lastClaimDate !== todayEST;
+      setCanClaim(canClaimToday);
 
-        // Next midnight in EST local time is (year, month-1, day+1) at 00:00 EST
-        // Convert that local midnight to UTC by subtracting the timezone offset hours
-        const nextMidnightUtcMs = Date.UTC(year, month - 1, day + 1, -totalOffsetHours, 0, 0)
-        return Math.max(0, nextMidnightUtcMs - nowUtcMs)
-      }
+      // Simplified countdown timer
+      const updateCountdown = () => {
+        const now = new Date();
+        const estNow = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
 
-      const interval = setInterval(() => {
-        const diff = getMsUntilNextMidnightEST()
-        const hours = Math.floor(diff / (1000 * 60 * 60))
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-        setTimeToNextClaim(`${hours}h ${minutes}m ${seconds}s`)
-      }, 1000)
+        const tomorrow = new Date(estNow);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
 
-      return () => clearInterval(interval)
-    } else {
-      setCanClaim(false)
+        const tomorrowUTC = new Date(tomorrow.toLocaleString("en-US", {timeZone: "UTC"}));
+        const diff = tomorrowUTC.getTime() - Date.now();
+
+        if (diff > 0) {
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          setTimeToNextClaim(`${hours}h ${minutes}m ${seconds}s`);
+        } else {
+          setTimeToNextClaim('0h 0m 0s');
+          if (user) {
+            loadUserCredits(user.id);
+          }
+        }
+      };
+
+      updateCountdown();
+      const interval = setInterval(updateCountdown, 1000);
+      return () => clearInterval(interval);
     }
-  }, [credits])
+  }, [credits, user])
 
   const loadUserCredits = async (userId: string) => {
     try {
@@ -266,11 +260,18 @@ export function CreditsManager() {
   }
 
   const handleClaimCredits = async () => {
+    console.log('Attempting to claim credits...')
+    console.log('Can claim:', canClaim)
+    console.log('Is claiming:', isClaiming)
+
     setIsClaiming(true)
     setError(null)
     try {
       const response = await fetch('/api/claim-daily-credits', { method: 'POST' })
       const data = await response.json()
+
+      console.log('API Response:', response.status, data)
+
       if (response.ok) {
         setCanClaim(false)
         if (user) {
@@ -281,7 +282,8 @@ export function CreditsManager() {
       } else {
         setError(data.error || 'Failed to claim daily credits')
       }
-    } catch (_err) {
+    } catch (err) {
+      console.error('Claim error:', err)
       setError('Failed to claim daily credits')
     } finally {
       setIsClaiming(false)
@@ -384,12 +386,15 @@ export function CreditsManager() {
                     Claim 50 Free Credits
                   </>
                 ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Next claim in {timeToNextClaim}
-                  </>
+                  `Next claim in ${timeToNextClaim}`
                 )}
               </Button>
+              <p className="text-sm text-muted-foreground mt-2 text-center">
+                {canClaim 
+                  ? 'You can claim your daily free credits now!'
+                  : `Daily credits refresh at midnight EST. Next claim in ${timeToNextClaim}`
+                }
+              </p>
             </div>
           </div>
         </CardContent>
