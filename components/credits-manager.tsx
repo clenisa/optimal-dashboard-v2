@@ -75,6 +75,9 @@ export function CreditsManager() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [isClaiming, setIsClaiming] = useState(false)
+  const [canClaim, setCanClaim] = useState(false)
+  const [timeToNextClaim, setTimeToNextClaim] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
@@ -101,6 +104,54 @@ export function CreditsManager() {
       return () => subscription.unsubscribe()
     }
   }, [])
+
+  useEffect(() => {
+    if (credits) {
+      // Simplified EST date comparison
+      const now = new Date();
+      const estNow = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+      const todayEST = estNow.toISOString().split('T')[0];
+
+      const lastClaimDate = credits.last_daily_credit 
+        ? new Date(credits.last_daily_credit).toISOString().split('T')[0]
+        : null;
+
+      console.log('Today EST:', todayEST);
+      console.log('Last claim date:', lastClaimDate);
+
+      const canClaimToday = lastClaimDate !== todayEST;
+      setCanClaim(canClaimToday);
+
+      // Simplified countdown timer
+      const updateCountdown = () => {
+        const now = new Date();
+        const estNow = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+
+        const tomorrow = new Date(estNow);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+
+        const tomorrowUTC = new Date(tomorrow.toLocaleString("en-US", {timeZone: "UTC"}));
+        const diff = tomorrowUTC.getTime() - Date.now();
+
+        if (diff > 0) {
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          setTimeToNextClaim(`${hours}h ${minutes}m ${seconds}s`);
+        } else {
+          setTimeToNextClaim('0h 0m 0s');
+          if (user) {
+            loadUserCredits(user.id);
+          }
+        }
+      };
+
+      updateCountdown();
+      const interval = setInterval(updateCountdown, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [credits, user])
 
   const loadUserCredits = async (userId: string) => {
     try {
@@ -208,54 +259,34 @@ export function CreditsManager() {
     }
   }
 
-  const claimDailyCredits = async () => {
-    if (!user || !credits) return
+  const handleClaimCredits = async () => {
+    console.log('Attempting to claim credits...')
+    console.log('Can claim:', canClaim)
+    console.log('Is claiming:', isClaiming)
 
-    const today = new Date().toISOString().split('T')[0]
-    if (credits.last_daily_credit === today) {
-      setError('Daily credits already claimed today')
-      return
-    }
-
-    setLoading(true)
+    setIsClaiming(true)
     setError(null)
-
     try {
-      const supabase = createClient()
-      if (!supabase) return
+      const response = await fetch('/api/claim-daily-credits', { method: 'POST' })
+      const data = await response.json()
 
-      const { data, error } = await supabase
-        .from('user_credits')
-        .update({
-          current_credits: credits.current_credits + 5,
-          total_earned: credits.total_earned + 5,
-          last_daily_credit: today
-        })
-        .eq('user_id', user.id)
-        .select()
-        .single()
+      console.log('API Response:', response.status, data)
 
-      if (!error && data) {
-        setCredits(data)
-        setSuccess('Daily credits claimed! +5 credits added.')
-        
-        // Log the transaction
-        await supabase
-          .from('credit_transactions')
-          .insert({
-            user_id: user.id,
-            type: 'daily_bonus',
-            amount: 5,
-            description: 'Daily login bonus'
-          })
-
-        // Reload transactions
-        loadCreditTransactions(user.id)
+      if (response.ok) {
+        setCanClaim(false)
+        if (user) {
+          await loadUserCredits(user.id)
+          await loadCreditTransactions(user.id)
+        }
+        setSuccess('Daily credits claimed! +50 credits added.')
+      } else {
+        setError(data.error || 'Failed to claim daily credits')
       }
     } catch (err) {
+      console.error('Claim error:', err)
       setError('Failed to claim daily credits')
     } finally {
-      setLoading(false)
+      setIsClaiming(false)
     }
   }
 
@@ -307,9 +338,6 @@ export function CreditsManager() {
     )
   }
 
-  const today = new Date().toISOString().split('T')[0]
-  const canClaimDaily = credits && credits.last_daily_credit !== today
-
   return (
     <div className="space-y-6">
       {/* Credits Overview */}
@@ -345,23 +373,28 @@ export function CreditsManager() {
             
             <div className="text-center">
               <Button 
-                onClick={claimDailyCredits}
-                disabled={!canClaimDaily || loading}
-                variant={canClaimDaily ? "default" : "secondary"}
+                onClick={handleClaimCredits}
+                disabled={!canClaim || isClaiming}
+                variant={canClaim ? "default" : "secondary"}
                 className="w-full"
               >
-                {canClaimDaily ? (
+                {isClaiming ? (
+                  'Claiming...'
+                ) : canClaim ? (
                   <>
                     <Gift className="w-4 h-4 mr-2" />
-                    Claim Daily +5
+                    Claim 50 Free Credits
                   </>
                 ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Claimed Today
-                  </>
+                  `Next claim in ${timeToNextClaim}`
                 )}
               </Button>
+              <p className="text-sm text-muted-foreground mt-2 text-center">
+                {canClaim 
+                  ? 'You can claim your daily free credits now!'
+                  : `Daily credits refresh at midnight EST. Next claim in ${timeToNextClaim}`
+                }
+              </p>
             </div>
           </div>
         </CardContent>
