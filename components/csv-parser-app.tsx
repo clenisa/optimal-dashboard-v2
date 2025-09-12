@@ -567,6 +567,16 @@ export function CsvParserApp() {
                 {loading ? "Uploading..." : "Upload to Supabase"}
               </Button>
             )}
+            
+            <Button 
+              onClick={handleDeleteAllTransactions}
+              disabled={loading}
+              variant="destructive"
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete All
+            </Button>
           </div>
 
           {/* Progress Indicator */}
