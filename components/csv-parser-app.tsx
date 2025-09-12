@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { processCsvFile, type ParsedTransaction } from "@/lib/csv-parser"
 import { createClient } from "@/lib/supabase-client"
 import { useAuthState } from "@/hooks/use-auth-state"
-import { Upload, FileText, CheckCircle, AlertCircle, Info } from "lucide-react"
+import { Upload, FileText, CheckCircle, AlertCircle, Info, Trash2 } from "lucide-react"
 import { CONTENT } from "@/lib/content"
 import { validateCsvFile, validateCsvHeaders, logCsvProcessing } from "@/lib/csv-utils"
 
