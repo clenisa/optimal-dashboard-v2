@@ -392,6 +392,45 @@ export function CsvParserApp() {
     }
   }, [transactions, user?.id, validationResult])
 
+  const handleDeleteAllTransactions = useCallback(async () => {
+    if (!user) {
+      setError('User not authenticated')
+      return
+    }
+
+    if (!confirm('Are you sure you want to delete ALL transactions? This cannot be undone.')) {
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const supabase = createClient()
+      
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('user_id', user.id)
+
+      if (error) {
+        throw new Error('Failed to delete transactions')
+      }
+
+      setSuccess('Successfully deleted all transactions')
+      setTransactions([])
+      setValidationResult(null)
+      setProcessingStats(null)
+
+    } catch (error) {
+      console.error('Error deleting transactions:', error)
+      setError(error instanceof Error ? error.message : 'Failed to delete transactions')
+    } finally {
+      setLoading(false)
+    }
+  }, [user])
+
   if (!user) {
     return (
       <div className="p-6">
