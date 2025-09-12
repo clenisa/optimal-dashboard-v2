@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { processCsvFile, type ParsedTransaction } from "@/lib/csv-parser"
 import { createClient } from "@/lib/supabase-client"
 import { useAuthState } from "@/hooks/use-auth-state"
-import { Upload, FileText, CheckCircle, AlertCircle, Info } from "lucide-react"
+import { Upload, FileText, CheckCircle, AlertCircle, Info, Trash2 } from "lucide-react"
 import { CONTENT } from "@/lib/content"
 import { validateCsvFile, validateCsvHeaders, logCsvProcessing } from "@/lib/csv-utils"
 
@@ -392,6 +392,45 @@ export function CsvParserApp() {
     }
   }, [transactions, user?.id, validationResult])
 
+  const handleDeleteAllTransactions = useCallback(async () => {
+    if (!user) {
+      setError('User not authenticated')
+      return
+    }
+
+    if (!confirm('Are you sure you want to delete ALL transactions? This cannot be undone.')) {
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const supabase = createClient()
+      
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('user_id', user.id)
+
+      if (error) {
+        throw new Error('Failed to delete transactions')
+      }
+
+      setSuccess('Successfully deleted all transactions')
+      setTransactions([])
+      setValidationResult(null)
+      setProcessingStats(null)
+
+    } catch (error) {
+      console.error('Error deleting transactions:', error)
+      setError(error instanceof Error ? error.message : 'Failed to delete transactions')
+    } finally {
+      setLoading(false)
+    }
+  }, [user])
+
   if (!user) {
     return (
       <div className="p-6">
@@ -528,6 +567,16 @@ export function CsvParserApp() {
                 {loading ? "Uploading..." : "Upload to Supabase"}
               </Button>
             )}
+            
+            <Button 
+              onClick={handleDeleteAllTransactions}
+              disabled={loading}
+              variant="destructive"
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete All
+            </Button>
           </div>
 
           {/* Progress Indicator */}
