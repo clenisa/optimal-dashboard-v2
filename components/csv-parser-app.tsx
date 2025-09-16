@@ -16,6 +16,8 @@ import { useAuthState } from "@/hooks/use-auth-state"
 import { Upload, FileText, CheckCircle, AlertCircle, Info, Trash2 } from "lucide-react"
 import { CONTENT } from "@/lib/content"
 import { validateCsvFile, validateCsvHeaders, logCsvProcessing } from "@/lib/csv-utils"
+import { CategoryEditor } from "./editors/CategoryEditor"
+import { PaymentSourceEditor } from "./editors/PaymentSourceEditor"
 
 // CSV Upload Instructions and Requirements are provided by CONTENT.csvUpload
 
@@ -751,6 +753,10 @@ export function CsvParserApp() {
 
         </CardContent>
       </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CategoryEditor />
+        <PaymentSourceEditor />
+      </div>
     </div>
   )
 }
