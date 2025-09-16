@@ -1,4 +1,5 @@
 import type React from "react"
+import { Suspense } from "react"
 import type { Metadata } from "next"
 import { Inter, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
@@ -116,7 +117,9 @@ export default function RootLayout({
             </main>
           </div>
           <Toaster />
-          <Analytics />
+          <Suspense fallback={null}>
+            <Analytics />
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>

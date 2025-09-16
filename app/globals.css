@@ -170,7 +170,7 @@
   
   /* Better button and input defaults */
   button, input, select, textarea {
-    @apply font-inherit;
+    font: inherit;
   }
   
   /* Remove default button styles */
