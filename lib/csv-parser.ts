@@ -6,9 +6,22 @@ export interface ParsedTransaction {
   type: string
 }
 
+// Remove UTF-8 BOM if present
+function removeBOM(content: string): string {
+  // UTF-8 BOM is EF BB BF in hex, which appears as \uFEFF in JavaScript
+  if (content && content.charCodeAt(0) === 0xFEFF) {
+    return content.slice(1)
+  }
+  return content
+}
+
 // Parse CSV string into an array of transaction objects.
 export function parseCSV(csvContent: string): ParsedTransaction[] {
-  const lines = csvContent.split("\n").filter((line) => line.trim())
+  // Remove BOM if present
+  const cleanContent = removeBOM(csvContent)
+  // Normalize line endings to handle Windows (\r\n), Unix (\n), and Mac (\r) formats
+  const normalizedContent = cleanContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  const lines = normalizedContent.split('\n').filter((line) => line.trim())
   const headers = lines[0].split(",").map((h) => h.trim().toLowerCase())
 
   const transactions: ParsedTransaction[] = []
