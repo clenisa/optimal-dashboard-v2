@@ -3,6 +3,7 @@ import type React from "react"
 import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -16,6 +17,8 @@ import { useAuthState } from "@/hooks/use-auth-state"
 import { Upload, FileText, CheckCircle, AlertCircle, Info, Trash2 } from "lucide-react"
 import { CONTENT } from "@/lib/content"
 import { validateCsvFile, validateCsvHeaders, logCsvProcessing } from "@/lib/csv-utils"
+import { CategoryEditor } from "./editors/CategoryEditor"
+import { PaymentSourceEditor } from "./editors/PaymentSourceEditor"
 
 // CSV Upload Instructions and Requirements are provided by CONTENT.csvUpload
 
@@ -442,315 +445,331 @@ export function CsvParserApp() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Instructions and Requirements Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            {CONTENT.csvUpload.title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-gray-600 dark:text-gray-300">
-            {CONTENT.csvUpload.description}
-          </p>
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Requirements */}
-            <div className="space-y-3">
-              <h4 className="font-medium flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                Requirements
-              </h4>
-              <ul className="space-y-2 text-sm">
-                {CONTENT.csvUpload.requirements.map((req, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5">•</span>
-                    <span>{req}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            
-            {/* Example Format */}
-            <div className="space-y-3">
-              <h4 className="font-medium flex items-center gap-2">
-                <Info className="h-4 w-4 text-blue-600" />
-                Example Format
-              </h4>
-              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm font-mono">
-                {CONTENT.csvUpload.examples.map((line, index) => (
-                  <div key={index} className="text-gray-700 dark:text-gray-300">
-                    {line}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>CSV Transaction Parser</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          
-          {/* File Upload Section */}
-          <div className="space-y-2">
-            <Label htmlFor="csv-file">Select CSV File</Label>
-            <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
-                loading 
-                  ? 'border-gray-300 bg-gray-50 dark:bg-gray-800' 
-                  : file
-                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                    : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'
-              }`}
-              onDragOver={handleDragOver}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <Input
-                id="csv-file"
-                type="file"
-                accept=".csv"
-                onChange={handleFileChange}
-                disabled={loading}
-                className="hidden"
-              />
-              <Label htmlFor="csv-file" className="cursor-pointer">
-                {file ? (
-                  <div className="space-y-3">
-                    <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
-                    <div className="text-lg font-medium text-green-800 dark:text-green-200">{file.name}</div>
-                    <div className="text-sm text-green-600 dark:text-green-400">
-                      {(file.size / 1024).toFixed(2)} KB
-                    </div>
-                    <div className="text-xs text-green-500">File selected successfully!</div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <Upload className="h-12 w-12 text-gray-400 mx-auto" />
-                    <div className="text-lg font-medium">Click to select or drag and drop a CSV file</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Supports .csv files up to 10MB
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      Drag your file here or click to browse
-                    </div>
-                  </div>
-                )}
-              </Label>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex space-x-2">
-            <Button 
-              onClick={handleParse} 
-              disabled={!file || loading}
-              className="flex-1"
-            >
-              {loading ? "Parsing..." : "Parse CSV"}
-            </Button>
-            
-            {transactions.length > 0 && validationResult?.isValid && (
-              <Button 
-                onClick={handleUploadToSupabase} 
-                disabled={loading}
-                variant="outline"
-                className="flex-1"
-              >
-                {loading ? "Uploading..." : "Upload to Supabase"}
-              </Button>
-            )}
-            
-            <Button 
-              onClick={handleDeleteAllTransactions}
-              disabled={loading}
-              variant="destructive"
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete All
-            </Button>
-          </div>
-
-          {/* Progress Indicator */}
-          {loading && uploadProgress > 0 && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Upload Progress</span>
-                <span>{uploadProgress}%</span>
-              </div>
-              <Progress value={uploadProgress} className="w-full" />
-            </div>
-          )}
-
-          {/* Status Messages */}
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {success && (
-            <Alert>
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Validation Results */}
-          {validationResult && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Validation Results</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+    <div className="w-full max-w-4xl mx-auto p-4">
+      <Tabs defaultValue="csv" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="csv">CSV Parser</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="sources">Payment Sources</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="csv" className="space-y-4">
+          {/* Instructions and Requirements Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                {CONTENT.csvUpload.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-600 dark:text-gray-300">
+                {CONTENT.csvUpload.description}
+              </p>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Requirements */}
+                <div className="space-y-3">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    Requirements
+                  </h4>
+                  <ul className="space-y-2 text-sm">
+                    {CONTENT.csvUpload.requirements.map((req, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="text-green-500 mt-0.5">•</span>
+                        <span>{req}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
                 
-                {/* Summary Statistics */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      {validationResult.processedCount}
-                    </div>
-                    <div className="text-sm text-gray-500">Valid</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-red-600">
-                      {validationResult.skippedCount}
-                    </div>
-                    <div className="text-sm text-gray-500">Invalid</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-yellow-600">
-                      {validationResult.warnings.length}
-                    </div>
-                    <div className="text-sm text-gray-500">Warnings</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {processingStats?.processingTime || 0}ms
-                    </div>
-                    <div className="text-sm text-gray-500">Processing Time</div>
-                  </div>
-                </div>
-
-                {/* Validation Status */}
-                <div className="flex items-center space-x-2">
-                  <Badge variant={validationResult.isValid ? "default" : "destructive"}>
-                    {validationResult.isValid ? "Valid" : "Invalid"}
-                  </Badge>
-                  {validationResult.warnings.length > 0 && (
-                    <Badge variant="secondary">
-                      {validationResult.warnings.length} Warning(s)
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Error Messages */}
-                {validationResult.errors.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-red-600">Validation Errors:</h4>
-                    <ScrollArea className="h-32 w-full border rounded p-2">
-                      <div className="space-y-1">
-                        {validationResult.errors.map((error, index) => (
-                          <div key={index} className="text-sm text-red-600">
-                            {error}
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                )}
-
-                {/* Warning Messages */}
-                {validationResult.warnings.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-yellow-600">Warnings:</h4>
-                    <ScrollArea className="h-24 w-full border rounded p-2">
-                      <div className="space-y-1">
-                        {validationResult.warnings.map((warning, index) => (
-                          <div key={index} className="text-sm text-yellow-600">
-                            {warning}
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Transaction Preview */}
-          {transactions.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">
-                  Parsed Transactions ({transactions.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-64 w-full">
-                  <div className="space-y-2">
-                    {transactions.slice(0, 10).map((txn, index) => (
-                      <div key={index} className="border rounded p-2 text-sm">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                          <div>
-                            <span className="font-medium">Date:</span> {txn.date}
-                          </div>
-                          <div>
-                            <span className="font-medium">Amount:</span> ${txn.amount}
-                          </div>
-                          <div>
-                            <span className="font-medium">Type:</span> {txn.type || 'N/A'}
-                          </div>
-                          <div>
-                            <span className="font-medium">Category:</span> {txn.category || 'N/A'}
-                          </div>
-                        </div>
-                        <div className="mt-1">
-                          <span className="font-medium">Description:</span> {txn.description}
-                        </div>
+                {/* Example Format */}
+                <div className="space-y-3">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Info className="h-4 w-4 text-blue-600" />
+                    Example Format
+                  </h4>
+                  <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm font-mono">
+                    {CONTENT.csvUpload.examples.map((line, index) => (
+                      <div key={index} className="text-gray-700 dark:text-gray-300">
+                        {line}
                       </div>
                     ))}
-                    {transactions.length > 10 && (
-                      <div className="text-center text-sm text-gray-500 py-2">
-                        Showing first 10 of {transactions.length} transactions
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>CSV Transaction Parser</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* File Upload Section */}
+              <div className="space-y-2">
+                <Label htmlFor="csv-file">Select CSV File</Label>
+                <div
+                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
+                    loading 
+                      ? 'border-gray-300 bg-gray-50 dark:bg-gray-800' 
+                      : file
+                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  <Input
+                    id="csv-file"
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileChange}
+                    disabled={loading}
+                    className="hidden"
+                  />
+                  <Label htmlFor="csv-file" className="cursor-pointer">
+                    {file ? (
+                      <div className="space-y-3">
+                        <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
+                        <div className="text-lg font-medium text-green-800 dark:text-green-200">{file.name}</div>
+                        <div className="text-sm text-green-600 dark:text-green-400">
+                          {(file.size / 1024).toFixed(2)} KB
+                        </div>
+                        <div className="text-xs text-green-500">File selected successfully!</div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <Upload className="h-12 w-12 text-gray-400 mx-auto" />
+                        <div className="text-lg font-medium">Click to select or drag and drop a CSV file</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          Supports .csv files up to 10MB
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Drag your file here or click to browse
+                        </div>
                       </div>
                     )}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          )}
+                  </Label>
+                </div>
+              </div>
 
-          {/* Debug Information */}
-          {debugInfo.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Debug Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-32 w-full">
-                  <div className="space-y-1">
-                    {debugInfo.map((info, index) => (
-                      <div key={index} className="text-xs font-mono text-gray-600">
-                        {info}
+              {/* Action Buttons */}
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={handleParse} 
+                  disabled={!file || loading}
+                  className="flex-1"
+                >
+                  {loading ? "Parsing..." : "Parse CSV"}
+                </Button>
+                
+                {transactions.length > 0 && validationResult?.isValid && (
+                  <Button 
+                    onClick={handleUploadToSupabase} 
+                    disabled={loading}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    {loading ? "Uploading..." : "Upload to Supabase"}
+                  </Button>
+                )}
+                
+                <Button 
+                  onClick={handleDeleteAllTransactions}
+                  disabled={loading}
+                  variant="destructive"
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete All
+                </Button>
+              </div>
+
+              {/* Progress Indicator */}
+              {loading && uploadProgress > 0 && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Upload Progress</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} className="w-full" />
+                </div>
+              )}
+
+              {/* Status Messages */}
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {success && (
+                <Alert>
+                  <AlertDescription>{success}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* Validation Results */}
+              {validationResult && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Validation Results</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    
+                    {/* Summary Statistics */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">
+                          {validationResult.processedCount}
+                        </div>
+                        <div className="text-sm text-gray-500">Valid</div>
                       </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          )}
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-red-600">
+                          {validationResult.skippedCount}
+                        </div>
+                        <div className="text-sm text-gray-500">Invalid</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-yellow-600">
+                          {validationResult.warnings.length}
+                        </div>
+                        <div className="text-sm text-gray-500">Warnings</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {processingStats?.processingTime || 0}ms
+                        </div>
+                        <div className="text-sm text-gray-500">Processing Time</div>
+                      </div>
+                    </div>
 
-        </CardContent>
-      </Card>
+                    {/* Validation Status */}
+                    <div className="flex items-center space-x-2">
+                      <Badge variant={validationResult.isValid ? "default" : "destructive"}>
+                        {validationResult.isValid ? "Valid" : "Invalid"}
+                      </Badge>
+                      {validationResult.warnings.length > 0 && (
+                        <Badge variant="secondary">
+                          {validationResult.warnings.length} Warning(s)
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Error Messages */}
+                    {validationResult.errors.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-red-600">Validation Errors:</h4>
+                        <ScrollArea className="h-32 w-full border rounded p-2">
+                          <div className="space-y-1">
+                            {validationResult.errors.map((error, index) => (
+                              <div key={index} className="text-sm text-red-600">
+                                {error}
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    )}
+
+                    {/* Warning Messages */}
+                    {validationResult.warnings.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-yellow-600">Warnings:</h4>
+                        <ScrollArea className="h-24 w-full border rounded p-2">
+                          <div className="space-y-1">
+                            {validationResult.warnings.map((warning, index) => (
+                              <div key={index} className="text-sm text-yellow-600">
+                                {warning}
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Transaction Preview */}
+              {transactions.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      Parsed Transactions ({transactions.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-64 w-full">
+                      <div className="space-y-2">
+                        {transactions.slice(0, 10).map((txn, index) => (
+                          <div key={index} className="border rounded p-2 text-sm">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                              <div>
+                                <span className="font-medium">Date:</span> {txn.date}
+                              </div>
+                              <div>
+                                <span className="font-medium">Amount:</span> ${txn.amount}
+                              </div>
+                              <div>
+                                <span className="font-medium">Type:</span> {txn.type || 'N/A'}
+                              </div>
+                              <div>
+                                <span className="font-medium">Category:</span> {txn.category || 'N/A'}
+                              </div>
+                            </div>
+                            <div className="mt-1">
+                              <span className="font-medium">Description:</span> {txn.description}
+                            </div>
+                          </div>
+                        ))}
+                        {transactions.length > 10 && (
+                          <div className="text-center text-sm text-gray-500 py-2">
+                            Showing first 10 of {transactions.length} transactions
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Debug Information */}
+              {debugInfo.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Debug Information</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-32 w-full">
+                      <div className="space-y-1">
+                        {debugInfo.map((info, index) => (
+                          <div key={index} className="text-xs font-mono text-gray-600">
+                            {info}
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="categories">
+          <CategoryEditor />
+        </TabsContent>
+        
+        <TabsContent value="sources">
+          <PaymentSourceEditor />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
