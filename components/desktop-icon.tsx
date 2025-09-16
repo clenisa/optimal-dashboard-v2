@@ -1,85 +1,68 @@
 "use client"
 
-import Image from "next/image"
-import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase-client"
-import { useVibration } from "@/hooks/use-vibration"
-import { logger } from "@/lib/logger"
+import React from "react"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 interface DesktopIconProps {
   id: string
   title: string
   icon: string
   onClick: () => void
-  requiresAuth?: boolean
+  className?: string
+  disabled?: boolean
 }
 
-export function DesktopIcon({ id, title, icon, onClick, requiresAuth = false }: DesktopIconProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const vibrate = useVibration({ duration: 30 })
-
-  useEffect(() => {
-    const supabase = createClient()
-    if (!supabase) {
-      setLoading(false)
-      return
-    }
-    const checkAuth = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-        setIsAuthenticated(!!session)
-        setLoading(false)
-      } catch (error) {
-        logger.error("DesktopIcon", "Auth check error", error)
-        setLoading(false)
-      }
-    }
-    checkAuth()
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
-      setIsAuthenticated(!!session)
-      setLoading(false)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const handleClick = () => {
-    onClick()
-    vibrate()
-  }
-
-  if (requiresAuth && !isAuthenticated) {
-    return null
-  }
-
+export function DesktopIcon({ 
+  id, 
+  title, 
+  icon, 
+  onClick, 
+  className,
+  disabled = false 
+}: DesktopIconProps) {
   return (
-    <button
-      id={id}
-      className="flex flex-col items-center p-2 hover:bg-gray-200 rounded transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-black min-w-[80px] touch-manipulation"
-      onClick={handleClick}
-      aria-label={`Open ${title} application`}
-      style={{ touchAction: "manipulation", pointerEvents: "auto", cursor: "pointer" }}
+    <Button
+      variant="ghost"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "flex flex-col items-center gap-2 p-3 h-auto min-h-[80px] w-20",
+        "hover:bg-accent/50 hover:text-accent-foreground",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "transition-all duration-200 group",
+        "rounded-lg border border-transparent",
+        "hover:border-border/50 hover:shadow-sm",
+        disabled && "opacity-50 cursor-not-allowed",
+        className
+      )}
+      aria-label={`Open ${title}`}
     >
-      <div className="relative w-12 h-12 sm:w-16 sm:h-16">
-        <Image
-          src={icon || "/placeholder.svg"}
-          alt={title}
-          width={64}
-          height={64}
-          className="animate-in fade-in-0 zoom-in-95 w-full h-full object-contain"
-          priority={!requiresAuth}
+      <div className="relative">
+        <img 
+          src={icon} 
+          alt=""
+          className={cn(
+            "w-8 h-8 transition-transform duration-200",
+            "group-hover:scale-110 group-active:scale-95"
+          )}
+          onError={(e) => {
+            // Fallback to a default icon or hide
+            e.currentTarget.src = "/images/default-app.png"
+          }}
         />
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded">
-            <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-black"></div>
-          </div>
+        {disabled && (
+          <div className="absolute inset-0 bg-muted/50 rounded" />
         )}
       </div>
-      <span className="text-xs font-mono text-black mt-1 text-center leading-tight">{title}</span>
-    </button>
+      
+      <span className={cn(
+        "text-xs font-medium text-center leading-tight",
+        "group-hover:text-foreground transition-colors duration-200",
+        "text-balance max-w-full"
+      )}>
+        {title}
+      </span>
+    </Button>
   )
 }

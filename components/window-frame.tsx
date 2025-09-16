@@ -3,12 +3,10 @@
 import type React from "react"
 import { useWindowStore } from "@/store/window-store"
 import { useWindowManager } from "@/hooks/use-window-manager"
-import { X } from "lucide-react"
+import { X, Minus, Maximize2, Minimize2 } from "lucide-react"
 import { useVibration } from "@/hooks/use-vibration"
-// Utility to merge Tailwind CSS classes conditionally
-function cn(...inputs: (string | undefined | null | false)[]) {
-  return inputs.filter(Boolean).join(" ")
-}
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 interface WindowFrameProps {
   id: string
@@ -21,6 +19,8 @@ interface WindowFrameProps {
   zIndex: number
   children: React.ReactNode
   transparentBackground?: boolean
+  resizable?: boolean
+  draggable?: boolean
 }
 
 export function WindowFrame({
@@ -34,10 +34,14 @@ export function WindowFrame({
   zIndex,
   children,
   transparentBackground = false,
+  resizable = true,
+  draggable = true,
 }: WindowFrameProps) {
   const removeWindow = useWindowStore((state) => state.removeWindow)
-  const windows = useWindowStore((state) => state.windows)
+  const updateWindow = useWindowStore((state) => state.updateWindow)
   const focusWindow = useWindowStore((state) => state.focusWindow)
+  const windows = useWindowStore((state) => state.windows)
+  
   const { windowRef } = useWindowManager({
     windowId: id,
     initialX: x,
@@ -45,26 +49,59 @@ export function WindowFrame({
     initialWidth: width,
     initialHeight: height,
   })
+  
   const vibrate = useVibration({ duration: 30 })
-
-  const maxZIndex = Math.max(...windows.map((w) => w.zIndex))
-  const isForeground = zIndex === maxZIndex
-
-  if (minimized) {
-    return null
-  }
+  const isActive = Math.max(...windows.map((w) => w.zIndex)) === zIndex
 
   const handleClose = () => {
-    removeWindow(id)
     vibrate()
+    removeWindow(id)
   }
+
+  const handleMinimize = () => {
+    vibrate()
+    updateWindow(id, { minimized: true })
+  }
+
+  const handleMaximize = () => {
+    vibrate()
+    const currentWindow = windows.find(w => w.id === id)
+    if (currentWindow) {
+      const isMaximized = currentWindow.width >= window.innerWidth - 100
+      if (isMaximized) {
+        updateWindow(id, { 
+          width: 800, 
+          height: 600, 
+          x: 100, 
+          y: 100 
+        })
+      } else {
+        updateWindow(id, { 
+          width: window.innerWidth - 100, 
+          height: window.innerHeight - 150, 
+          x: 50, 
+          y: 50 
+        })
+      }
+    }
+  }
+
+  const handleFocus = () => {
+    focusWindow(id)
+  }
+
+  if (minimized) return null
 
   return (
     <div
       ref={windowRef}
-      className="absolute flex flex-col animate-window-open select-none"
-      onMouseDown={() => focusWindow(id)}
-      onTouchStart={() => focusWindow(id)}
+      className={cn(
+        "absolute overflow-hidden rounded-lg shadow-xl border transition-all duration-200",
+        "bg-card text-card-foreground",
+        transparentBackground && "glass",
+        isActive ? "ring-2 ring-primary/20 shadow-2xl" : "shadow-lg",
+        "animate-scale-in"
+      )}
       style={{
         left: x,
         top: y,
@@ -72,54 +109,85 @@ export function WindowFrame({
         height: height,
         zIndex: zIndex,
       }}
+      onClick={handleFocus}
     >
-      <div
+      {/* Window Header */}
+      <div 
         className={cn(
-          "w-full h-full flex flex-col border-[2px] border-black rounded-lg overflow-hidden",
-          transparentBackground ? "bg-transparent" : "bg-system7-window-bg",
-          isForeground ? "shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]" : "",
+          "flex items-center justify-between px-4 py-2 border-b cursor-move select-none",
+          "bg-muted/50 backdrop-blur-sm",
+          isActive ? "bg-primary/5" : "bg-muted/30"
         )}
-        style={{
-          backgroundColor: transparentBackground ? 'transparent' : 'var(--system7-window-bg)',
-          opacity: 1,
-        }}
+        data-window-header
       >
-        {/* Title Bar */}
-        <div className="window-title-bar flex justify-between items-center bg-black text-white px-3 py-2 cursor-grab active:cursor-grabbing select-none touch-manipulation h-10 sm:h-7 rounded-t-md">
-          <span className="text-xs sm:text-xs font-mono pointer-events-none truncate flex-1 mr-2">{title}</span>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-red-600 rounded touch-manipulation flex items-center justify-center w-8 h-8 sm:w-5 sm:h-5 text-xs flex-shrink-0"
-            aria-label="Close window"
-            style={{ touchAction: "manipulation", cursor: "pointer", minWidth: "44px", minHeight: "44px" }}
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <img 
+            src={`/images/${id}.png`} 
+            alt=""
+            className="w-4 h-4 flex-shrink-0"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'
+            }}
+          />
+          <span className="text-sm font-medium truncate">
+            {title}
+          </span>
+        </div>
+        
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleMinimize}
+            className="h-6 w-6 p-0 hover:bg-warning/20 hover:text-warning-foreground"
+            aria-label="Minimize window"
           >
-            <X size={16} />
-          </button>
+            <Minus className="h-3 w-3" />
+          </Button>
+          
+          {resizable && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleMaximize}
+              className="h-6 w-6 p-0 hover:bg-info/20 hover:text-info-foreground"
+              aria-label="Maximize window"
+            >
+              <Maximize2 className="h-3 w-3" />
+            </Button>
+          )}
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClose}
+            className="h-6 w-6 p-0 hover:bg-destructive/20 hover:text-destructive-foreground"
+            aria-label="Close window"
+          >
+            <X className="h-3 w-3" />
+          </Button>
         </div>
-
-        {/* Content Area */}
-        <div
-          className="flex-grow p-3 sm:p-4 overflow-auto text-black"
-          style={{
-            pointerEvents: "auto",
-            isolation: "isolate",
-            position: "relative",
-            zIndex: 1,
-            backgroundColor: transparentBackground ? 'transparent' : 'var(--system7-window-bg)',
-          }}
-          onMouseDown={(e) => {
-            e.stopPropagation()
-          }}
-          onTouchStart={(e) => {
-            e.stopPropagation()
-          }}
-        >
-          {children}
-        </div>
-
-        {/* Resize Handle */}
-        <div className="window-resize-handle absolute bottom-0 right-0 w-4 h-4 bg-black cursor-nwse-resize touch-manipulation opacity-50 hover:opacity-100 transition-opacity" />
       </div>
+
+      {/* Window Content */}
+      <div className="h-full overflow-auto bg-background/50">
+        {children}
+      </div>
+
+      {/* Resize Handle */}
+      {resizable && (
+        <div
+          className={cn(
+            "absolute bottom-0 right-0 w-4 h-4 cursor-se-resize",
+            "bg-muted/50 hover:bg-muted transition-colors",
+            "border-l border-t border-border/50"
+          )}
+          data-resize-handle
+          style={{
+            background: `linear-gradient(-45deg, transparent 30%, currentColor 30%, currentColor 40%, transparent 40%, transparent 60%, currentColor 60%, currentColor 70%, transparent 70%)`,
+          }}
+        />
+      )}
     </div>
   )
 }

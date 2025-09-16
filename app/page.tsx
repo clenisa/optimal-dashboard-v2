@@ -1,13 +1,16 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import type React from "react"
+import { useEffect, useState, Suspense } from "react"
 import { DesktopIcon } from "@/components/desktop-icon"
 import { MenuBar } from "@/components/menu-bar"
-import { ThemeProvider } from "@/components/theme-manager"
 import { ThemeSwitcher } from "@/components/theme-manager"
 import { createClient } from "@/lib/supabase-client"
 import { User, AuthChangeEvent, Session } from "@supabase/supabase-js"
 import { logger } from "@/lib/logger"
+import { cn } from "@/lib/utils"
+import { ErrorBoundary } from "@/components/error-boundary"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 // Import all components
 import { SupabaseLoginApp } from "@/components/supabase-login-app"
@@ -37,9 +40,7 @@ import { appDefinitions, type AppId, getFinancialApps, getAIApps, getSystemApps,
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
-  // Remove local window state management
-  // const [windows, setWindows] = useState<WindowState[]>([])
-  // const [highestZIndex, setHighestZIndex] = useState(20)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Use the useWindowStore
   const windows = useWindowStore((state: WindowStore) => state.windows)
@@ -51,22 +52,24 @@ export default function Home() {
 
   useEffect(() => {
     const supabase = createClient()
+    let unsubscribe: (() => void) | undefined
     if (supabase) {
-      supabase.auth.getUser().then(({ data: { user } }: { data: { user: User | null } }) => {
-        setUser(user)
-      })
+      supabase.auth.getUser()
+        .then(({ data: { user } }: { data: { user: User | null } }) => {
+          setUser(user)
+        })
+        .finally(() => setIsLoading(false))
 
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
         setUser(session?.user ?? null)
       })
-
-      return () => subscription.unsubscribe()
+      unsubscribe = () => subscription.unsubscribe()
     } else {
       logger.warn("HomePage", "Supabase client not available - authentication features will be disabled")
       setUser(null)
+      setIsLoading(false)
     }
+    return () => unsubscribe?.()
   }, [])
 
   const openWindow = (appId: AppId) => {
@@ -112,130 +115,147 @@ export default function Home() {
   // }
 
   const renderAppContent = (appId: AppId) => {
-    switch (appId) {
-      case "supabase-login":
-        return <SupabaseLoginApp />
-      case "csv-parser":
-        return <CsvParserApp />
-      case "category-line-chart":
-        return <CategoryLineChart />
-      case "payment-source-balances":
-        return <PaymentSourceBalances />
-      case "transaction-manager":
-        return <TransactionManager />
-      case "ai-chat-console":
-        return <AIChatConsole />
-      case "credits-manager":
-        return <CreditsManager />
-      case "service-app":
-        return <ServiceApp serviceName="Default Service" />
-      case "debug-console":
-        return <DebugConsole />
-      case "about-this-desktop":
-        return <AboutThisDesktopApp />
-      default:
-        return <div>App not found</div>
+    const contentMap = {
+      "supabase-login": () => <SupabaseLoginApp />,
+      "csv-parser": () => <CsvParserApp />,
+      "category-line-chart": () => <CategoryLineChart />,
+      "payment-source-balances": () => <PaymentSourceBalances />,
+      "transaction-manager": () => <TransactionManager />,
+      "ai-chat-console": () => <AIChatConsole />,
+      "credits-manager": () => <CreditsManager />,
+      "service-app": () => <ServiceApp serviceName="Default Service" />,
+      "debug-console": () => <DebugConsole />,
+      "about-this-desktop": () => <AboutThisDesktopApp />,
     }
+
+    const Component = contentMap[appId as keyof typeof contentMap]
+    return Component ? (
+      <ErrorBoundary fallback={<div className="p-4 text-destructive">Failed to load {appId}</div>}>
+        <Suspense fallback={<LoadingSpinner />}> 
+          <Component />
+        </Suspense>
+      </ErrorBoundary>
+    ) : (
+      <div className="p-4 text-muted-foreground">App not found</div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
   }
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <div className="h-screen w-screen overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 relative">
+      <div className="h-screen w-screen overflow-hidden bg-background relative">
         {/* Menu Bar */}
         <MenuBar />
 
+        {/* Desktop Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5" />
+
         {/* Desktop Icons */}
-        <div className="absolute inset-0 p-4 pt-16">
-          <div className="grid grid-cols-1 gap-4 w-fit">
+        <div className="absolute inset-0 p-4 pt-16 z-base">
+          <div className="grid grid-cols-1 gap-6 w-fit">
             {/* AI & Communication Section */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
-                🤖 AI Assistant
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground/80 px-2 flex items-center gap-2">
+                <span className="text-lg">🤖</span>
+                AI Assistant
               </h3>
               <div className="grid grid-cols-1 gap-2">
                 {getAIApps().map(app => (
-                  <DesktopIcon
-                    key={app.id}
-                    id={app.id}
-                    title={app.title}
-                    onClick={() => {
-                      if (app.requiresAuth && !user) {
-                        openWindow("supabase-login")
-                      } else {
-                        openWindow(app.id)
-                      }
-                    }}
-                    icon={`/images/${app.id}.png`}
-                  />
+                  <div key={app.id}>
+                    <DesktopIcon
+                      id={app.id}
+                      title={app.title}
+                      onClick={() => {
+                        if (app.requiresAuth && !user) {
+                          openWindow("supabase-login")
+                        } else {
+                          openWindow(app.id)
+                        }
+                      }}
+                      icon={`/images/${app.id}.png`}
+                    />
+                  </div>
                 ))}
               </div>
-            </div>
+            </section>
 
             {/* Financial Apps Section */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
-                💰 Financial Management
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground/80 px-2 flex items-center gap-2">
+                <span className="text-lg">💰</span>
+                Financial Management
               </h3>
               <div className="grid grid-cols-1 gap-2">
                 {getFinancialApps().map(app => (
-                  <DesktopIcon
-                    key={app.id}
-                    id={app.id}
-                    title={app.title}
-                    onClick={() => {
-                      if (app.requiresAuth && !user) {
-                        openWindow("supabase-login")
-                      } else {
-                        openWindow(app.id)
-                      }
-                    }}
-                    icon={`/images/${app.id}.png`}
-                  />
+                  <div key={app.id}>
+                    <DesktopIcon
+                      id={app.id}
+                      title={app.title}
+                      onClick={() => {
+                        if (app.requiresAuth && !user) {
+                          openWindow("supabase-login")
+                        } else {
+                          openWindow(app.id)
+                        }
+                      }}
+                      icon={`/images/${app.id}.png`}
+                    />
+                  </div>
                 ))}
               </div>
-            </div>
+            </section>
 
             {/* Tools Section */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
-                🔧 Tools
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground/80 px-2 flex items-center gap-2">
+                <span className="text-lg">🔧</span>
+                Tools
               </h3>
               <div className="grid grid-cols-1 gap-2">
                 {getToolApps().map(app => (
-                  <DesktopIcon
-                    key={app.id}
-                    id={app.id}
-                    title={app.title}
-                    onClick={() => {
-                      if (app.requiresAuth && !user) {
-                        openWindow("supabase-login")
-                      } else {
-                        openWindow(app.id)
-                      }
-                    }}
-                    icon={`/images/${app.id}.png`}
-                  />
+                  <div key={app.id}>
+                    <DesktopIcon
+                      id={app.id}
+                      title={app.title}
+                      onClick={() => {
+                        if (app.requiresAuth && !user) {
+                          openWindow("supabase-login")
+                        } else {
+                          openWindow(app.id)
+                        }
+                      }}
+                      icon={`/images/${app.id}.png`}
+                    />
+                  </div>
                 ))}
               </div>
-            </div>
+            </section>
 
             {/* System Apps Section */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
-                ⚙️ System
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground/80 px-2 flex items-center gap-2">
+                <span className="text-lg">⚙️</span>
+                System
               </h3>
               <div className="grid grid-cols-1 gap-2">
                 {getSystemApps().map(app => (
-                  <DesktopIcon
-                    key={app.id}
-                    id={app.id}
-                    title={app.title}
-                    onClick={() => openWindow(app.id)}
-                    icon={`/images/${app.id}.png`}
-                  />
+                  <div key={app.id}>
+                    <DesktopIcon
+                      id={app.id}
+                      title={app.title}
+                      onClick={() => openWindow(app.id)}
+                      icon={`/images/${app.id}.png`}
+                    />
+                  </div>
                 ))}
               </div>
-            </div>
+            </section>
           </div>
         </div>
 
@@ -249,21 +269,20 @@ export default function Home() {
           if (!appDef) return null
 
           return (
-            <WindowFrame
-              key={win.id}
-              id={win.id}
-              title={appDef.title}
-              x={win.x}
-              y={win.y}
-              width={win.width}
-              height={win.height}
-              minimized={win.minimized}
-              zIndex={win.zIndex}
-              // The close button is handled internally by WindowFrame, no need for separate handler here
-              // The drag and resize handlers are also handled by useWindowManager within WindowFrame
-            >
-              {renderAppContent(win.id as AppId)}
-            </WindowFrame>
+            <div key={win.id}>
+              <WindowFrame
+                id={win.id}
+                title={appDef.title}
+                x={win.x}
+                y={win.y}
+                width={win.width}
+                height={win.height}
+                minimized={win.minimized}
+                zIndex={win.zIndex}
+              >
+                {renderAppContent(win.id as AppId)}
+              </WindowFrame>
+            </div>
             // Remove the manual window div with all the event handlers
             // <div
             //   key={win.id}
@@ -359,10 +378,10 @@ export default function Home() {
           )
         })}
 
-        {/* Taskbar */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 px-4 py-2 z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        {/* Enhanced Taskbar */}
+        <div className="absolute bottom-0 left-0 right-0 glass border-t z-docked">
+          <div className="flex items-center justify-between px-4 py-2">
+            <div className="flex items-center gap-2 overflow-x-auto">
               {windows.filter((w: WindowState) => !w.minimized).map((win: WindowState) => { // Filter for open and non-minimized windows
                 const appDef = appDefinitions.find(app => app.id === (win.id as AppId))
                 if (!appDef) return null
@@ -370,25 +389,25 @@ export default function Home() {
                 return (
                   <button
                     key={win.id}
-                    onClick={() => {
-                      // Use focusWindow, which also unminimizes if needed
-                      focusWindow(win.id)
-                    }}
-                    className={`px-3 py-1 rounded text-sm flex items-center gap-2 ${
-                      activeWindowId === win.id // Highlight if it's the active window
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                        : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
-                    }`}
+                    onClick={() => focusWindow(win.id)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      activeWindowId === win.id
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-muted/50 text-muted-foreground"
+                    )}
                   >
                     <img 
                       src={`/images/${win.id}.png`} 
-                      alt={appDef.title}
+                      alt=""
                       className="w-4 h-4"
                       onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
                         e.currentTarget.style.display = 'none'
                       }}
                     />
-                    {appDef.title}
+                    <span className="truncate max-w-32">{appDef.title}</span>
                   </button>
                 )
               })}
@@ -397,15 +416,14 @@ export default function Home() {
             <div className="flex items-center gap-4">
               <ThemeSwitcher />
               {user && (
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Welcome, {user.email}
+                <div className="text-sm text-muted-foreground">
+                  Welcome, <span className="font-medium">{user.email}</span>
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
-    </ThemeProvider>
   )
 }
 

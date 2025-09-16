@@ -73,6 +73,9 @@
     "zustand": "latest"
   },
   "devDependencies": {
+    "@tailwindcss/aspect-ratio": "^0.4.2",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22",
     "@types/papaparse": "^5.3.14",
     "@types/react": "^18",
@@ -85,4 +88,3 @@
     "typescript": "^5"
   }
 }
-
