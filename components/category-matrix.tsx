@@ -145,6 +145,9 @@ export function CategoryMatrix() {
       if (matrix[transaction.category_id] && newPeriods.includes(period)) {
         matrix[transaction.category_id].values[period] += Number(transaction.amount)
         matrix[transaction.category_id].total += Number(transaction.amount)
+      } else if (!matrix[transaction.category_id]) {
+        // eslint-disable-next-line no-console
+        console.warn(`Transaction ${transaction.id} references missing category ${transaction.category_id}`)
       }
     })
 
@@ -175,23 +178,38 @@ export function CategoryMatrix() {
 
   const getSortedCategories = (): number[] => {
     const categoryIds = Object.keys(matrixData).map(Number)
-    
+
+    const validCategoryIds = categoryIds.filter((id: number) =>
+      Boolean(matrixData[id]) && matrixData[id].categoryName !== undefined
+    )
+
     if (!sortColumn || !sortOrder) {
-      return categoryIds.sort((a, b) => 
-        matrixData[a].categoryName.localeCompare(matrixData[b].categoryName)
-      )
+      return validCategoryIds.sort((a: number, b: number) => {
+        const categoryA = matrixData[a]
+        const categoryB = matrixData[b]
+
+        if (!categoryA || !categoryB) return 0
+        if (!categoryA.categoryName || !categoryB.categoryName) return 0
+
+        return categoryA.categoryName.localeCompare(categoryB.categoryName)
+      })
     }
 
-    return categoryIds.sort((a, b) => {
+    return validCategoryIds.sort((a: number, b: number) => {
+      const dataA = matrixData[a]
+      const dataB = matrixData[b]
+
+      if (!dataA || !dataB) return 0
+
       let valueA: number
       let valueB: number
 
       if (sortColumn === 'total') {
-        valueA = matrixData[a].total
-        valueB = matrixData[b].total
+        valueA = dataA.total || 0
+        valueB = dataB.total || 0
       } else {
-        valueA = matrixData[a].values[sortColumn] || 0
-        valueB = matrixData[b].values[sortColumn] || 0
+        valueA = dataA.values[sortColumn] || 0
+        valueB = dataB.values[sortColumn] || 0
       }
 
       if (sortOrder === 'asc') {
