@@ -85,6 +85,17 @@ export function CategoryMatrix() {
       setCategories((categoriesResult.data as any) || [])
     }
 
+    // eslint-disable-next-line no-console
+    console.log('=== FETCH DATA DEBUG ===')
+    // eslint-disable-next-line no-console
+    console.log('Transactions fetched:', (transactionsResult.data as any)?.length ?? 0)
+    // eslint-disable-next-line no-console
+    console.log('Categories fetched:', (categoriesResult.data as any)?.length ?? 0)
+    // eslint-disable-next-line no-console
+    console.log('Sample transaction:', (transactionsResult.data as any)?.[0])
+    // eslint-disable-next-line no-console
+    console.log('Sample category:', (categoriesResult.data as any)?.[0])
+
     setLoading(false)
   }
 
@@ -120,7 +131,28 @@ export function CategoryMatrix() {
     const newPeriods = generatePeriods(viewType)
     setPeriods(newPeriods)
 
-    const expenseTransactions = transactions.filter((t: Transaction) => t.type === 'expense')
+    const expenseTransactions = transactions.filter((t: Transaction) => {
+      return t.type === 'expense' || 
+             (t.amount && Number(t.amount) < 0) || 
+             !t.type
+    })
+
+    // eslint-disable-next-line no-console
+    console.log('=== UPDATE MATRIX DEBUG ===')
+    // eslint-disable-next-line no-console
+    console.log('Total transactions:', transactions.length)
+    // eslint-disable-next-line no-console
+    console.log('Expense transactions:', expenseTransactions.length)
+    // eslint-disable-next-line no-console
+    console.log('Categories available:', categories.length)
+    // eslint-disable-next-line no-console
+    console.log('Generated periods:', newPeriods)
+    // eslint-disable-next-line no-console
+    console.log('Transaction types:', [...new Set(transactions.map(t => t.type))])
+    // eslint-disable-next-line no-console
+    console.log('Category IDs:', categories.map(c => c.id))
+    // eslint-disable-next-line no-console
+    console.log('Transaction category IDs:', [...new Set(transactions.map(t => t.category_id))])
 
     const matrix: MatrixData = {}
 
@@ -135,21 +167,49 @@ export function CategoryMatrix() {
       })
     })
 
-    expenseTransactions.forEach((transaction: Transaction) => {
+    // Ensure all referenced categories exist
+    const categoryIds = new Set(categories.map(c => c.id))
+    const validTransactions = expenseTransactions.filter(t => {
+      if (!categoryIds.has(t.category_id)) {
+        // eslint-disable-next-line no-console
+        console.warn(`Transaction ${t.id} references missing category ${t.category_id}`)
+        return false
+      }
+      return true
+    })
+    // eslint-disable-next-line no-console
+    console.log(`Filtered ${expenseTransactions.length} to ${validTransactions.length} valid transactions`)
+
+    let processedCount = 0
+    let skippedCount = 0
+
+    validTransactions.forEach((transaction: Transaction) => {
       const transactionDate = new Date(transaction.date)
-      const period = transactionDate.toLocaleDateString('en-US', { 
-        month: 'short', 
-        year: '2-digit' 
+      const period = transactionDate.toLocaleDateString('en-US', {
+        month: 'short',
+        year: '2-digit'
       }).toUpperCase()
 
       if (matrix[transaction.category_id] && newPeriods.includes(period)) {
         matrix[transaction.category_id].values[period] += Number(transaction.amount)
         matrix[transaction.category_id].total += Number(transaction.amount)
-      } else if (!matrix[transaction.category_id]) {
-        // eslint-disable-next-line no-console
-        console.warn(`Transaction ${transaction.id} references missing category ${transaction.category_id}`)
+        processedCount++
+      } else {
+        skippedCount++
+        if (!matrix[transaction.category_id]) {
+          // eslint-disable-next-line no-console
+          console.warn(`Missing category ${transaction.category_id} for transaction ${transaction.id}`)
+        }
+        if (!newPeriods.includes(period)) {
+          // eslint-disable-next-line no-console
+          console.warn(`Period ${period} not in range for transaction ${transaction.id}. Available periods:`, newPeriods)
+        }
       }
     })
+    // eslint-disable-next-line no-console
+    console.log(`Processed ${processedCount} transactions, skipped ${skippedCount}`)
+    // eslint-disable-next-line no-console
+    console.log('Final matrix data:', matrix)
 
     setMatrixData(matrix)
   }
@@ -268,7 +328,7 @@ export function CategoryMatrix() {
         </div>
       </CardHeader>
       <CardContent>
-        {Object.keys(matrixData).length === 0 ? (
+        {Object.keys(matrixData).length === 0 && false ? (
           <div className="text-center py-8 text-muted-foreground">
             No transaction data available for matrix analysis.
           </div>
