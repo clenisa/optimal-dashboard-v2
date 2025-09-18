@@ -9,14 +9,14 @@ import { ChevronUp, ChevronDown, BarChart3 } from "lucide-react"
 
 interface Transaction {
   id: number
-  category_id: number
+  category_id: string
   amount: number
   date: string
   type: 'income' | 'expense' | 'transfer'
 }
 
 interface Category {
-  id: number
+  id: string
   name: string
   color: string
 }
@@ -28,7 +28,7 @@ interface CategoryPeriodData {
 }
 
 interface MatrixData {
-  [categoryId: number]: CategoryPeriodData
+  [categoryId: string]: CategoryPeriodData
 }
 
 type ViewType = '6months' | '12months' | 'currentYear'
@@ -236,16 +236,16 @@ export function CategoryMatrix() {
     }
   }
 
-  const getSortedCategories = (): number[] => {
+  const getSortedCategories = (): string[] => {
     // eslint-disable-next-line no-console
     console.log('getSortedCategories() called with sortColumn/sortOrder:', sortColumn, sortOrder)
-    const categoryIds = Object.keys(matrixData).map(Number)
+    const categoryIds = Object.keys(matrixData)
     // eslint-disable-next-line no-console
     console.log('getSortedCategories() matrixData keys:', categoryIds)
     // eslint-disable-next-line no-console
     if (categoryIds.length > 0) console.log('getSortedCategories() sample entry:', categoryIds[0], matrixData[categoryIds[0]])
 
-    const validCategoryIds = categoryIds.filter((id: number) => {
+    const validCategoryIds = categoryIds.filter((id: string) => {
       const exists = Boolean(matrixData[id])
       const hasName = exists && matrixData[id].categoryName !== undefined
       if (!exists || !hasName) {
@@ -262,7 +262,7 @@ export function CategoryMatrix() {
       // eslint-disable-next-line no-console
       console.log('getSortedCategories() default sort by name')
       const before = [...validCategoryIds]
-      const result = validCategoryIds.sort((a: number, b: number) => {
+      const result = validCategoryIds.sort((a: string, b: string) => {
         const categoryA = matrixData[a]
         const categoryB = matrixData[b]
 
@@ -281,7 +281,7 @@ export function CategoryMatrix() {
     // eslint-disable-next-line no-console
     console.log('getSortedCategories() values pre-sort:', validCategoryIds.map(id => ({ id, value: sortColumn === 'total' ? (matrixData[id]?.total || 0) : (matrixData[id]?.values?.[sortColumn] || 0) })))
 
-    const sorted = validCategoryIds.sort((a: number, b: number) => {
+    const sorted = validCategoryIds.sort((a: string, b: string) => {
       const dataA = matrixData[a]
       const dataB = matrixData[b]
 
@@ -410,7 +410,7 @@ export function CategoryMatrix() {
                   ))}
                   <td className="p-3 text-center font-mono text-sm font-medium">TEST TOTAL</td>
                 </tr>
-                {sortedCategoryIds.map(categoryId => {
+                {sortedCategoryIds.map((categoryId: string) => {
                   const categoryData = matrixData[categoryId]
                   // eslint-disable-next-line no-console
                   console.log('Rendering row for categoryId:', categoryId, 'data:', categoryData)
