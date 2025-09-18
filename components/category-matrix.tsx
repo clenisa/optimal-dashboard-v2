@@ -237,14 +237,32 @@ export function CategoryMatrix() {
   }
 
   const getSortedCategories = (): number[] => {
+    // eslint-disable-next-line no-console
+    console.log('getSortedCategories() called with sortColumn/sortOrder:', sortColumn, sortOrder)
     const categoryIds = Object.keys(matrixData).map(Number)
+    // eslint-disable-next-line no-console
+    console.log('getSortedCategories() matrixData keys:', categoryIds)
+    // eslint-disable-next-line no-console
+    if (categoryIds.length > 0) console.log('getSortedCategories() sample entry:', categoryIds[0], matrixData[categoryIds[0]])
 
-    const validCategoryIds = categoryIds.filter((id: number) =>
-      Boolean(matrixData[id]) && matrixData[id].categoryName !== undefined
-    )
+    const validCategoryIds = categoryIds.filter((id: number) => {
+      const exists = Boolean(matrixData[id])
+      const hasName = exists && matrixData[id].categoryName !== undefined
+      if (!exists || !hasName) {
+        // eslint-disable-next-line no-console
+        console.warn('Excluding category id', id, 'exists:', exists, 'hasName:', hasName)
+      }
+      return exists && hasName
+    })
+
+    // eslint-disable-next-line no-console
+    console.log('getSortedCategories() validCategoryIds:', validCategoryIds)
 
     if (!sortColumn || !sortOrder) {
-      return validCategoryIds.sort((a: number, b: number) => {
+      // eslint-disable-next-line no-console
+      console.log('getSortedCategories() default sort by name')
+      const before = [...validCategoryIds]
+      const result = validCategoryIds.sort((a: number, b: number) => {
         const categoryA = matrixData[a]
         const categoryB = matrixData[b]
 
@@ -253,9 +271,17 @@ export function CategoryMatrix() {
 
         return categoryA.categoryName.localeCompare(categoryB.categoryName)
       })
+      // eslint-disable-next-line no-console
+      console.log('getSortedCategories() sort result:', result.map(id => ({ id, name: matrixData[id]?.categoryName })), 'before:', before)
+      return result
     }
 
-    return validCategoryIds.sort((a: number, b: number) => {
+    // eslint-disable-next-line no-console
+    console.log('getSortedCategories() sorting by', sortColumn, sortOrder)
+    // eslint-disable-next-line no-console
+    console.log('getSortedCategories() values pre-sort:', validCategoryIds.map(id => ({ id, value: sortColumn === 'total' ? (matrixData[id]?.total || 0) : (matrixData[id]?.values?.[sortColumn] || 0) })))
+
+    const sorted = validCategoryIds.sort((a: number, b: number) => {
       const dataA = matrixData[a]
       const dataB = matrixData[b]
 
@@ -278,6 +304,10 @@ export function CategoryMatrix() {
         return valueB - valueA
       }
     })
+
+    // eslint-disable-next-line no-console
+    console.log('getSortedCategories() values post-sort:', sorted.map(id => ({ id, value: sortColumn === 'total' ? (matrixData[id]?.total || 0) : (matrixData[id]?.values?.[sortColumn] || 0) })))
+    return sorted
   }
 
   const getSortIcon = (column: string) => {
@@ -367,10 +397,33 @@ export function CategoryMatrix() {
                 </tr>
               </thead>
               <tbody>
+                {/* Debug: show if tbody renders */}
+                {/* eslint-disable-next-line no-console */}
+                {console.log('Table body render start. Row candidates:', sortedCategoryIds)}
+                {/* Temporary test row to verify structure */}
+                <tr key="test-row" className="border-b bg-muted/20">
+                  <td className="p-3 font-medium">TEST ROW</td>
+                  {periods.map((period: string) => (
+                    <td key={`test-${period}`} className="p-3 text-center font-mono text-sm">
+                      TEST
+                    </td>
+                  ))}
+                  <td className="p-3 text-center font-mono text-sm font-medium">TEST TOTAL</td>
+                </tr>
                 {sortedCategoryIds.map(categoryId => {
                   const categoryData = matrixData[categoryId]
-                  if (categoryData.total === 0) return null
-                  
+                  // eslint-disable-next-line no-console
+                  console.log('Rendering row for categoryId:', categoryId, 'data:', categoryData)
+                  if (!categoryData) {
+                    // eslint-disable-next-line no-console
+                    console.warn('Missing categoryData for id', categoryId)
+                    return null
+                  }
+                  if (categoryData.total === 0) {
+                    // eslint-disable-next-line no-console
+                    console.log('Skipping categoryId due to zero total:', categoryId)
+                    return null
+                  }
                   return (
                     <tr key={categoryId} className="border-b hover:bg-muted/50">
                       <td className="p-3 font-medium">{categoryData.categoryName}</td>
