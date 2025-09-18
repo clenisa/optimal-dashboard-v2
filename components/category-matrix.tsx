@@ -303,6 +303,8 @@ export function CategoryMatrix() {
   }
 
   const sortedCategoryIds = getSortedCategories()
+  // eslint-disable-next-line no-console
+  console.log('Rendering Category Matrix with sortedCategoryIds:', sortedCategoryIds)
 
   return (
     <Card>
@@ -328,13 +330,13 @@ export function CategoryMatrix() {
         </div>
       </CardHeader>
       <CardContent>
-        {Object.keys(matrixData).length === 0 && false ? (
+        {false ? (
           <div className="text-center py-8 text-muted-foreground">
             No transaction data available for matrix analysis.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table key={`matrix-${Object.keys(matrixData).length}-${JSON.stringify(periods)}`} className="w-full border-collapse">
               <thead>
                 <tr className="border-b">
                   <th className="text-left p-3 font-medium">Category</th>
