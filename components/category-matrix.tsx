@@ -9,14 +9,14 @@ import { ChevronUp, ChevronDown, BarChart3 } from "lucide-react"
 
 interface Transaction {
   id: number
-  category_id: number
+  category_id: string
   amount: number
   date: string
   type: 'income' | 'expense' | 'transfer'
 }
 
 interface Category {
-  id: number
+  id: string
   name: string
   color: string
 }
@@ -28,7 +28,7 @@ interface CategoryPeriodData {
 }
 
 interface MatrixData {
-  [categoryId: number]: CategoryPeriodData
+  [categoryId: string]: CategoryPeriodData
 }
 
 type ViewType = '6months' | '12months' | 'currentYear'
@@ -85,6 +85,17 @@ export function CategoryMatrix() {
       setCategories((categoriesResult.data as any) || [])
     }
 
+    // eslint-disable-next-line no-console
+    console.log('=== FETCH DATA DEBUG ===')
+    // eslint-disable-next-line no-console
+    console.log('Transactions fetched:', (transactionsResult.data as any)?.length ?? 0)
+    // eslint-disable-next-line no-console
+    console.log('Categories fetched:', (categoriesResult.data as any)?.length ?? 0)
+    // eslint-disable-next-line no-console
+    console.log('Sample transaction:', (transactionsResult.data as any)?.[0])
+    // eslint-disable-next-line no-console
+    console.log('Sample category:', (categoriesResult.data as any)?.[0])
+
     setLoading(false)
   }
 
@@ -120,7 +131,28 @@ export function CategoryMatrix() {
     const newPeriods = generatePeriods(viewType)
     setPeriods(newPeriods)
 
-    const expenseTransactions = transactions.filter((t: Transaction) => t.type === 'expense')
+    const expenseTransactions = transactions.filter((t: Transaction) => {
+      return t.type === 'expense' || 
+             (t.amount && Number(t.amount) < 0) || 
+             !t.type
+    })
+
+    // eslint-disable-next-line no-console
+    console.log('=== UPDATE MATRIX DEBUG ===')
+    // eslint-disable-next-line no-console
+    console.log('Total transactions:', transactions.length)
+    // eslint-disable-next-line no-console
+    console.log('Expense transactions:', expenseTransactions.length)
+    // eslint-disable-next-line no-console
+    console.log('Categories available:', categories.length)
+    // eslint-disable-next-line no-console
+    console.log('Generated periods:', newPeriods)
+    // eslint-disable-next-line no-console
+    console.log('Transaction types:', [...new Set(transactions.map(t => t.type))])
+    // eslint-disable-next-line no-console
+    console.log('Category IDs:', categories.map(c => c.id))
+    // eslint-disable-next-line no-console
+    console.log('Transaction category IDs:', [...new Set(transactions.map(t => t.category_id))])
 
     const matrix: MatrixData = {}
 
@@ -135,21 +167,49 @@ export function CategoryMatrix() {
       })
     })
 
-    expenseTransactions.forEach((transaction: Transaction) => {
+    // Ensure all referenced categories exist
+    const categoryIds = new Set(categories.map(c => c.id))
+    const validTransactions = expenseTransactions.filter(t => {
+      if (!categoryIds.has(t.category_id)) {
+        // eslint-disable-next-line no-console
+        console.warn(`Transaction ${t.id} references missing category ${t.category_id}`)
+        return false
+      }
+      return true
+    })
+    // eslint-disable-next-line no-console
+    console.log(`Filtered ${expenseTransactions.length} to ${validTransactions.length} valid transactions`)
+
+    let processedCount = 0
+    let skippedCount = 0
+
+    validTransactions.forEach((transaction: Transaction) => {
       const transactionDate = new Date(transaction.date)
-      const period = transactionDate.toLocaleDateString('en-US', { 
-        month: 'short', 
-        year: '2-digit' 
+      const period = transactionDate.toLocaleDateString('en-US', {
+        month: 'short',
+        year: '2-digit'
       }).toUpperCase()
 
       if (matrix[transaction.category_id] && newPeriods.includes(period)) {
         matrix[transaction.category_id].values[period] += Number(transaction.amount)
         matrix[transaction.category_id].total += Number(transaction.amount)
-      } else if (!matrix[transaction.category_id]) {
-        // eslint-disable-next-line no-console
-        console.warn(`Transaction ${transaction.id} references missing category ${transaction.category_id}`)
+        processedCount++
+      } else {
+        skippedCount++
+        if (!matrix[transaction.category_id]) {
+          // eslint-disable-next-line no-console
+          console.warn(`Missing category ${transaction.category_id} for transaction ${transaction.id}`)
+        }
+        if (!newPeriods.includes(period)) {
+          // eslint-disable-next-line no-console
+          console.warn(`Period ${period} not in range for transaction ${transaction.id}. Available periods:`, newPeriods)
+        }
       }
     })
+    // eslint-disable-next-line no-console
+    console.log(`Processed ${processedCount} transactions, skipped ${skippedCount}`)
+    // eslint-disable-next-line no-console
+    console.log('Final matrix data:', matrix)
 
     setMatrixData(matrix)
   }
@@ -176,15 +236,33 @@ export function CategoryMatrix() {
     }
   }
 
-  const getSortedCategories = (): number[] => {
-    const categoryIds = Object.keys(matrixData).map(Number)
+  const getSortedCategories = (): string[] => {
+    // eslint-disable-next-line no-console
+    console.log('getSortedCategories() called with sortColumn/sortOrder:', sortColumn, sortOrder)
+    const categoryIds = Object.keys(matrixData)
+    // eslint-disable-next-line no-console
+    console.log('getSortedCategories() matrixData keys:', categoryIds)
+    // eslint-disable-next-line no-console
+    if (categoryIds.length > 0) console.log('getSortedCategories() sample entry:', categoryIds[0], matrixData[categoryIds[0]])
 
-    const validCategoryIds = categoryIds.filter((id: number) =>
-      Boolean(matrixData[id]) && matrixData[id].categoryName !== undefined
-    )
+    const validCategoryIds = categoryIds.filter((id: string) => {
+      const exists = Boolean(matrixData[id])
+      const hasName = exists && matrixData[id].categoryName !== undefined
+      if (!exists || !hasName) {
+        // eslint-disable-next-line no-console
+        console.warn('Excluding category id', id, 'exists:', exists, 'hasName:', hasName)
+      }
+      return exists && hasName
+    })
+
+    // eslint-disable-next-line no-console
+    console.log('getSortedCategories() validCategoryIds:', validCategoryIds)
 
     if (!sortColumn || !sortOrder) {
-      return validCategoryIds.sort((a: number, b: number) => {
+      // eslint-disable-next-line no-console
+      console.log('getSortedCategories() default sort by name')
+      const before = [...validCategoryIds]
+      const result = validCategoryIds.sort((a: string, b: string) => {
         const categoryA = matrixData[a]
         const categoryB = matrixData[b]
 
@@ -193,9 +271,17 @@ export function CategoryMatrix() {
 
         return categoryA.categoryName.localeCompare(categoryB.categoryName)
       })
+      // eslint-disable-next-line no-console
+      console.log('getSortedCategories() sort result:', result.map(id => ({ id, name: matrixData[id]?.categoryName })), 'before:', before)
+      return result
     }
 
-    return validCategoryIds.sort((a: number, b: number) => {
+    // eslint-disable-next-line no-console
+    console.log('getSortedCategories() sorting by', sortColumn, sortOrder)
+    // eslint-disable-next-line no-console
+    console.log('getSortedCategories() values pre-sort:', validCategoryIds.map(id => ({ id, value: sortColumn === 'total' ? (matrixData[id]?.total || 0) : (matrixData[id]?.values?.[sortColumn] || 0) })))
+
+    const sorted = validCategoryIds.sort((a: string, b: string) => {
       const dataA = matrixData[a]
       const dataB = matrixData[b]
 
@@ -218,6 +304,10 @@ export function CategoryMatrix() {
         return valueB - valueA
       }
     })
+
+    // eslint-disable-next-line no-console
+    console.log('getSortedCategories() values post-sort:', sorted.map(id => ({ id, value: sortColumn === 'total' ? (matrixData[id]?.total || 0) : (matrixData[id]?.values?.[sortColumn] || 0) })))
+    return sorted
   }
 
   const getSortIcon = (column: string) => {
@@ -243,6 +333,8 @@ export function CategoryMatrix() {
   }
 
   const sortedCategoryIds = getSortedCategories()
+  // eslint-disable-next-line no-console
+  console.log('Rendering Category Matrix with sortedCategoryIds:', sortedCategoryIds)
 
   return (
     <Card>
@@ -268,13 +360,13 @@ export function CategoryMatrix() {
         </div>
       </CardHeader>
       <CardContent>
-        {Object.keys(matrixData).length === 0 ? (
+        {false ? (
           <div className="text-center py-8 text-muted-foreground">
             No transaction data available for matrix analysis.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table key={`matrix-${Object.keys(matrixData).length}-${JSON.stringify(periods)}`} className="w-full border-collapse">
               <thead>
                 <tr className="border-b">
                   <th className="text-left p-3 font-medium">Category</th>
@@ -305,10 +397,33 @@ export function CategoryMatrix() {
                 </tr>
               </thead>
               <tbody>
-                {sortedCategoryIds.map(categoryId => {
+                {/* Debug: show if tbody renders */}
+                {/* eslint-disable-next-line no-console */}
+                {console.log('Table body render start. Row candidates:', sortedCategoryIds)}
+                {/* Temporary test row to verify structure */}
+                <tr key="test-row" className="border-b bg-muted/20">
+                  <td className="p-3 font-medium">TEST ROW</td>
+                  {periods.map((period: string) => (
+                    <td key={`test-${period}`} className="p-3 text-center font-mono text-sm">
+                      TEST
+                    </td>
+                  ))}
+                  <td className="p-3 text-center font-mono text-sm font-medium">TEST TOTAL</td>
+                </tr>
+                {sortedCategoryIds.map((categoryId: string) => {
                   const categoryData = matrixData[categoryId]
-                  if (categoryData.total === 0) return null
-                  
+                  // eslint-disable-next-line no-console
+                  console.log('Rendering row for categoryId:', categoryId, 'data:', categoryData)
+                  if (!categoryData) {
+                    // eslint-disable-next-line no-console
+                    console.warn('Missing categoryData for id', categoryId)
+                    return null
+                  }
+                  if (categoryData.total === 0) {
+                    // eslint-disable-next-line no-console
+                    console.log('Skipping categoryId due to zero total:', categoryId)
+                    return null
+                  }
                   return (
                     <tr key={categoryId} className="border-b hover:bg-muted/50">
                       <td className="p-3 font-medium">{categoryData.categoryName}</td>
