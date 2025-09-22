@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Trash2, Edit, PlusCircle, CreditCard, Wallet } from "lucide-react"
-import { useUser } from "@supabase/auth-helpers-react"
+import { useAuthState } from "@/hooks/use-auth-state"
 
 interface PaymentSource {
   id: number
@@ -40,18 +40,20 @@ export function PaymentSourceEditor() {
   })
 
   const supabase = createClient()
-  const user = useUser()
+  const { user } = useAuthState()
 
   useEffect(() => {
-    if (!user) {
+    if (!supabase || !user) {
+      setLoading(false)
       return
     }
 
     fetchPaymentSources()
-  }, [user])
+  }, [supabase, user])
 
   const fetchPaymentSources = async () => {
-    if (!user) {
+    if (!supabase || !user) {
+      setLoading(false)
       return
     }
 
@@ -129,6 +131,11 @@ export function PaymentSourceEditor() {
   }
 
   const handleSubmit = async () => {
+    if (!supabase) {
+      alert("Unable to connect to the database. Please try again later.")
+      return
+    }
+
     if (!user) {
       alert("Authentication required. Please log in again.")
       return
@@ -244,7 +251,14 @@ export function PaymentSourceEditor() {
       return
     }
 
-    const { error } = await supabase.from("sources").delete().eq("id", id)
+    if (!supabase) {
+      alert("Unable to connect to the database. Please try again later.")
+      return
+    }
+
+    const query = supabase.from("sources").delete().eq("id", id)
+
+    const { error } = await (user ? query.eq("user_id", user.id) : query)
 
     if (error) {
       console.error("Error deleting payment source:", error)
