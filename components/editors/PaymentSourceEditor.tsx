@@ -11,15 +11,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Trash2, Edit, PlusCircle, CreditCard, Wallet } from "lucide-react"
+import { useUser } from "@supabase/auth-helpers-react"
 
 interface PaymentSource {
   id: number
   name: string
   type: "credit" | "debit"
-  current_balance: number
-  max_balance: number
-  interest_rate: number
-  notes?: string
+  current_balance: number | null
+  max_balance: number | null
+  interest_rate: number | null
+  notes?: string | null
 }
 
 export function PaymentSourceEditor() {
@@ -32,21 +33,34 @@ export function PaymentSourceEditor() {
   const [formData, setFormData] = useState({
     name: "",
     type: "debit" as "credit" | "debit",
-    current_balance: 0,
-    max_balance: 0,
-    interest_rate: 0,
+    current_balance: "",
+    max_balance: "",
+    interest_rate: "",
     notes: ""
   })
 
   const supabase = createClient()
+  const user = useUser()
 
   useEffect(() => {
+    if (!user) {
+      return
+    }
+
     fetchPaymentSources()
-  }, [])
+  }, [user])
 
   const fetchPaymentSources = async () => {
+    if (!user) {
+      return
+    }
+
     setLoading(true)
-    const { data, error } = await supabase.from("sources").select("*").order("name")
+    const { data, error } = await supabase
+      .from("sources")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("name")
     if (error) {
       console.error("Error fetching payment sources:", error)
     } else {
@@ -56,12 +70,15 @@ export function PaymentSourceEditor() {
   }
 
   const calculateAvailableBalance = (source: PaymentSource): number => {
+    const currentBalance = source.current_balance ?? 0
+    const maxBalance = source.max_balance ?? 0
+
     if (source.type === "credit") {
       // For credit cards: available = credit limit - current debt
-      return source.max_balance - source.current_balance
+      return maxBalance - currentBalance
     } else {
       // For debit cards: available = current balance
-      return source.current_balance
+      return currentBalance
     }
   }
 
@@ -76,9 +93,9 @@ export function PaymentSourceEditor() {
     setFormData({
       name: "",
       type: "debit",
-      current_balance: 0,
-      max_balance: 0,
-      interest_rate: 0,
+      current_balance: "",
+      max_balance: "",
+      interest_rate: "",
       notes: ""
     })
     setEditingSource(null)
@@ -93,9 +110,18 @@ export function PaymentSourceEditor() {
     setFormData({
       name: source.name,
       type: source.type,
-      current_balance: source.current_balance,
-      max_balance: source.max_balance,
-      interest_rate: source.interest_rate,
+      current_balance:
+        source.current_balance !== null && source.current_balance !== undefined
+          ? source.current_balance.toString()
+          : "",
+      max_balance:
+        source.max_balance !== null && source.max_balance !== undefined
+          ? source.max_balance.toString()
+          : "",
+      interest_rate:
+        source.interest_rate !== null && source.interest_rate !== undefined
+          ? source.interest_rate.toString()
+          : "",
       notes: source.notes || ""
     })
     setEditingSource(source)
@@ -103,38 +129,85 @@ export function PaymentSourceEditor() {
   }
 
   const handleSubmit = async () => {
+    if (!user) {
+      alert("Authentication required. Please log in again.")
+      return
+    }
+
+    // Validate required fields
     if (!formData.name.trim()) {
-      alert("Please enter a name for the payment source.")
+      alert("Please enter a source name")
+      return
+    }
+
+    // Validate numeric fields
+    if (formData.current_balance && isNaN(parseFloat(formData.current_balance))) {
+      alert("Current balance must be a valid number")
+      return
+    }
+
+    if (formData.max_balance && isNaN(parseFloat(formData.max_balance))) {
+      alert("Maximum balance must be a valid number")
+      return
+    }
+
+    if (formData.interest_rate && isNaN(parseFloat(formData.interest_rate))) {
+      alert("Interest rate must be a valid number")
+      return
+    }
+
+    // Validate editingSource for updates
+    if (editingSource && !editingSource.id) {
+      alert("Invalid source selected for editing")
       return
     }
 
     const sourceData = {
       name: formData.name.trim(),
       type: formData.type,
-      current_balance: formData.current_balance,
-      max_balance: formData.max_balance,
-      interest_rate: formData.interest_rate,
-      notes: formData.notes.trim() || null
+      current_balance:
+        formData.current_balance === "" ? null : parseFloat(formData.current_balance),
+      max_balance: formData.max_balance === "" ? null : parseFloat(formData.max_balance),
+      interest_rate:
+        formData.interest_rate === "" ? null : parseFloat(formData.interest_rate),
+      notes: formData.notes.trim() || null,
+      user_id: user.id
     }
 
-    if (editingSource) {
+    if (editingSource && editingSource.id) {
       // Update existing source
       const { data, error } = await supabase
         .from("sources")
         .update(sourceData)
         .eq("id", editingSource.id)
+        .eq("user_id", user.id)
         .select()
 
       if (error) {
-        console.error("Error updating payment source:", error)
-        alert("Error updating payment source. Please try again.")
-      } else if (data) {
-        setPaymentSources(
-          paymentSources.map((source: PaymentSource) => (source.id === editingSource.id ? data[0] : source))
-        )
-        setIsDialogOpen(false)
-        resetForm()
+        console.error("Error saving source:", error)
+        console.error("Error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        alert(`Error saving source: ${error.message}`)
+        return
       }
+
+      if (!data || data.length === 0) {
+        console.error("No data returned from save operation")
+        alert("Save operation completed but no data was returned")
+        return
+      }
+
+      setPaymentSources(
+        paymentSources.map((source: PaymentSource) =>
+          source.id === editingSource.id ? (data[0] as PaymentSource) : source
+        )
+      )
+      setIsDialogOpen(false)
+      resetForm()
     } else {
       // Add new source
       const { data, error } = await supabase
@@ -143,13 +216,26 @@ export function PaymentSourceEditor() {
         .select()
 
       if (error) {
-        console.error("Error adding payment source:", error)
-        alert("Error adding payment source. Please try again.")
-      } else if (data) {
-        setPaymentSources([...paymentSources, data[0] as PaymentSource])
-        setIsDialogOpen(false)
-        resetForm()
+        console.error("Error saving source:", error)
+        console.error("Error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        alert(`Error saving source: ${error.message}`)
+        return
       }
+
+      if (!data || data.length === 0) {
+        console.error("No data returned from save operation")
+        alert("Save operation completed but no data was returned")
+        return
+      }
+
+      setPaymentSources([...paymentSources, data[0] as PaymentSource])
+      setIsDialogOpen(false)
+      resetForm()
     }
   }
 
@@ -224,7 +310,7 @@ export function PaymentSourceEditor() {
                       </span>
                       {source.type === 'credit' && (
                         <span className="text-xs text-muted-foreground">
-                          Limit: {formatCurrency(source.max_balance)}
+                          Limit: {formatCurrency(source.max_balance ?? 0)}
                         </span>
                       )}
                     </div>
@@ -294,7 +380,9 @@ export function PaymentSourceEditor() {
                   type="number"
                   step="0.01"
                   value={formData.current_balance}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, current_balance: parseFloat(e.target.value) || 0 })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, current_balance: e.target.value })
+                  }
                   placeholder="0.00"
                 />
               </div>
@@ -308,7 +396,9 @@ export function PaymentSourceEditor() {
                   type="number"
                   step="0.01"
                   value={formData.max_balance}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, max_balance: parseFloat(e.target.value) || 0 })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, max_balance: e.target.value })
+                  }
                   placeholder="0.00"
                 />
               </div>
@@ -320,7 +410,9 @@ export function PaymentSourceEditor() {
                   type="number"
                   step="0.01"
                   value={formData.interest_rate}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, interest_rate: parseFloat(e.target.value) || 0 })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, interest_rate: e.target.value })
+                  }
                   placeholder="0.00"
                 />
               </div>
