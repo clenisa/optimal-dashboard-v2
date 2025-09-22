@@ -400,16 +400,6 @@ export function CategoryMatrix() {
                 {/* Debug: show if tbody renders */}
                 {/* eslint-disable-next-line no-console */}
                 {console.log('Table body render start. Row candidates:', sortedCategoryIds)}
-                {/* Temporary test row to verify structure */}
-                <tr key="test-row" className="border-b bg-muted/20">
-                  <td className="p-3 font-medium">TEST ROW</td>
-                  {periods.map((period: string) => (
-                    <td key={`test-${period}`} className="p-3 text-center font-mono text-sm">
-                      TEST
-                    </td>
-                  ))}
-                  <td className="p-3 text-center font-mono text-sm font-medium">TEST TOTAL</td>
-                </tr>
                 {sortedCategoryIds.map((categoryId: string) => {
                   const categoryData = matrixData[categoryId]
                   // eslint-disable-next-line no-console
