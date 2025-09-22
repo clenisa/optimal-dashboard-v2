@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Trash2, Edit, PlusCircle, CreditCard, Wallet } from "lucide-react"
 import { useAuthState } from "@/hooks/use-auth-state"
 
@@ -20,7 +19,6 @@ interface PaymentSource {
   current_balance: number | null
   max_balance: number | null
   interest_rate: number | null
-  notes?: string | null
 }
 
 export function PaymentSourceEditor() {
@@ -35,8 +33,7 @@ export function PaymentSourceEditor() {
     type: "debit" as "credit" | "debit",
     current_balance: "",
     max_balance: "",
-    interest_rate: "",
-    notes: ""
+    interest_rate: ""
   })
 
   const supabase = createClient()
@@ -97,8 +94,7 @@ export function PaymentSourceEditor() {
       type: "debit",
       current_balance: "",
       max_balance: "",
-      interest_rate: "",
-      notes: ""
+      interest_rate: ""
     })
     setEditingSource(null)
   }
@@ -123,8 +119,7 @@ export function PaymentSourceEditor() {
       interest_rate:
         source.interest_rate !== null && source.interest_rate !== undefined
           ? source.interest_rate.toString()
-          : "",
-      notes: source.notes || ""
+          : ""
     })
     setEditingSource(source)
     setIsDialogOpen(true)
@@ -177,7 +172,6 @@ export function PaymentSourceEditor() {
       max_balance: formData.max_balance === "" ? null : parseFloat(formData.max_balance),
       interest_rate:
         formData.interest_rate === "" ? null : parseFloat(formData.interest_rate),
-      notes: formData.notes.trim() || null,
       user_id: user.id
     }
 
@@ -431,16 +425,6 @@ export function PaymentSourceEditor() {
                 />
               </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="notes">Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Additional notes about this payment source..."
-                  rows={3}
-                />
-              </div>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
