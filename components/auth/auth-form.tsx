@@ -15,7 +15,10 @@ export function AuthForm({ onError }: AuthFormProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
-  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : "/auth/callback"
+  const redirectTo =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/auth/callback`
+      : "/auth/callback"
 
   useEffect(() => {
     authLogger.log("AuthForm mounted. Redirect URL set to:", { redirectTo })
