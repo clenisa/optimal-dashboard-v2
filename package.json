@@ -49,6 +49,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^0.2.0",
     "date-fns": "^3.3.1",
+    "date-fns-tz": "^3.2.0",
     "embla-carousel-react": "latest",
     "immer": "^10.0.3",
     "input-otp": "^1.0.1",
@@ -85,4 +86,3 @@
     "typescript": "^5"
   }
 }
-
