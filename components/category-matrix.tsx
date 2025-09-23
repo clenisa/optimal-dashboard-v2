@@ -4,22 +4,9 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { createClient } from "@/lib/supabase-client"
 import { ChevronUp, ChevronDown, BarChart3 } from "lucide-react"
-
-interface Transaction {
-  id: number
-  category_id: string
-  amount: number
-  date: string
-  type: 'income' | 'expense' | 'transfer'
-}
-
-interface Category {
-  id: string
-  name: string
-  color: string
-}
+import { useFinancialData } from '@/hooks/useFinancialData'
+import type { CategoryData, TransactionData } from '@/lib/chart-data'
 
 interface CategoryPeriodData {
   values: Record<string, number>
@@ -28,76 +15,25 @@ interface CategoryPeriodData {
 }
 
 interface MatrixData {
-  [categoryId: string]: CategoryPeriodData
+  [categoryName: string]: CategoryPeriodData
 }
 
 type ViewType = '6months' | '12months' | 'currentYear'
 type SortOrder = 'asc' | 'desc' | null
 
 export function CategoryMatrix() {
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
+  const { transactions, categories, loading, error } = useFinancialData()
   const [matrixData, setMatrixData] = useState<MatrixData>({})
   const [periods, setPeriods] = useState<string[]>([])
   const [viewType, setViewType] = useState<ViewType>('6months')
-  const [loading, setLoading] = useState(true)
   const [sortColumn, setSortColumn] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<SortOrder>(null)
-
-  useEffect(() => {
-    fetchData()
-  }, [])
 
   useEffect(() => {
     if (transactions.length > 0 && categories.length > 0) {
       updateMatrix()
     }
   }, [transactions, categories, viewType])
-
-  const fetchData = async () => {
-    setLoading(true)
-    const supabase = createClient()
-    if (!supabase) {
-      setTransactions([])
-      setCategories([])
-      setLoading(false)
-      return
-    }
-    
-    const [transactionsResult, categoriesResult] = await Promise.all([
-      supabase.from("transactions").select("id,category_id,amount,date,type"),
-      supabase.from("categories").select("id,name,color")
-    ])
-
-    if (transactionsResult.error) {
-      // eslint-disable-next-line no-console
-      console.error("Error fetching transactions:", transactionsResult.error)
-      setTransactions([])
-    } else {
-      setTransactions((transactionsResult.data as any) || [])
-    }
-
-    if (categoriesResult.error) {
-      // eslint-disable-next-line no-console
-      console.error("Error fetching categories:", categoriesResult.error)
-      setCategories([])
-    } else {
-      setCategories((categoriesResult.data as any) || [])
-    }
-
-    // eslint-disable-next-line no-console
-    console.log('=== FETCH DATA DEBUG ===')
-    // eslint-disable-next-line no-console
-    console.log('Transactions fetched:', (transactionsResult.data as any)?.length ?? 0)
-    // eslint-disable-next-line no-console
-    console.log('Categories fetched:', (categoriesResult.data as any)?.length ?? 0)
-    // eslint-disable-next-line no-console
-    console.log('Sample transaction:', (transactionsResult.data as any)?.[0])
-    // eslint-disable-next-line no-console
-    console.log('Sample category:', (categoriesResult.data as any)?.[0])
-
-    setLoading(false)
-  }
 
   const generatePeriods = (type: ViewType): string[] => {
     const now = new Date()
@@ -131,85 +67,48 @@ export function CategoryMatrix() {
     const newPeriods = generatePeriods(viewType)
     setPeriods(newPeriods)
 
-    const expenseTransactions = transactions.filter((t: Transaction) => {
-      return t.type === 'expense' || 
-             (t.amount && Number(t.amount) < 0) || 
-             !t.type
-    })
-
-    // eslint-disable-next-line no-console
-    console.log('=== UPDATE MATRIX DEBUG ===')
-    // eslint-disable-next-line no-console
-    console.log('Total transactions:', transactions.length)
-    // eslint-disable-next-line no-console
-    console.log('Expense transactions:', expenseTransactions.length)
-    // eslint-disable-next-line no-console
-    console.log('Categories available:', categories.length)
-    // eslint-disable-next-line no-console
-    console.log('Generated periods:', newPeriods)
-    // eslint-disable-next-line no-console
-    console.log('Transaction types:', [...new Set(transactions.map(t => t.type))])
-    // eslint-disable-next-line no-console
-    console.log('Category IDs:', categories.map(c => c.id))
-    // eslint-disable-next-line no-console
-    console.log('Transaction category IDs:', [...new Set(transactions.map(t => t.category_id))])
+    // Fixed expense filtering - only include transactions explicitly marked as 'expense'
+    const expenseTransactions = transactions.filter((t: TransactionData) => t.type === 'expense')
 
     const matrix: MatrixData = {}
 
-    categories.forEach((category: Category) => {
-      matrix[category.id] = {
-        categoryName: category.name,
+    // Build a set of category names from both provided categories and transactions
+    const categoryNameSet = new Set<string>()
+    categories.forEach((cat: CategoryData) => {
+      if (cat?.category) categoryNameSet.add(cat.category)
+    })
+    expenseTransactions.forEach((txn: TransactionData) => {
+      const catName = txn.category || 'Uncategorized'
+      categoryNameSet.add(catName)
+    })
+
+    const categoryNames = Array.from(categoryNameSet)
+
+    categoryNames.forEach((categoryName: string) => {
+      matrix[categoryName] = {
+        categoryName,
         total: 0,
         values: {}
       }
       newPeriods.forEach((period: string) => {
-        matrix[category.id].values[period] = 0
+        matrix[categoryName].values[period] = 0
       })
     })
 
-    // Ensure all referenced categories exist
-    const categoryIds = new Set(categories.map(c => c.id))
-    const validTransactions = expenseTransactions.filter(t => {
-      if (!categoryIds.has(t.category_id)) {
-        // eslint-disable-next-line no-console
-        console.warn(`Transaction ${t.id} references missing category ${t.category_id}`)
-        return false
-      }
-      return true
-    })
-    // eslint-disable-next-line no-console
-    console.log(`Filtered ${expenseTransactions.length} to ${validTransactions.length} valid transactions`)
-
-    let processedCount = 0
-    let skippedCount = 0
-
-    validTransactions.forEach((transaction: Transaction) => {
+    expenseTransactions.forEach((transaction: TransactionData) => {
       const transactionDate = new Date(transaction.date)
       const period = transactionDate.toLocaleDateString('en-US', {
         month: 'short',
         year: '2-digit'
       }).toUpperCase()
 
-      if (matrix[transaction.category_id] && newPeriods.includes(period)) {
-        matrix[transaction.category_id].values[period] += Number(transaction.amount)
-        matrix[transaction.category_id].total += Number(transaction.amount)
-        processedCount++
-      } else {
-        skippedCount++
-        if (!matrix[transaction.category_id]) {
-          // eslint-disable-next-line no-console
-          console.warn(`Missing category ${transaction.category_id} for transaction ${transaction.id}`)
-        }
-        if (!newPeriods.includes(period)) {
-          // eslint-disable-next-line no-console
-          console.warn(`Period ${period} not in range for transaction ${transaction.id}. Available periods:`, newPeriods)
-        }
+      const categoryName = transaction.category || 'Uncategorized'
+      if (matrix[categoryName] && newPeriods.includes(period)) {
+        const amount = Math.abs(Number(transaction.amount) || 0)
+        matrix[categoryName].values[period] += amount
+        matrix[categoryName].total += amount
       }
     })
-    // eslint-disable-next-line no-console
-    console.log(`Processed ${processedCount} transactions, skipped ${skippedCount}`)
-    // eslint-disable-next-line no-console
-    console.log('Final matrix data:', matrix)
 
     setMatrixData(matrix)
   }
@@ -237,32 +136,14 @@ export function CategoryMatrix() {
   }
 
   const getSortedCategories = (): string[] => {
-    // eslint-disable-next-line no-console
-    console.log('getSortedCategories() called with sortColumn/sortOrder:', sortColumn, sortOrder)
-    const categoryIds = Object.keys(matrixData)
-    // eslint-disable-next-line no-console
-    console.log('getSortedCategories() matrixData keys:', categoryIds)
-    // eslint-disable-next-line no-console
-    if (categoryIds.length > 0) console.log('getSortedCategories() sample entry:', categoryIds[0], matrixData[categoryIds[0]])
+    const categoryNames = Object.keys(matrixData)
 
-    const validCategoryIds = categoryIds.filter((id: string) => {
-      const exists = Boolean(matrixData[id])
-      const hasName = exists && matrixData[id].categoryName !== undefined
-      if (!exists || !hasName) {
-        // eslint-disable-next-line no-console
-        console.warn('Excluding category id', id, 'exists:', exists, 'hasName:', hasName)
-      }
-      return exists && hasName
-    })
-
-    // eslint-disable-next-line no-console
-    console.log('getSortedCategories() validCategoryIds:', validCategoryIds)
+    const validCategoryNames = categoryNames.filter((name: string) =>
+      Boolean(matrixData[name]) && matrixData[name].categoryName !== undefined
+    )
 
     if (!sortColumn || !sortOrder) {
-      // eslint-disable-next-line no-console
-      console.log('getSortedCategories() default sort by name')
-      const before = [...validCategoryIds]
-      const result = validCategoryIds.sort((a: string, b: string) => {
+      return validCategoryNames.sort((a: string, b: string) => {
         const categoryA = matrixData[a]
         const categoryB = matrixData[b]
 
@@ -271,17 +152,9 @@ export function CategoryMatrix() {
 
         return categoryA.categoryName.localeCompare(categoryB.categoryName)
       })
-      // eslint-disable-next-line no-console
-      console.log('getSortedCategories() sort result:', result.map(id => ({ id, name: matrixData[id]?.categoryName })), 'before:', before)
-      return result
     }
 
-    // eslint-disable-next-line no-console
-    console.log('getSortedCategories() sorting by', sortColumn, sortOrder)
-    // eslint-disable-next-line no-console
-    console.log('getSortedCategories() values pre-sort:', validCategoryIds.map(id => ({ id, value: sortColumn === 'total' ? (matrixData[id]?.total || 0) : (matrixData[id]?.values?.[sortColumn] || 0) })))
-
-    const sorted = validCategoryIds.sort((a: string, b: string) => {
+    return validCategoryNames.sort((a: string, b: string) => {
       const dataA = matrixData[a]
       const dataB = matrixData[b]
 
@@ -304,10 +177,6 @@ export function CategoryMatrix() {
         return valueB - valueA
       }
     })
-
-    // eslint-disable-next-line no-console
-    console.log('getSortedCategories() values post-sort:', sorted.map(id => ({ id, value: sortColumn === 'total' ? (matrixData[id]?.total || 0) : (matrixData[id]?.values?.[sortColumn] || 0) })))
-    return sorted
   }
 
   const getSortIcon = (column: string) => {
@@ -332,9 +201,22 @@ export function CategoryMatrix() {
     )
   }
 
-  const sortedCategoryIds = getSortedCategories()
-  // eslint-disable-next-line no-console
-  console.log('Rendering Category Matrix with sortedCategoryIds:', sortedCategoryIds)
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Category Matrix</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8 text-red-600">
+            {error}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const sortedCategoryNames = getSortedCategories()
 
   return (
     <Card>
@@ -360,7 +242,7 @@ export function CategoryMatrix() {
         </div>
       </CardHeader>
       <CardContent>
-        {false ? (
+        {Object.keys(matrixData).length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             No transaction data available for matrix analysis.
           </div>
@@ -370,7 +252,7 @@ export function CategoryMatrix() {
               <thead>
                 <tr className="border-b">
                   <th className="text-left p-3 font-medium">Category</th>
-                  {periods.map(period => (
+                  {periods.map((period: string) => (
                     <th key={period} className="text-center p-3 font-medium">
                       <Button
                         variant="ghost"
@@ -397,32 +279,19 @@ export function CategoryMatrix() {
                 </tr>
               </thead>
               <tbody>
-                {/* Debug: show if tbody renders */}
-                {/* eslint-disable-next-line no-console */}
-                {console.log('Table body render start. Row candidates:', sortedCategoryIds)}
-                {sortedCategoryIds.map((categoryId: string) => {
-                  const categoryData = matrixData[categoryId]
-                  // eslint-disable-next-line no-console
-                  console.log('Rendering row for categoryId:', categoryId, 'data:', categoryData)
-                  if (!categoryData) {
-                    // eslint-disable-next-line no-console
-                    console.warn('Missing categoryData for id', categoryId)
-                    return null
-                  }
-                  if (categoryData.total === 0) {
-                    // eslint-disable-next-line no-console
-                    console.log('Skipping categoryId due to zero total:', categoryId)
-                    return null
-                  }
+                {sortedCategoryNames.map((categoryName: string) => {
+                  const categoryData = matrixData[categoryName]
+                  if (!categoryData) return null
+
                   return (
-                    <tr key={categoryId} className="border-b hover:bg-muted/50">
+                    <tr key={categoryName} className="border-b hover:bg-muted/50">
                       <td className="p-3 font-medium">{categoryData.categoryName}</td>
                       {periods.map((period: string) => (
-                        <td key={period} className="p-3 text-center font-mono text-sm">
+                        <td key={period} className="p-3 text-center">
                           {formatCurrency(categoryData.values[period] || 0)}
                         </td>
                       ))}
-                      <td className="p-3 text-center font-mono text-sm font-medium">
+                      <td className="p-3 text-center font-medium">
                         {formatCurrency(categoryData.total)}
                       </td>
                     </tr>
@@ -436,4 +305,3 @@ export function CategoryMatrix() {
     </Card>
   )
 }
-
