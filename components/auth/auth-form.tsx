@@ -17,8 +17,8 @@ export function AuthForm({ onError }: AuthFormProps) {
 
   const redirectTo =
     typeof window !== "undefined"
-      ? `${window.location.origin}/reset-password?next=${encodeURIComponent("/")}`
-      : "/reset-password"
+      ? `${window.location.origin}/auth/callback`
+      : "/auth/callback"
 
   useEffect(() => {
     authLogger.log("AuthForm mounted. Redirect URL set to:", { redirectTo })
