@@ -1,4 +1,4 @@
-import { zonedTimeToUtc, utcToZonedTime, format } from 'date-fns-tz'
+import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz'
 import { startOfDay, isSameDay } from 'date-fns'
 
 const EST_TIMEZONE = 'America/New_York'
@@ -8,8 +8,7 @@ const EST_TIMEZONE = 'America/New_York'
  */
 export function getCurrentESTDate(): string {
   const now = new Date()
-  const estDate = utcToZonedTime(now, EST_TIMEZONE)
-  return format(estDate, 'yyyy-MM-dd', { timeZone: EST_TIMEZONE })
+  return formatInTimeZone(now, EST_TIMEZONE, 'yyyy-MM-dd')
 }
 
 /**
@@ -17,9 +16,9 @@ export function getCurrentESTDate(): string {
  */
 export function getESTStartOfDay(date?: Date): Date {
   const targetDate = date || new Date()
-  const estDate = utcToZonedTime(targetDate, EST_TIMEZONE)
+  const estDate = toZonedTime(targetDate, EST_TIMEZONE)
   const startOfDayEST = startOfDay(estDate)
-  return zonedTimeToUtc(startOfDayEST, EST_TIMEZONE)
+  return fromZonedTime(startOfDayEST, EST_TIMEZONE)
 }
 
 /**
@@ -27,19 +26,19 @@ export function getESTStartOfDay(date?: Date): Date {
  */
 export function getNextESTMidnight(): Date {
   const now = new Date()
-  const estNow = utcToZonedTime(now, EST_TIMEZONE)
+  const estNow = toZonedTime(now, EST_TIMEZONE)
   const tomorrow = new Date(estNow)
   tomorrow.setDate(tomorrow.getDate() + 1)
   const startOfTomorrowEST = startOfDay(tomorrow)
-  return zonedTimeToUtc(startOfTomorrowEST, EST_TIMEZONE)
+  return fromZonedTime(startOfTomorrowEST, EST_TIMEZONE)
 }
 
 /**
  * Check if two dates are the same day in EST timezone
  */
 export function isSameDayEST(date1: Date, date2: Date): boolean {
-  const est1 = utcToZonedTime(date1, EST_TIMEZONE)
-  const est2 = utcToZonedTime(date2, EST_TIMEZONE)
+  const est1 = toZonedTime(date1, EST_TIMEZONE)
+  const est2 = toZonedTime(date2, EST_TIMEZONE)
   return isSameDay(est1, est2)
 }
 
@@ -48,8 +47,7 @@ export function isSameDayEST(date1: Date, date2: Date): boolean {
  */
 export function parseESTDate(dateString: string): Date {
   const [year, month, day] = dateString.split('-').map(Number)
-  const estDate = new Date(year, month - 1, day)
-  return zonedTimeToUtc(estDate, EST_TIMEZONE)
+  return fromZonedTime(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00`, EST_TIMEZONE)
 }
 
 /**

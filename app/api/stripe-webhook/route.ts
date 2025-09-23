@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
@@ -54,7 +54,15 @@ export async function POST(req: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const supabase = createClient()
+  if (session.payment_status !== 'paid') {
+    console.warn('Checkout session not paid yet, skipping credit grant:', {
+      sessionId: session.id,
+      status: session.payment_status,
+    })
+    return
+  }
+
+  const supabase = createAdminClient()
   
   if (!session.metadata?.userId || !session.metadata?.packageId) {
     console.error('Missing metadata in checkout session:', session.id)
@@ -81,45 +89,77 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const totalCredits = packageInfo.credits + packageInfo.bonus
 
   try {
-    // Update user credits
-    const { data: currentCredits } = await supabase
+    const { data: currentCredits, error: fetchError } = await supabase
       .from('user_credits')
       .select('current_credits, total_earned')
       .eq('user_id', userId)
       .single()
 
-    const newCredits = (currentCredits?.current_credits || 0) + totalCredits
-    const newTotalEarned = (currentCredits?.total_earned || 0) + totalCredits
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Failed to fetch existing user credits:', fetchError)
+      throw fetchError
+    }
 
-    await supabase
-      .from('user_credits')
-      .update({
+    const newCredits = (currentCredits?.current_credits ?? 0) + totalCredits
+    const newTotalEarned = (currentCredits?.total_earned ?? 0) + totalCredits
+
+    if (currentCredits) {
+      const { error: updateError } = await supabase
+        .from('user_credits')
+        .update({
+          current_credits: newCredits,
+          total_earned: newTotalEarned,
+        })
+        .eq('user_id', userId)
+
+      if (updateError) {
+        console.error('Failed to update user credits:', updateError)
+        throw updateError
+      }
+    } else {
+      const { error: insertError } = await supabase.from('user_credits').insert({
+        user_id: userId,
         current_credits: newCredits,
-        total_earned: newTotalEarned
+        total_earned: newTotalEarned,
+        daily_credit_amount: 50,
       })
-      .eq('user_id', userId)
 
-    // Record transaction
-    await supabase.from('credit_transactions').insert({
+      if (insertError) {
+        console.error('Failed to initialize user credits:', insertError)
+        throw insertError
+      }
+    }
+
+    const paymentIntentId =
+      typeof session.payment_intent === 'string'
+        ? session.payment_intent
+        : session.payment_intent?.id
+
+    const { error: transactionError } = await supabase.from('credit_transactions').insert({
       user_id: userId,
       type: 'purchased',
       amount: totalCredits,
       description: `Purchased ${packageInfo.credits} credits${packageInfo.bonus > 0 ? ` (+${packageInfo.bonus} bonus)` : ''}`,
-      stripe_payment_intent_id: session.payment_intent as string,
+      stripe_payment_intent_id: paymentIntentId ?? null,
       metadata: {
         package_id: packageId,
         session_id: session.id,
-        amount_paid: session.amount_total
-      }
+        amount_paid: session.amount_total,
+        currency: session.currency,
+      },
     })
+
+    if (transactionError) {
+      console.error('Failed to record credit transaction:', transactionError)
+      throw transactionError
+    }
 
     console.log('Credits added successfully:', {
       userId,
       packageId,
       creditsAdded: totalCredits,
-      newBalance: newCredits
+      newBalance: newCredits,
     })
-
   } catch (error) {
     console.error('Error updating credits:', error)
     throw error
