@@ -2,29 +2,6 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentESTDate } from '@/lib/timezone-utils'
 
-// Simple in-memory rate limiting (for production, use Redis or similar)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
-const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute
-const RATE_LIMIT_MAX_ATTEMPTS = 5 // Max 5 attempts per minute
-
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now()
-  const userLimit = rateLimitMap.get(userId)
-
-  if (!userLimit || now > userLimit.resetTime) {
-    // Reset or create new limit
-    rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
-    return true
-  }
-
-  if (userLimit.count >= RATE_LIMIT_MAX_ATTEMPTS) {
-    return false
-  }
-
-  userLimit.count++
-  return true
-}
-
 export async function POST() {
   const supabase = createClient()
 
@@ -34,19 +11,11 @@ export async function POST() {
     return NextResponse.json({ error: 'User not authenticated' }, { status: 401 })
   }
 
-  // Check rate limit
-  if (!checkRateLimit(user.id)) {
-    console.warn('Rate limit exceeded for user:', user.id)
-    return NextResponse.json({ 
-      error: 'Too many attempts. Please wait a minute before trying again.' 
-    }, { status: 429 })
-  }
-
   try {
-    // Get user credits with proper error handling
+    // Get user credits - using correct column names
     const { data: userCredits, error: creditsError } = await supabase
       .from('user_credits')
-      .select('last_daily_credit, current_credits, total_earned, daily_credit_amount')
+      .select('last_daily_credit, total_credits, total_earned, daily_credit_amount')
       .eq('user_id', user.id)
       .single()
 
@@ -55,7 +24,6 @@ export async function POST() {
       return NextResponse.json({ error: 'Failed to retrieve user credits' }, { status: 500 })
     }
 
-    // Get current EST date as YYYY-MM-DD string
     const todayEST = getCurrentESTDate()
     const lastClaimDate = userCredits?.last_daily_credit
 
@@ -66,7 +34,6 @@ export async function POST() {
       canClaim: lastClaimDate !== todayEST
     })
 
-    // Check if already claimed today
     if (lastClaimDate === todayEST) {
       return NextResponse.json({ 
         error: 'Daily credits already claimed',
@@ -74,18 +41,17 @@ export async function POST() {
       }, { status: 429 })
     }
 
-    // Use the daily_credit_amount from user record, fallback to 50
     const creditAmount = userCredits?.daily_credit_amount || 50
-    const updatedCredits = (userCredits?.current_credits ?? 0) + creditAmount
+    const updatedCredits = (userCredits?.total_credits ?? 0) + creditAmount
     const updatedTotalEarned = (userCredits?.total_earned ?? 0) + creditAmount
 
-    // Update user credits
+    // Update using correct column names
     const { error: updateError } = await supabase
       .from('user_credits')
       .update({
-        current_credits: updatedCredits,
+        total_credits: updatedCredits,  // Using total_credits not current_credits
         total_earned: updatedTotalEarned,
-        last_daily_credit: todayEST, // Store as EST date string
+        last_daily_credit: todayEST,
       })
       .eq('user_id', user.id)
 
@@ -94,7 +60,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Failed to update user credits' }, { status: 500 })
     }
 
-    // Record the transaction
+    // Record transaction
     const { error: transactionError } = await supabase.from('credit_transactions').insert([
       {
         user_id: user.id,
@@ -105,7 +71,6 @@ export async function POST() {
     ])
 
     if (transactionError) {
-      // Log the error, but don't block the user since the credits were updated
       console.error('Failed to record credit transaction:', transactionError)
     }
 
