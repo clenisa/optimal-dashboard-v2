@@ -5,6 +5,7 @@ import type React from "react"
 import { createClient } from "@/lib/supabase-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -13,12 +14,13 @@ import { Trash2, Edit, PlusCircle, CreditCard, Wallet } from "lucide-react"
 import { useAuthState } from "@/hooks/use-auth-state"
 
 interface PaymentSource {
-  id: number
+  id: string
   name: string
   type: "credit" | "debit"
   current_balance: number | null
   max_balance: number | null
   interest_rate: number | null
+  notes?: string | null
 }
 
 export function PaymentSourceEditor() {
@@ -33,7 +35,8 @@ export function PaymentSourceEditor() {
     type: "debit" as "credit" | "debit",
     current_balance: "",
     max_balance: "",
-    interest_rate: ""
+    interest_rate: "",
+    notes: ""
   })
 
   const supabase = createClient()
@@ -94,7 +97,8 @@ export function PaymentSourceEditor() {
       type: "debit",
       current_balance: "",
       max_balance: "",
-      interest_rate: ""
+      interest_rate: "",
+      notes: ""
     })
     setEditingSource(null)
   }
@@ -119,7 +123,8 @@ export function PaymentSourceEditor() {
       interest_rate:
         source.interest_rate !== null && source.interest_rate !== undefined
           ? source.interest_rate.toString()
-          : ""
+          : "",
+      notes: source.notes || ""
     })
     setEditingSource(source)
     setIsDialogOpen(true)
@@ -172,7 +177,8 @@ export function PaymentSourceEditor() {
         formData.current_balance === "" ? null : parseFloat(formData.current_balance),
       max_balance: formData.max_balance === "" ? null : parseFloat(formData.max_balance),
       interest_rate:
-        formData.interest_rate === "" ? null : parseFloat(formData.interest_rate)
+        formData.interest_rate === "" ? null : parseFloat(formData.interest_rate),
+      notes: formData.notes.trim() || null
     }
 
     if (editingSource && editingSource.id) {
@@ -193,6 +199,15 @@ export function PaymentSourceEditor() {
           details: error.details,
           hint: error.hint,
           code: error.code
+        })
+        console.error("Detailed error information:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          updateData: updateData,
+          editingSourceId: editingSource.id,
+          userId: user.id
         })
         alert(`Error saving source: ${error.message}`)
         return
@@ -231,6 +246,14 @@ export function PaymentSourceEditor() {
           hint: error.hint,
           code: error.code
         })
+        console.error("Detailed error information:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          insertData: insertData,
+          userId: user.id
+        })
         alert(`Error saving source: ${error.message}`)
         return
       }
@@ -247,7 +270,7 @@ export function PaymentSourceEditor() {
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this payment source?")) {
       return
     }
@@ -429,6 +452,19 @@ export function PaymentSourceEditor() {
                     setFormData({ ...formData, interest_rate: e.target.value })
                   }
                   placeholder="0.00"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
+                  placeholder="Additional notes about this payment source..."
+                  rows={3}
                 />
               </div>
 
