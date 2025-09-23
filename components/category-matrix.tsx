@@ -4,22 +4,9 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { createClient } from "@/lib/supabase-client"
 import { ChevronUp, ChevronDown, BarChart3 } from "lucide-react"
-
-interface Transaction {
-  id: number
-  category_id: number
-  amount: number
-  date: string
-  type: 'income' | 'expense' | 'transfer'
-}
-
-interface Category {
-  id: number
-  name: string
-  color: string
-}
+import { useFinancialData } from '@/hooks/useFinancialData'
+import type { CategoryData, TransactionData } from '@/lib/chart-data'
 
 interface CategoryPeriodData {
   values: Record<string, number>
@@ -28,65 +15,25 @@ interface CategoryPeriodData {
 }
 
 interface MatrixData {
-  [categoryId: number]: CategoryPeriodData
+  [categoryName: string]: CategoryPeriodData
 }
 
 type ViewType = '6months' | '12months' | 'currentYear'
 type SortOrder = 'asc' | 'desc' | null
 
 export function CategoryMatrix() {
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
+  const { transactions, categories, loading, error } = useFinancialData()
   const [matrixData, setMatrixData] = useState<MatrixData>({})
   const [periods, setPeriods] = useState<string[]>([])
   const [viewType, setViewType] = useState<ViewType>('6months')
-  const [loading, setLoading] = useState(true)
   const [sortColumn, setSortColumn] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<SortOrder>(null)
-
-  useEffect(() => {
-    fetchData()
-  }, [])
 
   useEffect(() => {
     if (transactions.length > 0 && categories.length > 0) {
       updateMatrix()
     }
   }, [transactions, categories, viewType])
-
-  const fetchData = async () => {
-    setLoading(true)
-    const supabase = createClient()
-    if (!supabase) {
-      setTransactions([])
-      setCategories([])
-      setLoading(false)
-      return
-    }
-    
-    const [transactionsResult, categoriesResult] = await Promise.all([
-      supabase.from("transactions").select("id,category_id,amount,date,type"),
-      supabase.from("categories").select("id,name,color")
-    ])
-
-    if (transactionsResult.error) {
-      // eslint-disable-next-line no-console
-      console.error("Error fetching transactions:", transactionsResult.error)
-      setTransactions([])
-    } else {
-      setTransactions((transactionsResult.data as any) || [])
-    }
-
-    if (categoriesResult.error) {
-      // eslint-disable-next-line no-console
-      console.error("Error fetching categories:", categoriesResult.error)
-      setCategories([])
-    } else {
-      setCategories((categoriesResult.data as any) || [])
-    }
-
-    setLoading(false)
-  }
 
   const generatePeriods = (type: ViewType): string[] => {
     const now = new Date()
@@ -120,34 +67,45 @@ export function CategoryMatrix() {
     const newPeriods = generatePeriods(viewType)
     setPeriods(newPeriods)
 
-    const expenseTransactions = transactions.filter((t: Transaction) => t.type === 'expense')
+    const expenseTransactions = transactions.filter((t: TransactionData) => t.type === 'expense')
 
     const matrix: MatrixData = {}
 
-    categories.forEach((category: Category) => {
-      matrix[category.id] = {
-        categoryName: category.name,
+    // Build a set of category names from both provided categories and transactions
+    const categoryNameSet = new Set<string>()
+    categories.forEach((cat: CategoryData) => {
+      if (cat?.category) categoryNameSet.add(cat.category)
+    })
+    expenseTransactions.forEach((txn: TransactionData) => {
+      const catName = txn.category || 'Uncategorized'
+      categoryNameSet.add(catName)
+    })
+
+    const categoryNames = Array.from(categoryNameSet)
+
+    categoryNames.forEach((categoryName: string) => {
+      matrix[categoryName] = {
+        categoryName,
         total: 0,
         values: {}
       }
       newPeriods.forEach((period: string) => {
-        matrix[category.id].values[period] = 0
+        matrix[categoryName].values[period] = 0
       })
     })
 
-    expenseTransactions.forEach((transaction: Transaction) => {
+    expenseTransactions.forEach((transaction: TransactionData) => {
       const transactionDate = new Date(transaction.date)
       const period = transactionDate.toLocaleDateString('en-US', { 
         month: 'short', 
         year: '2-digit' 
       }).toUpperCase()
 
-      if (matrix[transaction.category_id] && newPeriods.includes(period)) {
-        matrix[transaction.category_id].values[period] += Number(transaction.amount)
-        matrix[transaction.category_id].total += Number(transaction.amount)
-      } else if (!matrix[transaction.category_id]) {
-        // eslint-disable-next-line no-console
-        console.warn(`Transaction ${transaction.id} references missing category ${transaction.category_id}`)
+      const categoryName = transaction.category || 'Uncategorized'
+      if (matrix[categoryName] && newPeriods.includes(period)) {
+        const amount = Math.abs(Number(transaction.amount) || 0)
+        matrix[categoryName].values[period] += amount
+        matrix[categoryName].total += amount
       }
     })
 
@@ -176,15 +134,15 @@ export function CategoryMatrix() {
     }
   }
 
-  const getSortedCategories = (): number[] => {
-    const categoryIds = Object.keys(matrixData).map(Number)
+  const getSortedCategories = (): string[] => {
+    const categoryNames = Object.keys(matrixData)
 
-    const validCategoryIds = categoryIds.filter((id: number) =>
-      Boolean(matrixData[id]) && matrixData[id].categoryName !== undefined
+    const validCategoryNames = categoryNames.filter((name: string) =>
+      Boolean(matrixData[name]) && matrixData[name].categoryName !== undefined
     )
 
     if (!sortColumn || !sortOrder) {
-      return validCategoryIds.sort((a: number, b: number) => {
+      return validCategoryNames.sort((a: string, b: string) => {
         const categoryA = matrixData[a]
         const categoryB = matrixData[b]
 
@@ -195,7 +153,7 @@ export function CategoryMatrix() {
       })
     }
 
-    return validCategoryIds.sort((a: number, b: number) => {
+    return validCategoryNames.sort((a: string, b: string) => {
       const dataA = matrixData[a]
       const dataB = matrixData[b]
 
@@ -242,7 +200,22 @@ export function CategoryMatrix() {
     )
   }
 
-  const sortedCategoryIds = getSortedCategories()
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Category Matrix</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8 text-red-600">
+            {error}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const sortedCategoryNames = getSortedCategories()
 
   return (
     <Card>
@@ -278,7 +251,7 @@ export function CategoryMatrix() {
               <thead>
                 <tr className="border-b">
                   <th className="text-left p-3 font-medium">Category</th>
-                  {periods.map(period => (
+                  {periods.map((period: string) => (
                     <th key={period} className="text-center p-3 font-medium">
                       <Button
                         variant="ghost"
@@ -305,12 +278,12 @@ export function CategoryMatrix() {
                 </tr>
               </thead>
               <tbody>
-                {sortedCategoryIds.map(categoryId => {
-                  const categoryData = matrixData[categoryId]
+                {sortedCategoryNames.map(categoryName => {
+                  const categoryData = matrixData[categoryName]
                   if (categoryData.total === 0) return null
                   
                   return (
-                    <tr key={categoryId} className="border-b hover:bg-muted/50">
+                    <tr key={categoryName} className="border-b hover:bg-muted/50">
                       <td className="p-3 font-medium">{categoryData.categoryName}</td>
                       {periods.map((period: string) => (
                         <td key={period} className="p-3 text-center font-mono text-sm">
