@@ -164,22 +164,24 @@ export function PaymentSourceEditor() {
       return
     }
 
-    const sourceData = {
+    // Create base data without user_id
+    const baseData = {
       name: formData.name.trim(),
       type: formData.type,
       current_balance:
         formData.current_balance === "" ? null : parseFloat(formData.current_balance),
       max_balance: formData.max_balance === "" ? null : parseFloat(formData.max_balance),
       interest_rate:
-        formData.interest_rate === "" ? null : parseFloat(formData.interest_rate),
-      user_id: user.id
+        formData.interest_rate === "" ? null : parseFloat(formData.interest_rate)
     }
 
     if (editingSource && editingSource.id) {
-      // Update existing source
+      // For UPDATE: use baseData without user_id
+      const updateData = baseData
+
       const { data, error } = await supabase
         .from("sources")
-        .update(sourceData)
+        .update(updateData)
         .eq("id", editingSource.id)
         .eq("user_id", user.id)
         .select()
@@ -210,10 +212,15 @@ export function PaymentSourceEditor() {
       setIsDialogOpen(false)
       resetForm()
     } else {
-      // Add new source
+      // For INSERT: include user_id in payload
+      const insertData = {
+        ...baseData,
+        user_id: user.id
+      }
+
       const { data, error } = await supabase
         .from("sources")
-        .insert([sourceData])
+        .insert([insertData])
         .select()
 
       if (error) {
