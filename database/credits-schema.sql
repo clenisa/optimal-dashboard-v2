@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS user_credits (
     current_credits INTEGER DEFAULT 10, -- Starting credits
     total_earned INTEGER DEFAULT 10, -- Total credits earned
     total_spent INTEGER DEFAULT 0, -- Total credits spent
-    last_daily_credit DATE, -- Last date daily credits were awarded
-    daily_credit_amount INTEGER DEFAULT 5, -- Daily free credits
+last_daily_credit DATE, -- Last date daily credits were awarded (EST timezone)
+daily_credit_amount INTEGER DEFAULT 50, -- Daily free credits
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
