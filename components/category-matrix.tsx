@@ -67,6 +67,7 @@ export function CategoryMatrix() {
     const newPeriods = generatePeriods(viewType)
     setPeriods(newPeriods)
 
+    // Fixed expense filtering - only include transactions explicitly marked as 'expense'
     const expenseTransactions = transactions.filter((t: TransactionData) => t.type === 'expense')
 
     const matrix: MatrixData = {}
@@ -96,9 +97,9 @@ export function CategoryMatrix() {
 
     expenseTransactions.forEach((transaction: TransactionData) => {
       const transactionDate = new Date(transaction.date)
-      const period = transactionDate.toLocaleDateString('en-US', { 
-        month: 'short', 
-        year: '2-digit' 
+      const period = transactionDate.toLocaleDateString('en-US', {
+        month: 'short',
+        year: '2-digit'
       }).toUpperCase()
 
       const categoryName = transaction.category || 'Uncategorized'
@@ -247,7 +248,7 @@ export function CategoryMatrix() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table key={`matrix-${Object.keys(matrixData).length}-${JSON.stringify(periods)}`} className="w-full border-collapse">
               <thead>
                 <tr className="border-b">
                   <th className="text-left p-3 font-medium">Category</th>
@@ -278,19 +279,19 @@ export function CategoryMatrix() {
                 </tr>
               </thead>
               <tbody>
-                {sortedCategoryNames.map(categoryName => {
+                {sortedCategoryNames.map((categoryName: string) => {
                   const categoryData = matrixData[categoryName]
-                  if (categoryData.total === 0) return null
-                  
+                  if (!categoryData) return null
+
                   return (
                     <tr key={categoryName} className="border-b hover:bg-muted/50">
                       <td className="p-3 font-medium">{categoryData.categoryName}</td>
                       {periods.map((period: string) => (
-                        <td key={period} className="p-3 text-center font-mono text-sm">
+                        <td key={period} className="p-3 text-center">
                           {formatCurrency(categoryData.values[period] || 0)}
                         </td>
                       ))}
-                      <td className="p-3 text-center font-mono text-sm font-medium">
+                      <td className="p-3 text-center font-medium">
                         {formatCurrency(categoryData.total)}
                       </td>
                     </tr>
@@ -304,4 +305,3 @@ export function CategoryMatrix() {
     </Card>
   )
 }
-
