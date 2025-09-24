@@ -80,11 +80,12 @@ export default function ResetPasswordPage() {
         return
       }
 
-      if (eventType && eventType !== "recovery") {
-        const redirectUrl = redirectPath || "/"
-        router.replace(redirectUrl)
-        return
-      }
+      // Removed automatic redirect on non-recovery events
+      // if (eventType && eventType !== "recovery") {
+      //   const redirectUrl = redirectPath || "/"
+      //   router.replace(redirectUrl)
+      //   return
+      // }
 
       setCanUpdatePassword(true)
       setInitializing(false)
