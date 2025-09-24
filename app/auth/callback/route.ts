@@ -9,12 +9,12 @@ export async function GET(request: Request) {
 
   authLogger.log("Auth callback received", { url: request.url, codeExists: !!code })
 
-  // Handle password recovery flow by redirecting to reset password page without auto sign-in
+  // Handle password recovery flow by redirecting to reset password page with tokens in URL fragment
   const type = searchParams.get("type")
   if (type === "recovery") {
-    const queryString = searchParams.toString()
-    const redirectUrl = `${origin}/reset-password${queryString ? `?${queryString}` : ""}`
-    authLogger.log("Recovery flow detected, redirecting to reset-password.", { redirectTo: redirectUrl })
+    const fragment = code ? `#access_token=${encodeURIComponent(code)}&type=recovery` : `#type=recovery`
+    const redirectUrl = `${origin}/reset-password${fragment}`
+    authLogger.log("Recovery flow detected, redirecting to reset-password with fragment.", { redirectTo: redirectUrl, codeExists: !!code })
     return NextResponse.redirect(redirectUrl)
   }
 
