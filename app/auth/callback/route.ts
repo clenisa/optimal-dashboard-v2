@@ -9,6 +9,15 @@ export async function GET(request: Request) {
 
   authLogger.log("Auth callback received", { url: request.url, codeExists: !!code })
 
+  // Handle password recovery flow by redirecting to reset password page without auto sign-in
+  const type = searchParams.get("type")
+  if (type === "recovery") {
+    const queryString = searchParams.toString()
+    const redirectUrl = `${origin}/reset-password${queryString ? `?${queryString}` : ""}`
+    authLogger.log("Recovery flow detected, redirecting to reset-password.", { redirectTo: redirectUrl })
+    return NextResponse.redirect(redirectUrl)
+  }
+
   if (code) {
     const supabase = createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
