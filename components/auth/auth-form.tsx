@@ -20,6 +20,12 @@ export function AuthForm({ onError }: AuthFormProps) {
       ? `${window.location.origin}/auth/callback`
       : "/auth/callback"
 
+  // Separate redirect URL for password reset
+  const passwordResetRedirectTo =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/reset-password`
+      : "/reset-password"
+
   useEffect(() => {
     authLogger.log("AuthForm mounted. Redirect URL set to:", { redirectTo })
   }, [redirectTo])
@@ -162,6 +168,7 @@ export function AuthForm({ onError }: AuthFormProps) {
         }}
         providers={["google"]}
         redirectTo={redirectTo}
+        passwordResetRedirectTo={passwordResetRedirectTo}
         onlyThirdPartyProviders={false}
         view="sign_in"
       />
