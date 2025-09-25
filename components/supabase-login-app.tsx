@@ -1,16 +1,18 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useVibration } from "@/hooks/use-vibration"
 import { useAuthState } from "@/hooks/use-auth-state"
 import { AuthForm } from "./auth/auth-form"
 import { createClient } from "@/lib/supabase-client"
 import { logger } from "@/lib/logger"
+import { PasswordUpdateModal } from "./auth/password-update-modal"
 
 export function SupabaseLoginApp() {
   const { user, loading } = useAuthState()
   const vibrate = useVibration({ duration: 50 })
   const hasLoggedInitialization = useRef(false)
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
 
   const signOut = async () => {
     const supabase = createClient()
@@ -48,13 +50,26 @@ export function SupabaseLoginApp() {
     return (
       <div className="flex flex-col items-center justify-center h-full p-4 text-center">
         <h2 className="text-xl font-bold mb-4 text-green-600">You are logged in</h2>
-        <button
-          onClick={signOut}
-          className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors min-h-[44px] text-sm"
-          style={{ touchAction: "manipulation", cursor: "pointer" }}
-        >
-          Log Out
-        </button>
+        <div className="flex w-full max-w-xs flex-col gap-3">
+          <button
+            onClick={() => setIsPasswordModalOpen(true)}
+            className="px-4 py-2 rounded border border-black bg-white text-sm font-medium transition-colors hover:bg-black hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 min-h-[44px]"
+            style={{ touchAction: "manipulation", cursor: "pointer" }}
+          >
+            Update Password
+          </button>
+          <button
+            onClick={signOut}
+            className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors min-h-[44px] text-sm"
+            style={{ touchAction: "manipulation", cursor: "pointer" }}
+          >
+            Log Out
+          </button>
+        </div>
+        <PasswordUpdateModal
+          open={isPasswordModalOpen}
+          onOpenChange={setIsPasswordModalOpen}
+        />
       </div>
     )
   }
