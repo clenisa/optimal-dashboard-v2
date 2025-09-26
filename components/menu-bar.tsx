@@ -69,7 +69,7 @@ export function MenuBar() {
   return (
     <div
       ref={menuRef}
-      className="fixed top-0 left-0 right-0 h-7 bg-white border-b border-black flex items-center justify-between px-2 text-xs font-bold z-30"
+      className="fixed top-0 left-0 right-0 h-9 sm:h-7 bg-white border-b border-black flex items-center justify-between px-2 text-xs font-bold z-30"
       style={{ fontFamily: "Chicago, monospace" }}
     >
       {/* Left side - Menu items */}

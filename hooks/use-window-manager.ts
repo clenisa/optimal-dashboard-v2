@@ -31,11 +31,18 @@ export function useWindowManager({ windowId, initialX, initialY, initialWidth, i
     const viewportHeight = window.innerHeight
     const minVisible = 50
 
+    // Responsive minimum sizes
+    const isMobile = viewportWidth < 768
+    const minWidth = isMobile ? Math.min(280, viewportWidth * 0.9) : 300
+    const minHeight = isMobile ? Math.min(200, viewportHeight * 0.4) : 200
+    const maxWidth = isMobile ? viewportWidth * 0.95 : viewportWidth - 100
+    const maxHeight = isMobile ? viewportHeight * 0.85 : viewportHeight - 100
+
     return {
       x: Math.max(minVisible - width, Math.min(x, viewportWidth - minVisible)),
       y: Math.max(0, Math.min(y, viewportHeight - minVisible)),
-      width: Math.min(width, viewportWidth),
-      height: Math.min(height, viewportHeight),
+      width: Math.max(minWidth, Math.min(width, maxWidth)),
+      height: Math.max(minHeight, Math.min(height, maxHeight)),
     }
   }, [])
 
@@ -143,8 +150,12 @@ export function useWindowManager({ windowId, initialX, initialY, initialWidth, i
         const deltaX = clientX - resizeStart.current.x
         const deltaY = clientY - resizeStart.current.y
 
-        const newWidth = Math.max(300, initialWindow.current.width + deltaX)
-        const newHeight = Math.max(200, initialWindow.current.height + deltaY)
+        const isMobile = window.innerWidth < 768
+        const minWidth = isMobile ? Math.min(280, window.innerWidth * 0.9) : 300
+        const minHeight = isMobile ? Math.min(200, window.innerHeight * 0.4) : 200
+
+        const newWidth = Math.max(minWidth, initialWindow.current.width + deltaX)
+        const newHeight = Math.max(minHeight, initialWindow.current.height + deltaY)
 
         const currentRect = windowRef.current.getBoundingClientRect()
         const constrained = constrainToViewport(currentRect.left, currentRect.top, newWidth, newHeight)
