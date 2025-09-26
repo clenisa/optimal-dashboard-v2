@@ -101,16 +101,16 @@ export function WindowFrame({
         }}
       >
         {/* Title Bar */}
-        <div className="window-title-bar flex justify-between items-center bg-black text-white px-3 py-2 cursor-grab active:cursor-grabbing select-none touch-manipulation h-10 sm:h-7 rounded-t-md">
+        <div className="window-title-bar flex justify-between items-center bg-black text-white px-3 py-1 cursor-grab active:cursor-grabbing select-none touch-manipulation h-10 sm:h-7 rounded-t-md">
           <span className="text-xs sm:text-xs font-mono pointer-events-none truncate flex-1 mr-2">{title}</span>
           <button
             onClick={handleClose}
             onTouchEnd={handleTouchEnd}
-            className="window-close-button"
+            className="window-close-btn"
             aria-label="Close window"
             data-testid="window-close-button"
           >
-            <X size={12} className="pointer-events-none" />
+            <X size={16} className="pointer-events-none sm:w-4 sm:h-4 w-5 h-5" />
           </button>
         </div>
 

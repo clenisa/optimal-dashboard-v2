@@ -54,61 +54,6 @@
     --mobile-window-title-height: 40px;
     --desktop-window-title-height: 28px;
 
-    /* Button sizing variables */
-    --close-button-size-mobile: 32px;
-    --close-button-size-desktop: 20px;
-    --close-button-padding: 2px;
-}
-
-/* Window control classes */
-.window-close-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 3px;
-  flex-shrink: 0;
-  background-color: transparent;
-  transition: background-color 150ms ease-in-out;
-  cursor: pointer;
-  position: relative;
-  z-index: 10;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  touch-action: manipulation;
-  margin: 2px; /* Add margin to create space from title bar edges */
-}
-
-.window-close-button:hover {
-  background-color: #dc2626; /* red-600 */
-}
-
-.window-close-button:active {
-  background-color: #b91c1c; /* red-700 */
-}
-
-.window-close-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px #ef4444, 0 0 0 4px #000000;
-}
-
-/* Responsive button sizing with proper containment */
-@media (max-width: 640px) {
-  .window-close-button {
-    width: var(--close-button-size-mobile);
-    height: var(--close-button-size-mobile);
-    max-width: calc(100% - 8px); /* Ensure it never exceeds container minus margins */
-    max-height: calc(var(--mobile-window-title-height) - 8px); /* 40px - 8px = 32px max */
-  }
-}
-
-@media (min-width: 641px) {
-  .window-close-button {
-    width: var(--close-button-size-desktop);
-    height: var(--close-button-size-desktop);
-    max-width: calc(100% - 8px);
-    max-height: calc(var(--desktop-window-title-height) - 8px); /* 28px - 8px = 20px max */
-  }
 }
 
 /* Window resize improvements */
@@ -125,6 +70,61 @@
 
 .window-resize-handle:hover {
   opacity: 1;
+}
+
+/* Simple X button - no background, just icon effects */
+.window-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  margin: 0;
+  color: #ffffff;
+  transition: all 0.15s ease;
+  position: relative;
+  z-index: 10;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  border-radius: 2px;
+}
+
+/* Hover effect - just change the icon color and add subtle scale */
+.window-close-btn:hover {
+  color: #ff4444;
+  transform: scale(1.1);
+}
+
+/* Active state */
+.window-close-btn:active {
+  color: #ff6666;
+  transform: scale(0.95);
+}
+
+/* Focus state for accessibility */
+.window-close-btn:focus {
+  outline: 1px solid #ff4444;
+  outline-offset: 1px;
+}
+
+/* Responsive sizing - just the button padding and icon size */
+@media (max-width: 640px) {
+  .window-close-btn {
+    padding: 8px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 641px) {
+  .window-close-btn {
+    padding: 4px;
+    min-width: 24px;
+    min-height: 24px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -197,8 +197,8 @@
   }
   
   .window-title-bar button {
-    min-width: var(--touch-target-min) !important;
-    min-height: var(--touch-target-min) !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
     touch-action: manipulation;
   }
   
