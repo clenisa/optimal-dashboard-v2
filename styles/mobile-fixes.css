@@ -1,0 +1,27 @@
+/* Global definition for touch target size */
+:root {
+  --touch-target-min: 48px;
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  body {
+    /* Prevent text selection and callouts globally on touch areas */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+  }
+}
+
+/* Ensure all buttons have a minimum touch target */
+.window-title-bar button, [data-testid="error-dismiss-button"] {
+  min-width: var(--touch-target-min) !important;
+  min-height: var(--touch-target-min) !important;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  cursor: pointer !important;
+}
+
+/* Prevent icons inside buttons from intercepting touch events */
+.window-title-bar button svg {
+  pointer-events: none !important;
+}

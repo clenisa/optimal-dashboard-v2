@@ -54,9 +54,25 @@ export function WindowFrame({
     return null
   }
 
-  const handleClose = () => {
+  const handleClose = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     removeWindow(id)
     vibrate()
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const touch = e.changedTouches[0]
+    const element = document.elementFromPoint(touch.clientX, touch.clientY)
+    const button = e.currentTarget
+
+    if (element === button || button.contains(element as Node)) {
+      removeWindow(id)
+      vibrate()
+    }
   }
 
   return (
@@ -89,11 +105,28 @@ export function WindowFrame({
           <span className="text-xs sm:text-xs font-mono pointer-events-none truncate flex-1 mr-2">{title}</span>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-red-600 rounded touch-manipulation flex items-center justify-center w-8 h-8 sm:w-5 sm:h-5 text-xs flex-shrink-0"
+            onTouchEnd={handleTouchEnd}
+            className={cn(
+              "flex items-center justify-center rounded flex-shrink-0",
+              "bg-transparent hover:bg-red-600 active:bg-red-700",
+              "transition-colors duration-150",
+              "focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-black",
+            )}
             aria-label="Close window"
-            style={{ touchAction: "manipulation", cursor: "pointer", minWidth: "44px", minHeight: "44px" }}
+            style={{
+              width: "var(--touch-target-min, 48px)",
+              height: "var(--touch-target-min, 48px)",
+              touchAction: "manipulation",
+              cursor: "pointer",
+              position: "relative",
+              zIndex: 10,
+              userSelect: "none",
+              WebkitUserSelect: "none",
+              WebkitTouchCallout: "none",
+            }}
+            data-testid="window-close-button"
           >
-            <X size={16} />
+            <X size={16} className="pointer-events-none" />
           </button>
         </div>
 
