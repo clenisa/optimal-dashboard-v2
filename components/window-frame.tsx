@@ -110,7 +110,7 @@ export function WindowFrame({
             aria-label="Close window"
             data-testid="window-close-button"
           >
-            <X size={14} className="pointer-events-none" />
+            <X size={12} className="pointer-events-none" />
           </button>
         </div>
 
