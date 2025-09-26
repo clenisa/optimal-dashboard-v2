@@ -101,32 +101,16 @@ export function WindowFrame({
         }}
       >
         {/* Title Bar */}
-        <div className="window-title-bar flex justify-between items-center bg-black text-white px-3 py-2 cursor-grab active:cursor-grabbing select-none touch-manipulation h-10 sm:h-7 rounded-t-md">
+        <div className="window-title-bar flex justify-between items-center bg-black text-white px-3 py-1 cursor-grab active:cursor-grabbing select-none touch-manipulation h-10 sm:h-7 rounded-t-md">
           <span className="text-xs sm:text-xs font-mono pointer-events-none truncate flex-1 mr-2">{title}</span>
           <button
             onClick={handleClose}
             onTouchEnd={handleTouchEnd}
-            className={cn(
-              "flex items-center justify-center rounded flex-shrink-0",
-              "bg-transparent hover:bg-red-600 active:bg-red-700",
-              "transition-colors duration-150",
-              "focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-black",
-            )}
+            className="window-close-btn"
             aria-label="Close window"
-            style={{
-              width: "var(--touch-target-min, 48px)",
-              height: "var(--touch-target-min, 48px)",
-              touchAction: "manipulation",
-              cursor: "pointer",
-              position: "relative",
-              zIndex: 10,
-              userSelect: "none",
-              WebkitUserSelect: "none",
-              WebkitTouchCallout: "none",
-            }}
             data-testid="window-close-button"
           >
-            <X size={16} className="pointer-events-none" />
+            <X size={16} className="pointer-events-none sm:w-4 sm:h-4 w-5 h-5" />
           </button>
         </div>
 
@@ -151,7 +135,7 @@ export function WindowFrame({
         </div>
 
         {/* Resize Handle */}
-        <div className="window-resize-handle absolute bottom-0 right-0 w-4 h-4 bg-black cursor-nwse-resize touch-manipulation opacity-50 hover:opacity-100 transition-opacity" />
+        <div className="window-resize-handle" />
       </div>
     </div>
   )
