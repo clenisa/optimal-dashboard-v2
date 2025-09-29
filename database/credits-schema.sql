@@ -42,27 +42,26 @@ CREATE TABLE IF NOT EXISTS credit_transactions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- AI conversations table (for ElectronConsole integration)
+-- AI conversations & messages tables
 CREATE TABLE IF NOT EXISTS ai_conversations (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    conversation_id VARCHAR(255) NOT NULL, -- External conversation ID
+    id VARCHAR(255) PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    provider VARCHAR(50) NOT NULL,
+    model VARCHAR(100) NOT NULL,
     title VARCHAR(255),
-    messages JSONB NOT NULL DEFAULT '[]', -- Array of message objects
-    metadata JSONB DEFAULT '{}', -- Additional metadata
-    last_message_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    metadata JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(user_id, conversation_id)
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- AI logs table (for debugging and monitoring)
-CREATE TABLE IF NOT EXISTS ai_logs (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    message TEXT NOT NULL,
-    level VARCHAR(20) DEFAULT 'info' CHECK (level IN ('debug', 'info', 'warn', 'error')),
+CREATE TABLE IF NOT EXISTS ai_messages (
+    id VARCHAR(255) PRIMARY KEY,
+    conversation_id VARCHAR(255) REFERENCES ai_conversations(id) ON DELETE CASCADE NOT NULL,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
+    content TEXT NOT NULL,
     metadata JSONB DEFAULT '{}',
+    provider VARCHAR(50),
+    model VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -73,15 +72,15 @@ CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category, u
 CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account, user_id);
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_user ON credit_transactions(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_type ON credit_transactions(type, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_ai_conversations_user ON ai_conversations(user_id, last_message_at DESC);
-CREATE INDEX IF NOT EXISTS idx_ai_logs_user ON ai_logs(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_conversations_user ON ai_conversations(user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_messages_conversation ON ai_messages(conversation_id, created_at ASC);
 
 -- Row Level Security Policies
 ALTER TABLE user_credits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE credit_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_conversations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE ai_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_messages ENABLE ROW LEVEL SECURITY;
 
 -- User credits policies
 CREATE POLICY "Users can view their own credits" ON user_credits
@@ -105,12 +104,30 @@ CREATE POLICY "Users can view their own credit transactions" ON credit_transacti
     FOR ALL USING (auth.uid() = user_id);
 
 -- AI conversations policies
-CREATE POLICY "Users can manage their own conversations" ON ai_conversations
-    FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can view their conversations" ON ai_conversations
+    FOR SELECT USING (auth.uid() = user_id);
 
--- AI logs policies
-CREATE POLICY "Users can view their own logs" ON ai_logs
-    FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their conversations" ON ai_conversations
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their conversations" ON ai_conversations
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their conversations" ON ai_conversations
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- AI messages policies
+CREATE POLICY "Users can view their conversation messages" ON ai_messages
+    FOR SELECT USING (auth.uid() = (SELECT user_id FROM ai_conversations WHERE id = conversation_id));
+
+CREATE POLICY "Users can insert their conversation messages" ON ai_messages
+    FOR INSERT WITH CHECK (auth.uid() = (SELECT user_id FROM ai_conversations WHERE id = conversation_id));
+
+CREATE POLICY "Users can update their conversation messages" ON ai_messages
+    FOR UPDATE USING (auth.uid() = (SELECT user_id FROM ai_conversations WHERE id = conversation_id));
+
+CREATE POLICY "Users can delete their conversation messages" ON ai_messages
+    FOR DELETE USING (auth.uid() = (SELECT user_id FROM ai_conversations WHERE id = conversation_id));
 
 -- Functions for automatic updates
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -130,6 +147,20 @@ CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON transactions
 
 CREATE TRIGGER update_ai_conversations_updated_at BEFORE UPDATE ON ai_conversations
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE OR REPLACE FUNCTION touch_ai_conversation()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE ai_conversations SET updated_at = NOW() WHERE id = NEW.conversation_id;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER ai_messages_touch_conversation AFTER INSERT ON ai_messages
+    FOR EACH ROW EXECUTE FUNCTION touch_ai_conversation();
+
+CREATE TRIGGER ai_messages_touch_conversation_update AFTER UPDATE ON ai_messages
+    FOR EACH ROW EXECUTE FUNCTION touch_ai_conversation();
 
 -- Function to award daily credits
 CREATE OR REPLACE FUNCTION award_daily_credits()
