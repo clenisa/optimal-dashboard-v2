@@ -35,8 +35,8 @@ export function TransactionSummary({ transactions }: TransactionSummaryProps) {
       <CardHeader>
         <CardTitle>Summary</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
+      <CardContent className="p-2">
+        <div className="space-y-1">
           <div className="flex justify-between">
             <span>Income:</span>
             <span className="text-green-500">{totalIncome.toFixed(2)}</span>
