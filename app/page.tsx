@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { DesktopIcon } from "@/components/desktop-icon"
 import { MenuBar } from "@/components/menu-bar"
 import { ThemeProvider } from "@/components/theme-manager"
 import { ThemeSwitcher } from "@/components/theme-manager"
@@ -20,10 +19,12 @@ import { CreditsManager } from "@/components/credits-manager"
 import { ServiceApp } from "@/components/service-app"
 import { DebugConsole } from "@/components/debug-console"
 import { AboutThisDesktopApp } from "@/components/about-this-desktop-app"
-import { WindowFrame } from "@/components/window-frame" // Keep this import
-import { useWindowStore, WindowState, WindowStore } from "@/store/window-store" // Import WindowState, WindowStore and useWindowStore
+import { DesktopServiceSettings } from "@/components/desktop-service-settings"
+import { WindowFrame } from "@/components/window-frame"
+import { useWindowStore, type WindowState, type WindowStore } from "@/store/window-store"
+import { useDesktopServiceStore } from "@/store/desktop-service-store"
 
-import { appDefinitions, type AppId, getFinancialApps, getAIApps, getSystemApps, getToolApps } from "@/lib/app-definitions"
+import { appDefinitions, type AppId } from "@/lib/app-definitions"
 
 // Remove the local WindowState interface, as it's now imported from window-store.ts
 // interface WindowState {
@@ -47,7 +48,9 @@ export default function Home() {
   const removeWindow = useWindowStore((state: WindowStore) => state.removeWindow)
   const updateWindow = useWindowStore((state: WindowStore) => state.updateWindow)
   const focusWindow = useWindowStore((state: WindowStore) => state.focusWindow)
-  const activeWindowId = useWindowStore((state: WindowStore) => state.activeWindowId) // To highlight active window in taskbar
+  const activeWindowId = useWindowStore((state: WindowStore) => state.activeWindowId)
+
+  const { selectedServiceId, isDesktopModeEnabled } = useDesktopServiceStore()
 
   useEffect(() => {
     const supabase = createClient()
@@ -133,9 +136,43 @@ export default function Home() {
         return <DebugConsole />
       case "about-this-desktop":
         return <AboutThisDesktopApp />
+      case "desktop-settings":
+        return <DesktopServiceSettings />
       default:
         return <div>App not found</div>
     }
+  }
+
+  const renderDesktopContent = () => {
+    if (!isDesktopModeEnabled) {
+      return (
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center text-gray-600 dark:text-gray-400">
+            <h2 className="text-3xl font-bold mb-4">Welcome to Optimal Desktop</h2>
+            <p className="text-lg opacity-90">Access your apps via the menu bar above</p>
+            <p className="text-sm mt-2 opacity-70">
+              Enable Desktop Service in Settings to show an app here
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    const desktopApp = appDefinitions.find((app) => app.id === selectedServiceId)
+    if (!desktopApp) {
+      return (
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center text-gray-600 dark:text-gray-400">
+            <h2 className="text-2xl font-semibold mb-2">Select a desktop service</h2>
+            <p className="text-sm opacity-80">
+              Choose an app in Desktop Settings to display it as your desktop background
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    return <div className="h-full">{renderAppContent(desktopApp.id)}</div>
   }
 
   return (
@@ -144,98 +181,10 @@ export default function Home() {
         {/* Menu Bar */}
         <MenuBar />
 
-        {/* Desktop Icons */}
-        <div className="absolute inset-0 p-4 pt-16">
-          <div className="grid grid-cols-1 gap-4 w-fit">
-            {/* AI & Communication Section */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
-                🤖 AI Assistant
-              </h3>
-              <div className="grid grid-cols-1 gap-2">
-                {getAIApps().map(app => (
-                  <DesktopIcon
-                    key={app.id}
-                    id={app.id}
-                    title={app.title}
-                    onClick={() => {
-                      if (app.requiresAuth && !user) {
-                        openWindow("supabase-login")
-                      } else {
-                        openWindow(app.id)
-                      }
-                    }}
-                    icon={`/images/${app.id}.png`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Financial Apps Section */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
-                💰 Financial Management
-              </h3>
-              <div className="grid grid-cols-1 gap-2">
-                {getFinancialApps().map(app => (
-                  <DesktopIcon
-                    key={app.id}
-                    id={app.id}
-                    title={app.title}
-                    onClick={() => {
-                      if (app.requiresAuth && !user) {
-                        openWindow("supabase-login")
-                      } else {
-                        openWindow(app.id)
-                      }
-                    }}
-                    icon={`/images/${app.id}.png`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Tools Section */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
-                🔧 Tools
-              </h3>
-              <div className="grid grid-cols-1 gap-2">
-                {getToolApps().map(app => (
-                  <DesktopIcon
-                    key={app.id}
-                    id={app.id}
-                    title={app.title}
-                    onClick={() => {
-                      if (app.requiresAuth && !user) {
-                        openWindow("supabase-login")
-                      } else {
-                        openWindow(app.id)
-                      }
-                    }}
-                    icon={`/images/${app.id}.png`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* System Apps Section */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">
-                ⚙️ System
-              </h3>
-              <div className="grid grid-cols-1 gap-2">
-                {getSystemApps().map(app => (
-                  <DesktopIcon
-                    key={app.id}
-                    id={app.id}
-                    title={app.title}
-                    onClick={() => openWindow(app.id)}
-                    icon={`/images/${app.id}.png`}
-                  />
-                ))}
-              </div>
-            </div>
+        {/* Desktop Content Area */}
+        <div className="h-full pt-12 pb-20 px-4">
+          <div className="h-full rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-gray-900/70 backdrop-blur-sm shadow-inner overflow-hidden">
+            {renderDesktopContent()}
           </div>
         </div>
 

@@ -35,7 +35,7 @@ export function TransactionFilters({ allTransactions, setFilteredTransactions }:
   }
 
   return (
-    <div className="flex items-center space-x-4 mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+    <div className="flex items-center space-x-2 mb-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
       <div className="flex items-center space-x-2">
         <Label htmlFor="start-date">From:</Label>
         <Input
