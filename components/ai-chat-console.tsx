@@ -384,36 +384,37 @@ export function AIChatConsole() {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="flex-shrink-0">
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
           <div className="flex items-center gap-2">
-            <span>AI Assistant</span>
+            <span className="text-base sm:text-lg">AI Assistant</span>
             {consoleConnected ? (
-              <Badge variant="default" className="flex items-center gap-1">
+              <Badge variant="default" className="flex items-center gap-1 text-xs">
                 <Wifi className="w-3 h-3" />
                 Connected
               </Badge>
             ) : (
-              <Badge variant="destructive" className="flex items-center gap-1">
+              <Badge variant="destructive" className="flex items-center gap-1 text-xs">
                 <WifiOff className="w-3 h-3" />
                 Disconnected
               </Badge>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="flex items-center gap-1">
+            <Badge variant="outline" className="flex items-center gap-1 text-xs">
               <CreditCard className="w-3 h-3" />
               {credits?.current_credits || 0} credits
             </Badge>
             {(credits?.current_credits || 0) <= 2 && (
-              <Button size="sm" variant="outline">
-                Buy Credits
+              <Button size="sm" variant="outline" className="flex items-center gap-1">
+                <DollarSign className="w-4 h-4 sm:hidden" />
+                <span className="hidden sm:inline">Buy Credits</span>
               </Button>
             )}
           </div>
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0">
+      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
         {/* Connection Status */}
         {!consoleConnected && (
           <Alert className="m-4 mb-0">
@@ -433,15 +434,15 @@ export function AIChatConsole() {
         )}
 
         {/* Messages Area */}
-        <ScrollArea className="flex-1 p-4">
+        <ScrollArea className="flex-1 p-4 h-[calc(100vh-200px)] sm:h-auto">
           <div className="space-y-4">
             {messages.length === 0 && (
-              <div className="text-center text-gray-500 py-8">
+              <div className="text-center text-gray-500 py-4 sm:py-8 max-h-[60vh] overflow-y-auto">
                 <Bot className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium mb-2">{AI_CHAT_WELCOME.title}</p>
+                <p className="text-base sm:text-lg font-medium mb-2">{AI_CHAT_WELCOME.title}</p>
                 <p className="text-sm mb-4">{AI_CHAT_WELCOME.description}</p>
-                
-                <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto">
                   {/* Capabilities */}
                   <div className="text-left">
                     <h4 className="font-medium flex items-center gap-2 mb-3 text-gray-700">
@@ -487,7 +488,7 @@ export function AIChatConsole() {
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
+                  className={`max-w-[85%] sm:max-w-[80%] rounded-lg p-2 sm:p-3 ${
                     message.role === 'user'
                       ? 'bg-blue-600 text-white'
                       : message.metadata?.error
@@ -515,7 +516,7 @@ export function AIChatConsole() {
             {/* Generating indicator */}
             {isGenerating && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-lg p-3 max-w-[80%]">
+                <div className="bg-gray-100 rounded-lg p-2 sm:p-3 max-w-[85%] sm:max-w-[80%]">
                   <div className="flex items-center gap-2">
                     <div className="animate-pulse">🤖</div>
                     <div className="text-sm text-gray-600">
@@ -531,7 +532,7 @@ export function AIChatConsole() {
         </ScrollArea>
 
         {/* Input Area */}
-        <div className="border-t p-4 flex-shrink-0">
+        <div className="border-t px-4 pt-4 pb-4 sm:pb-4 flex-shrink-0 sticky bottom-0 bg-white dark:bg-gray-800">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
