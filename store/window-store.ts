@@ -34,7 +34,7 @@ const Z_INDEX_HIERARCHY = {
 } as const
 
 // Track active window z-indices to manage proper stacking
-let windowZIndexCounter = Z_INDEX_HIERARCHY.WINDOW_BASE
+let windowZIndexCounter: number = Z_INDEX_HIERARCHY.WINDOW_BASE
 const getNextWindowZIndex = () => {
   windowZIndexCounter += Z_INDEX_HIERARCHY.WINDOW_INCREMENT
   

@@ -1,6 +1,6 @@
 import { APP_DIMENSIONS } from './constants'
 
-export type AppId = 
+export type AppId =
   | "supabase-login"
   | "csv-parser"
   | "category-line-chart"
@@ -11,6 +11,7 @@ export type AppId =
   | "service-app"
   | "debug-console"
   | "about-this-desktop"
+  | "desktop-settings"
 
 export interface AppDefinition {
   id: AppId
@@ -21,6 +22,7 @@ export interface AppDefinition {
   category?: 'financial' | 'ai' | 'tools' | 'system'
   description?: string
   developmentOnly?: boolean
+  canBeDesktop?: boolean
 }
 
 export const appDefinitions: AppDefinition[] = [
@@ -32,7 +34,8 @@ export const appDefinitions: AppDefinition[] = [
     defaultHeight: APP_DIMENSIONS.LARGE.height,
     requiresAuth: true,
     category: 'ai',
-    description: "Chat with AI via your local ElectronConsole with Ollama"
+    description: "Chat with AI via your local ElectronConsole with Ollama",
+    canBeDesktop: true,
   },
   {
     id: "credits-manager",
@@ -41,7 +44,8 @@ export const appDefinitions: AppDefinition[] = [
     defaultHeight: APP_DIMENSIONS.LARGE.height,
     requiresAuth: true,
     category: 'ai',
-    description: "Manage AI credits and purchase additional credits"
+    description: "Manage AI credits and purchase additional credits",
+    canBeDesktop: true,
   },
   
   // Financial Management
@@ -52,7 +56,8 @@ export const appDefinitions: AppDefinition[] = [
     defaultHeight: APP_DIMENSIONS.MEDIUM.height,
     requiresAuth: true,
     category: 'financial',
-    description: "Spending trends by category over time"
+    description: "Spending trends by category over time",
+    canBeDesktop: true,
   },
   {
     id: "payment-source-balances",
@@ -61,7 +66,8 @@ export const appDefinitions: AppDefinition[] = [
     defaultHeight: APP_DIMENSIONS.LARGE.height,
     requiresAuth: true,
     category: 'financial',
-    description: "Payment source balances with threshold filtering"
+    description: "Payment source balances with threshold filtering",
+    canBeDesktop: true,
   },
   {
     id: "transaction-manager",
@@ -70,7 +76,8 @@ export const appDefinitions: AppDefinition[] = [
     defaultHeight: APP_DIMENSIONS.LARGE.height,
     requiresAuth: true,
     category: 'financial',
-    description: "Manage and view financial transactions"
+    description: "Manage and view financial transactions",
+    canBeDesktop: true,
   },
   
   // Tools
@@ -81,10 +88,19 @@ export const appDefinitions: AppDefinition[] = [
     defaultHeight: APP_DIMENSIONS.LARGE.height,
     requiresAuth: true,
     category: 'tools',
-    description: "Parse and analyze CSV files"
+    description: "Parse and analyze CSV files",
+    canBeDesktop: true,
   },
   
   // System
+  {
+    id: "desktop-settings",
+    title: "Desktop Settings",
+    defaultWidth: 500,
+    defaultHeight: 400,
+    category: 'system',
+    description: "Configure desktop service and appearance",
+  },
   {
     id: "supabase-login",
     title: "Authentication",
@@ -147,5 +163,9 @@ export function getSystemApps(): AppDefinition[] {
 
 export function getToolApps(): AppDefinition[] {
   return getAppsByCategory('tools')
+}
+
+export function getDesktopCapableApps(): AppDefinition[] {
+  return appDefinitions.filter(app => app.canBeDesktop && !app.developmentOnly)
 }
 
