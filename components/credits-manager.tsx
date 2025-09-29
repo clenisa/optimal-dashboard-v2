@@ -16,7 +16,7 @@ import { ErrorBoundary, CreditsErrorFallback } from '@/components/error-boundary
 import { cache, CACHE_KEYS } from '@/lib/cache-utils'
 
 interface UserCredits {
-  total_credits: number
+  current_credits: number
   total_earned: number
   total_spent: number
   last_daily_credit: string
@@ -182,7 +182,7 @@ export function CreditsManager() {
           .from('user_credits')
           .insert({
             user_id: userId,
-            total_credits: 10,
+            current_credits: 10,
             total_earned: 10,
             daily_credit_amount: 50,
             last_daily_credit: getCurrentESTDate()
@@ -412,7 +412,7 @@ export function CreditsManager() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600">
-                  {credits?.total_credits || 0}
+                  {credits?.current_credits || 0}
                 </div>
                 <div className="text-sm text-gray-600">Available Credits</div>
               </div>
