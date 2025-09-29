@@ -22,7 +22,7 @@ A modern, desktop-style financial dashboard application built with Next.js, feat
 - **Financial Analysis**: Get insights on spending patterns and trends
 - **Budget Recommendations**: AI-powered suggestions for financial optimization
 - **Natural Language Queries**: Ask questions about your finances in plain English
-- **Local AI Integration**: Connects to your local ElectronConsole with Ollama
+- **Multi-Provider Support**: Seamlessly switch between local Ollama and OpenAI ChatGPT models
 
 ## 🛠️ Technology Stack
 
@@ -76,6 +76,11 @@ The application uses environment variables for configuration. Copy `.env.example
 ### Optional Configuration
 - `NODE_ENV`: Set to 'development' to enable debug logging
 - `NEXT_PUBLIC_ELECTRON_CONSOLE_URL`: URL for ElectronConsole integration
+- `OPENAI_API_KEY`: Server-side key for OpenAI ChatGPT access
+- `NEXT_PUBLIC_ENABLE_OLLAMA`: Enable/disable the Ollama provider (default: true)
+- `NEXT_PUBLIC_ENABLE_OPENAI`: Enable/disable the OpenAI provider (default: false)
+- `NEXT_PUBLIC_DEFAULT_AI_PROVIDER`: Choose the initial provider shown in the UI
+- `NEXT_PUBLIC_OPENAI_DEFAULT_MODEL`: Preferred OpenAI model identifier
 
 ### Development vs Production
 - Debug logging is automatically enabled in development mode

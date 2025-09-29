@@ -1,21 +1,40 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Mic, Send, Square, CreditCard, DollarSign, AlertCircle, Wifi, WifiOff, Bot, Lightbulb, MessageSquare } from 'lucide-react'
+import { Separator } from '@/components/ui/separator'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Mic,
+  Send,
+  Square,
+  CreditCard,
+  DollarSign,
+  AlertCircle,
+  Wifi,
+  WifiOff,
+  Bot,
+  Lightbulb,
+  MessageSquare,
+  Loader2,
+  Sparkles
+} from 'lucide-react'
 import { createClient } from "@/lib/supabase-client"
 import { User } from "@supabase/supabase-js"
 import { logger } from "@/lib/logger"
+import { aiService } from '@/lib/ai/service'
+import type { AIModel, AIProviderId, ProviderStatus, ConversationSummary } from '@/lib/ai/types'
+import { AIProviderSelector } from './ai-provider-selector'
+import { AIChatHistorySidebar } from './ai-chat-history-sidebar'
 
-// AI Chat Welcome Message and Capabilities
 const AI_CHAT_WELCOME = {
   title: "AI Financial Assistant",
-  description: "Ask questions about your financial data, get insights, and receive personalized recommendations.",
+  description: "Switch between local Ollama and OpenAI to get insights about your finances.",
   capabilities: [
     "Analyze spending patterns and trends",
     "Provide budget recommendations",
@@ -31,19 +50,20 @@ const AI_CHAT_WELCOME = {
   ]
 }
 
+const CREDIT_USD_VALUE = 0.01
+const DEFAULT_PROVIDER = (process.env.NEXT_PUBLIC_DEFAULT_AI_PROVIDER as AIProviderId | undefined) ?? 'ollama'
+
 interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
-  thinking?: string[]
-  gesture?: string
-  metadata?: {
-    modelDisplayName?: string
-    isFinancialQuery?: boolean
-    error?: boolean
-    conversationId?: string
-  }
+  provider: AIProviderId
+  model: string
+  metadata?: Record<string, unknown>
+  costUSD?: number
+  usageSummary?: string
+  error?: boolean
 }
 
 interface UserCredits {
@@ -53,70 +73,151 @@ interface UserCredits {
   last_daily_credit: string
 }
 
+interface ProviderOption {
+  id: AIProviderId
+  name: string
+  defaultModel?: string
+  models: AIModel[]
+}
+
 export function AIChatConsole() {
   const [user, setUser] = useState<User | null>(null)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [inputValue, setInputValue] = useState('')
-  const [isGenerating, setIsGenerating] = useState(false)
   const [credits, setCredits] = useState<UserCredits | null>(null)
+  const [providers, setProviders] = useState<ProviderOption[]>([])
+  const [providerStatus, setProviderStatus] = useState<Record<string, ProviderStatus>>({})
+  const [activeProvider, setActiveProvider] = useState<AIProviderId>('ollama')
+  const [modelSelections, setModelSelections] = useState<Record<string, string>>({})
+  const [inputValue, setInputValue] = useState('')
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [isGenerating, setIsGenerating] = useState(false)
   const [isListening, setIsListening] = useState(false)
-  const [consoleConnected, setConsoleConnected] = useState(false)
-  const [consoleUrl, setConsoleUrl] = useState('http://localhost:3000') // Default ElectronConsole port
   const [error, setError] = useState<string | null>(null)
-  
+  const [history, setHistory] = useState<ConversationSummary[]>([])
+  const [selectedConversationId, setSelectedConversationId] = useState<string | undefined>(undefined)
+  const [, setIsLoadingHistory] = useState(false)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Initialize user and credits
-  useEffect(() => {
-    const supabase = createClient()
-    if (supabase) {
-      supabase.auth.getUser().then(({ data: { user } }: { data: { user: User | null } }) => {
-        setUser(user)
-        if (user) {
-          loadUserCredits(user.id)
-          checkDailyCredits(user.id)
-        }
-      })
-
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-        const newUser = session?.user ?? null
-        setUser(newUser)
-        if (newUser) {
-          loadUserCredits(newUser.id)
-          checkDailyCredits(newUser.id)
-        }
-      })
-
-      return () => subscription.unsubscribe()
-    }
-  }, [])
-
-  // Check ElectronConsole connection
-  useEffect(() => {
-    checkConsoleConnection()
-    const interval = setInterval(checkConsoleConnection, 10000) // Check every 10 seconds
-    return () => clearInterval(interval)
-  }, [consoleUrl])
-
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const checkConsoleConnection = async () => {
+  useEffect(() => {
+    const supabase = createClient()
+    if (!supabase) return
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user)
+      if (user) {
+        initializeForUser(user.id)
+      }
+    })
+
+    const { data: authSubscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      const nextUser = session?.user ?? null
+      setUser(nextUser)
+      if (nextUser) {
+        initializeForUser(nextUser.id)
+      } else {
+        setHistory([])
+        setMessages([])
+      }
+    })
+
+    return () => {
+      authSubscription?.subscription.unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+
+    async function fetchProviders() {
+      try {
+        const providerList = await aiService.listProviders()
+        if (!mounted) return
+        setProviders(providerList)
+
+        const initialSelections: Record<string, string> = {}
+        providerList.forEach((provider) => {
+          const defaultModel = provider.defaultModel || provider.models?.[0]?.id
+          if (defaultModel) {
+            initialSelections[provider.id] = defaultModel
+          }
+        })
+        setModelSelections((prev) => ({ ...initialSelections, ...prev }))
+
+        const preferred =
+          providerList.find((provider) => provider.id === DEFAULT_PROVIDER) ?? providerList[0]
+        if (preferred) {
+          setActiveProvider(preferred.id)
+        }
+      } catch (err) {
+        logger.error('AIChatConsole', 'Failed to load providers', err)
+        setError('Failed to load AI providers. Check your configuration.')
+      }
+    }
+
+    fetchProviders()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (providers.length === 0) return
+    let cancelled = false
+
+    async function refreshStatuses() {
+      try {
+        const statuses = await Promise.all(
+          providers.map(async (provider) => {
+            try {
+              const status = await aiService.getProviderStatus(provider.id)
+              return [provider.id, status] as const
+            } catch (err) {
+              logger.warn('AIChatConsole', 'Provider status fetch failed', { provider: provider.id, err })
+              return [provider.id, { ok: false, error: 'Status unavailable' }] as const
+            }
+          })
+        )
+
+        if (!cancelled) {
+          setProviderStatus(Object.fromEntries(statuses))
+        }
+      } catch (err) {
+        logger.warn('AIChatConsole', 'Failed to refresh provider statuses', err)
+      }
+    }
+
+    refreshStatuses()
+    const interval = setInterval(refreshStatuses, 15000)
+
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [providers])
+
+  const activeModel = useMemo(() => {
+    return modelSelections[activeProvider]
+  }, [modelSelections, activeProvider])
+
+  async function initializeForUser(userId: string) {
+    await Promise.all([loadUserCredits(userId), checkDailyCredits(userId), loadHistory(userId)])
+  }
+
+  const loadHistory = async (userId: string) => {
     try {
-      const response = await fetch(`${consoleUrl}/health`, { 
-        method: 'GET',
-        signal: AbortSignal.timeout(3000)
-      })
-      setConsoleConnected(response.ok)
-      setError(null)
+      setIsLoadingHistory(true)
+      const conversations = await aiService.loadHistory(userId)
+      setHistory(conversations)
     } catch (err) {
-      setConsoleConnected(false)
-      setError('ElectronConsole not reachable. Make sure it\'s running on your PC.')
+      logger.error('AIChatConsole', 'Failed to load chat history', err)
+    } finally {
+      setIsLoadingHistory(false)
     }
   }
 
@@ -131,7 +232,7 @@ export function AIChatConsole() {
         .eq('user_id', userId)
         .single()
 
-      if (error && error.code !== 'PGRST116') { // Not found error
+      if (error && error.code !== 'PGRST116') {
         logger.error('AIChatConsole', 'Error loading credits', error)
         return
       }
@@ -139,7 +240,6 @@ export function AIChatConsole() {
       if (data) {
         setCredits(data)
       } else {
-        // Create initial credits for new user
         const { data: newCredits, error: insertError } = await supabase
           .from('user_credits')
           .insert({
@@ -166,20 +266,22 @@ export function AIChatConsole() {
       if (!supabase) return
 
       const today = new Date().toISOString().split('T')[0]
-      
-      const { data, error } = await supabase
+
+      const { data } = await supabase
         .from('user_credits')
-        .select('last_daily_credit')
+        .select('last_daily_credit, daily_credit_amount, current_credits, total_earned')
         .eq('user_id', userId)
         .single()
 
       if (data && data.last_daily_credit !== today) {
-        // Award daily credits
+        const newCurrentCredits = (data.current_credits || 0) + (data.daily_credit_amount || 0)
+        const newTotalEarned = (data.total_earned || 0) + (data.daily_credit_amount || 0)
+
         const { data: updated, error: updateError } = await supabase
           .from('user_credits')
           .update({
-            current_credits: (credits?.current_credits || 0) + 5,
-            total_earned: (credits?.total_earned || 0) + 5,
+            current_credits: newCurrentCredits,
+            total_earned: newTotalEarned,
             last_daily_credit: today
           })
           .eq('user_id', userId)
@@ -188,16 +290,13 @@ export function AIChatConsole() {
 
         if (!updateError && updated) {
           setCredits(updated)
-          
-          // Log the credit transaction
-          await supabase
-            .from('credit_transactions')
-            .insert({
-              user_id: userId,
-              type: 'daily_bonus',
-              amount: 5,
-              description: 'Daily login bonus'
-            })
+
+          await supabase.from('credit_transactions').insert({
+            user_id: userId,
+            type: 'earned',
+            amount: data.daily_credit_amount || 0,
+            description: 'Daily login bonus'
+          })
         }
       }
     } catch (err) {
@@ -205,7 +304,15 @@ export function AIChatConsole() {
     }
   }
 
-  const deductCredit = async (userId: string, conversationId: string) => {
+  const spendCredits = async (
+    userId: string,
+    amount: number,
+    conversationId: string,
+    provider: AIProviderId,
+    metadata?: Record<string, unknown>
+  ) => {
+    if (amount <= 0) return true
+
     try {
       const supabase = createClient()
       if (!supabase) return false
@@ -213,8 +320,47 @@ export function AIChatConsole() {
       const { data, error } = await supabase
         .from('user_credits')
         .update({
-          current_credits: Math.max(0, (credits?.current_credits || 0) - 1),
-          total_spent: (credits?.total_spent || 0) + 1
+          current_credits: Math.max(0, (credits?.current_credits || 0) - amount),
+          total_spent: (credits?.total_spent || 0) + amount
+        })
+        .eq('user_id', userId)
+        .select()
+        .single()
+
+      if (error) {
+        logger.error('AIChatConsole', 'Error spending credits', error)
+        return false
+      }
+
+      setCredits(data)
+
+      await supabase.from('credit_transactions').insert({
+        user_id: userId,
+        type: 'spent',
+        amount: -amount,
+        description: `AI chat (${provider})`,
+        conversation_id: conversationId,
+        metadata
+      })
+
+      return true
+    } catch (err) {
+      logger.error('AIChatConsole', 'Unexpected error spending credits', err)
+      return false
+    }
+  }
+
+  const refundCredits = async (userId: string, amount: number, reason: string) => {
+    if (amount <= 0) return
+    try {
+      const supabase = createClient()
+      if (!supabase) return
+
+      const { data, error } = await supabase
+        .from('user_credits')
+        .update({
+          current_credits: (credits?.current_credits || 0) + amount,
+          total_spent: Math.max(0, (credits?.total_spent || 0) - amount)
         })
         .eq('user_id', userId)
         .select()
@@ -222,141 +368,197 @@ export function AIChatConsole() {
 
       if (!error && data) {
         setCredits(data)
-        
-        // Log the credit transaction
-        await supabase
-          .from('credit_transactions')
-          .insert({
-            user_id: userId,
-            type: 'spent',
-            amount: -1,
-            description: 'AI chat message',
-            conversation_id: conversationId
-          })
-        
-        return true
+        await supabase.from('credit_transactions').insert({
+          user_id: userId,
+          type: 'earned',
+          amount,
+          description: reason
+        })
       }
-      
-      return false
     } catch (err) {
-      logger.error('AIChatConsole', 'Error deducting credit', err)
-      return false
+      logger.error('AIChatConsole', 'Error refunding credits', err)
     }
   }
 
+  const handleProviderChange = (provider: AIProviderId) => {
+    setActiveProvider(provider)
+    setMessages([])
+    setSelectedConversationId(undefined)
+  }
+
+  const handleModelChange = (modelId: string) => {
+    setModelSelections((prev) => ({ ...prev, [activeProvider]: modelId }))
+  }
+
+  const handleConversationSelect = async (conversationId: string) => {
+    if (!user) return
+    try {
+      setSelectedConversationId(conversationId)
+      const conversationMessages = await aiService.loadConversationMessages(conversationId)
+
+      const formattedMessages: ChatMessage[] = conversationMessages.map((message) => ({
+        id: message.id,
+        role: message.role,
+        content: message.content,
+        timestamp: new Date(message.createdAt),
+        provider: (message.provider || activeProvider) as AIProviderId,
+        model: message.model || activeModel || '',
+        metadata: message.metadata || {}
+      }))
+
+      setMessages(formattedMessages)
+
+      const conversation = history.find((item) => item.id === conversationId)
+      if (conversation) {
+        setActiveProvider(conversation.provider)
+        if (conversation.model) {
+          setModelSelections((prev) => ({ ...prev, [conversation.provider]: conversation.model }))
+        }
+      }
+    } catch (err) {
+      logger.error('AIChatConsole', 'Failed to load conversation messages', err)
+      setError('Failed to load conversation. Try again later.')
+    }
+  }
+
+  const handleConversationDelete = async (conversationId: string) => {
+    try {
+      await aiService.deleteConversation(conversationId)
+      setHistory((prev) => prev.filter((conversation) => conversation.id !== conversationId))
+      if (selectedConversationId === conversationId) {
+        setSelectedConversationId(undefined)
+        setMessages([])
+      }
+    } catch (err) {
+      logger.error('AIChatConsole', 'Failed to delete conversation', err)
+      setError('Unable to delete conversation at this time.')
+    }
+  }
+
+  const calculateCreditsFromUsd = (usd?: number) => {
+    if (!usd || usd <= 0) return 1
+    return Math.max(1, Math.ceil(usd / CREDIT_USD_VALUE))
+  }
+
   const sendMessage = async () => {
-    if (!inputValue.trim() || isGenerating || !user || !consoleConnected) return
-    
+    if (!inputValue.trim() || isGenerating || !user) return
+    if (!activeModel) {
+      setError('Select a model before sending a message.')
+      return
+    }
+
     if (!credits || credits.current_credits <= 0) {
       setError('No credits remaining. Purchase more credits to continue chatting.')
       return
     }
 
-    const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    
-    // Deduct credit first
-    const creditDeducted = await deductCredit(user.id, conversationId)
-    if (!creditDeducted) {
-      setError('Failed to deduct credit. Please try again.')
+    const conversationId = selectedConversationId ?? `conv_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+    const deposit = 1
+
+    const canSpend = await spendCredits(user.id, deposit, conversationId, activeProvider, {
+      model: activeModel,
+      type: 'initial_deposit'
+    })
+
+    if (!canSpend) {
+      setError('Failed to deduct credits. Please try again.')
       return
     }
 
+    const timestamp = new Date()
     const userMessage: ChatMessage = {
       id: `msg_${Date.now()}_user`,
       role: 'user',
       content: inputValue.trim(),
-      timestamp: new Date()
+      timestamp,
+      provider: activeProvider,
+      model: activeModel
     }
 
-    setMessages(prev => [...prev, userMessage])
+    const nextMessages = [...messages, userMessage]
+    setMessages(nextMessages)
     setInputValue('')
     setIsGenerating(true)
     setError(null)
 
     try {
-      // Send to ElectronConsole with user identification
-      const response = await fetch(`${consoleUrl}/prompt`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          prompt: userMessage.content,
-          userId: user.id,
-          userEmail: user.email,
-          conversationId: conversationId,
-          source: 'optimal-desktop',
-          timestamp: new Date().toISOString(),
-          // Include financial context flag
-          includeFinancialContext: /budget|spending|expense|income|credit|transaction|financial|money|dollar|\$/.test(userMessage.content.toLowerCase())
-        })
+      const chatHistory = nextMessages.map((message) => ({
+        role: message.role,
+        content: message.content
+      }))
+
+      const { result, conversation } = await aiService.sendMessage({
+        provider: activeProvider,
+        model: activeModel,
+        userId: user.id,
+        userEmail: user.email,
+        conversationId,
+        messages: chatHistory
       })
 
-      if (!response.ok) {
-        throw new Error(`ElectronConsole error: ${response.status}`)
-      }
+      const costCredits = activeProvider === 'openai'
+        ? calculateCreditsFromUsd(result.message.costUSD)
+        : 1
 
-      const result = await response.json()
+      const additionalCredits = costCredits - deposit
+      if (additionalCredits > 0) {
+        await spendCredits(user.id, additionalCredits, conversationId, activeProvider, {
+          model: activeModel,
+          type: 'usage_adjustment',
+          costUSD: result.message.costUSD,
+          usage: result.message.usage
+        })
+      } else if (additionalCredits < 0) {
+        await refundCredits(user.id, Math.abs(additionalCredits), 'AI chat credit adjustment')
+      }
 
       const assistantMessage: ChatMessage = {
-        id: `msg_${Date.now()}_assistant`,
+        id: result.message.id,
         role: 'assistant',
-        content: result.response || 'I received your message but had trouble generating a response.',
+        content: result.message.content,
         timestamp: new Date(),
-        thinking: result.thinking,
-        gesture: result.gesture,
-        metadata: {
-          ...result.metadata,
-          conversationId: conversationId
-        }
+        provider: result.provider,
+        model: result.model,
+        metadata: result.message.metadata,
+        costUSD: result.message.costUSD,
+        usageSummary: result.message.usage
+          ? `${result.message.usage.totalTokens} tokens`
+          : undefined
       }
 
-      setMessages(prev => [...prev, assistantMessage])
+      setMessages((prev) => [...prev, assistantMessage])
+      setSelectedConversationId(conversation.id)
 
+      setHistory((prev) => {
+        const others = prev.filter((item) => item.id !== conversation.id)
+        const updated: ConversationSummary = {
+          ...conversation,
+          updatedAt: new Date().toISOString()
+        }
+        return [updated, ...others]
+      })
     } catch (err) {
-      logger.error('AIChatConsole', 'Error communicating with ElectronConsole', err)
-      
-      // Refund the credit on error
-      if (credits) {
-        const supabase = createClient()
-        if (supabase) {
-          await supabase
-            .from('user_credits')
-            .update({
-              current_credits: credits.current_credits + 1,
-              total_spent: Math.max(0, credits.total_spent - 1)
-            })
-            .eq('user_id', user.id)
-          
-          // Reload credits
-          loadUserCredits(user.id)
-        }
-      }
-
-      const errorMessage: ChatMessage = {
-        id: `msg_${Date.now()}_error`,
-        role: 'assistant',
-        content: `I couldn't connect to the AI console — error: ${err instanceof Error ? err.message : 'Unknown error'}. Make sure ElectronConsole is running on your PC.`,
-        timestamp: new Date(),
-        metadata: { error: true }
-      }
-
-      setMessages(prev => [...prev, errorMessage])
+      logger.error('AIChatConsole', 'Error generating AI response', err)
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'We encountered an issue communicating with the AI provider.'
+      )
+      await refundCredits(user.id, deposit, 'AI chat refund (failed request)')
     } finally {
       setIsGenerating(false)
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
       sendMessage()
     }
   }
 
   const toggleVoiceRecognition = () => {
     setIsListening(!isListening)
-    // Mock voice recognition for now
     if (!isListening) {
       setTimeout(() => {
         setIsListening(false)
@@ -365,9 +567,7 @@ export function AIChatConsole() {
     }
   }
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  }
+  const formatTime = (date: Date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
   if (!user) {
     return (
@@ -381,216 +581,260 @@ export function AIChatConsole() {
     )
   }
 
+  const activeStatus = providerStatus[activeProvider]
+  const providerConnected = activeStatus?.ok ?? false
+
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="flex-shrink-0">
-        <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-          <div className="flex items-center gap-2">
-            <span className="text-base sm:text-lg">AI Assistant</span>
-            {consoleConnected ? (
-              <Badge variant="default" className="flex items-center gap-1 text-xs">
-                <Wifi className="w-3 h-3" />
-                Connected
-              </Badge>
-            ) : (
-              <Badge variant="destructive" className="flex items-center gap-1 text-xs">
-                <WifiOff className="w-3 h-3" />
-                Disconnected
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="flex items-center gap-1 text-xs">
-              <CreditCard className="w-3 h-3" />
-              {credits?.current_credits || 0} credits
-            </Badge>
-            {(credits?.current_credits || 0) <= 2 && (
-              <Button size="sm" variant="outline" className="flex items-center gap-1">
-                <DollarSign className="w-4 h-4 sm:hidden" />
-                <span className="hidden sm:inline">Buy Credits</span>
-              </Button>
-            )}
-          </div>
-        </CardTitle>
-      </CardHeader>
+    <div className="flex h-full min-h-[600px] border rounded-lg overflow-hidden bg-background">
+      <AIChatHistorySidebar
+        conversations={history}
+        selectedConversationId={selectedConversationId}
+        onSelect={handleConversationSelect}
+        onDelete={handleConversationDelete}
+      />
 
-      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
-        {/* Connection Status */}
-        {!consoleConnected && (
-          <Alert className="m-4 mb-0">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              ElectronConsole not connected. Make sure it's running on your PC at {consoleUrl}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Error Display */}
-        {error && (
-          <Alert className="m-4 mb-0" variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Messages Area */}
-        <ScrollArea className="flex-1 p-4 h-[calc(100vh-200px)] sm:h-auto">
-          <div className="space-y-4">
-            {messages.length === 0 && (
-              <div className="text-center text-gray-500 py-4 sm:py-8 max-h-[60vh] overflow-y-auto">
-                <Bot className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-base sm:text-lg font-medium mb-2">{AI_CHAT_WELCOME.title}</p>
-                <p className="text-sm mb-4">{AI_CHAT_WELCOME.description}</p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto">
-                  {/* Capabilities */}
-                  <div className="text-left">
-                    <h4 className="font-medium flex items-center gap-2 mb-3 text-gray-700">
-                      <Lightbulb className="h-4 w-4 text-yellow-600" />
-                      What I can help with:
-                    </h4>
-                    <ul className="space-y-2 text-sm">
-                      {AI_CHAT_WELCOME.capabilities.map((capability, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-0.5">•</span>
-                          <span>{capability}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  
-                  {/* Example Queries */}
-                  <div className="text-left">
-                    <h4 className="font-medium flex items-center gap-2 mb-3 text-gray-700">
-                      <MessageSquare className="h-4 w-4 text-green-600" />
-                      Try asking:
-                    </h4>
-                    <ul className="space-y-2 text-sm">
-                      {AI_CHAT_WELCOME.exampleQueries.map((query, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <span className="text-green-500 mt-0.5">•</span>
-                          <span className="italic">"{query}"</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+      <div className="flex-1 flex flex-col">
+        <Card className="border-none shadow-none h-full flex flex-col">
+          <CardHeader className="flex-shrink-0">
+            <CardTitle className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-base sm:text-lg">AI Assistant</span>
+                  {providerConnected ? (
+                    <Badge variant="default" className="flex items-center gap-1 text-xs">
+                      <Wifi className="w-3 h-3" />
+                      Connected
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="flex items-center gap-1 text-xs">
+                      <WifiOff className="w-3 h-3" />
+                      Offline
+                    </Badge>
+                  )}
+                  <AIProviderSelector
+                    providers={providers}
+                    value={activeProvider}
+                    onChange={handleProviderChange}
+                    status={providerStatus}
+                  />
+                  {providers.find((provider) => provider.id === activeProvider)?.models?.length ? (
+                    <Select
+                      value={activeModel ?? ''}
+                      onValueChange={handleModelChange}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Select model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {providers
+                          .find((provider) => provider.id === activeProvider)
+                          ?.models.map((model) => (
+                            <SelectItem key={model.id} value={model.id}>
+                              <div className="flex flex-col">
+                                <span>{model.name}</span>
+                                {model.pricing && (
+                                  <span className="text-xs text-muted-foreground">
+                                    ${model.pricing.prompt.toFixed(4)}/{model.pricing.unit}
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  ) : null}
                 </div>
-                
-                <div className="mt-6 text-xs text-gray-400">
-                  Connected to your local ElectronConsole with Ollama
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                    <CreditCard className="w-3 h-3" />
+                    {credits?.current_credits || 0} credits
+                  </Badge>
+                  {(credits?.current_credits || 0) <= 2 && (
+                    <Button size="sm" variant="outline" className="flex items-center gap-1">
+                      <DollarSign className="w-4 h-4 sm:hidden" />
+                      <span className="hidden sm:inline">Buy Credits</span>
+                    </Button>
+                  )}
                 </div>
               </div>
+              <Separator />
+              <div className="flex flex-wrap gap-2 items-center text-xs text-muted-foreground">
+                <Sparkles className="h-3 w-3" />
+                <span>
+                  {providers.length > 0
+                    ? `Using ${providers.find((provider) => provider.id === activeProvider)?.name || activeProvider} • ${activeModel}`
+                    : 'Loading providers...'}
+                </span>
+              </div>
+            </CardTitle>
+          </CardHeader>
+
+          <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+            {error && (
+              <Alert className="mx-4 mt-4" variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[85%] sm:max-w-[80%] rounded-lg p-2 sm:p-3 ${
-                    message.role === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : message.metadata?.error
-                      ? 'bg-red-50 border border-red-200 text-red-800'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
+            {!providerConnected && (
+              <Alert className="mx-4 mt-4" variant="default">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {activeProvider === 'ollama'
+                    ? 'ElectronConsole not connected. Make sure it is running on your local machine.'
+                    : 'OpenAI provider unreachable. Check your API key and network connectivity.'}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-4">
+                {messages.length === 0 && !selectedConversationId && (
+                  <div className="text-center text-gray-500 py-8">
+                    <Bot className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p className="text-base sm:text-lg font-medium mb-2">{AI_CHAT_WELCOME.title}</p>
+                    <p className="text-sm mb-4">{AI_CHAT_WELCOME.description}</p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                      <div className="text-left">
+                        <h4 className="font-medium flex items-center gap-2 mb-3 text-gray-700">
+                          <Lightbulb className="h-4 w-4 text-yellow-600" />
+                          What I can help with:
+                        </h4>
+                        <ul className="space-y-2 text-sm">
+                          {AI_CHAT_WELCOME.capabilities.map((capability, index) => (
+                            <li key={index} className="flex items-start gap-2">
+                              <span className="text-blue-500 mt-0.5">•</span>
+                              <span>{capability}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="text-left">
+                        <h4 className="font-medium flex items-center gap-2 mb-3 text-gray-700">
+                          <MessageSquare className="h-4 w-4 text-green-600" />
+                          Try asking:
+                        </h4>
+                        <ul className="space-y-2 text-sm">
+                          {AI_CHAT_WELCOME.exampleQueries.map((query, index) => (
+                            <li key={index} className="flex items-start gap-2">
+                              <span className="text-green-500 mt-0.5">•</span>
+                              <span className="italic">"{query}"</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 text-xs text-gray-400">
+                      Seamlessly switch between local Ollama and cloud AI providers.
+                    </div>
+                  </div>
+                )}
+
+                {messages.map((message) => (
+                  <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      className={`max-w-[85%] sm:max-w-[70%] rounded-lg p-3 text-sm ${
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : message.error
+                          ? 'bg-red-50 border border-red-200 text-red-800'
+                          : 'bg-muted text-foreground'
+                      }`}
+                    >
+                      <div className="whitespace-pre-wrap">{message.content}</div>
+                      <div className="flex items-center justify-between mt-2 text-[11px] opacity-70">
+                        <span>{formatTime(message.timestamp)}</span>
+                        <span className="uppercase">{message.provider}</span>
+                      </div>
+                      {message.costUSD !== undefined && (
+                        <div className="mt-1 text-[10px] text-muted-foreground">
+                          Cost: ${message.costUSD.toFixed(4)} {message.usageSummary ? `• ${message.usageSummary}` : ''}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {isGenerating && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted rounded-lg p-3 max-w-[70%] text-sm flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>
+                        {activeProvider === 'ollama'
+                          ? 'AI is thinking via ElectronConsole...'
+                          : 'AI is generating a response...'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+
+            <div className="border-t px-4 py-4 flex-shrink-0 bg-background">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={toggleVoiceRecognition}
+                  className={isListening ? 'bg-red-100 border-red-300' : ''}
+                  disabled={isGenerating || !credits || credits.current_credits <= 0}
                 >
-                  <div className="whitespace-pre-wrap text-sm">
-                    {message.content}
-                  </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="text-xs opacity-70">
-                      {formatTime(message.timestamp)}
-                    </div>
-                    {message.metadata?.conversationId && (
-                      <Badge variant="secondary" className="text-xs">
-                        Via ElectronConsole
-                      </Badge>
-                    )}
-                  </div>
-                </div>
+                  {isListening ? <Square className="w-4 h-4 text-red-600" /> : <Mic className="w-4 h-4" />}
+                </Button>
+
+                <Input
+                  ref={inputRef}
+                  value={inputValue}
+                  onChange={(event) => setInputValue(event.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder={
+                    !providerConnected
+                      ? 'Provider not reachable'
+                      : !credits || credits.current_credits <= 0
+                      ? 'No credits remaining - purchase more to continue'
+                      : isGenerating
+                      ? 'AI is thinking...'
+                      : 'Ask your AI assistant...'
+                  }
+                  disabled={isGenerating || !credits || credits.current_credits <= 0 || !providerConnected}
+                  className="flex-1"
+                />
+
+                <Button
+                  onClick={sendMessage}
+                  disabled={!inputValue.trim() || isGenerating || !credits || credits.current_credits <= 0 || !providerConnected}
+                  size="icon"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
               </div>
-            ))}
 
-            {/* Generating indicator */}
-            {isGenerating && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-lg p-2 sm:p-3 max-w-[85%] sm:max-w-[80%]">
-                  <div className="flex items-center gap-2">
-                    <div className="animate-pulse">🤖</div>
-                    <div className="text-sm text-gray-600">
-                      AI is thinking via ElectronConsole...
-                    </div>
-                  </div>
+              {isListening && (
+                <div className="mt-2 text-center text-sm text-red-600 animate-pulse">
+                  🎤 Listening... (Mock - speak now)
                 </div>
-              </div>
-            )}
+              )}
 
-            <div ref={messagesEndRef} />
-          </div>
-        </ScrollArea>
+              {(!credits || credits.current_credits <= 0) && (
+                <div className="mt-2 text-center text-sm text-orange-600">
+                  ⚠️ No credits remaining. Purchase more to continue chatting.
+                </div>
+              )}
 
-        {/* Input Area */}
-        <div className="border-t px-4 pt-4 pb-4 sm:pb-4 flex-shrink-0 sticky bottom-0 bg-white dark:bg-gray-800">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={toggleVoiceRecognition}
-              className={isListening ? 'bg-red-100 border-red-300' : ''}
-              disabled={isGenerating || !credits || credits.current_credits <= 0 || !consoleConnected}
-            >
-              <Mic className={`w-4 h-4 ${isListening ? 'text-red-600' : ''}`} />
-            </Button>
-
-            <Input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={
-                !consoleConnected
-                  ? "ElectronConsole not connected"
-                  : !credits || credits.current_credits <= 0 
-                  ? "No credits remaining - purchase more to continue"
-                  : isGenerating 
-                  ? "AI is thinking..." 
-                  : "Ask your AI assistant..."
-              }
-              disabled={isGenerating || !credits || credits.current_credits <= 0 || !consoleConnected}
-              className="flex-1"
-            />
-
-            <Button
-              onClick={sendMessage}
-              disabled={!inputValue.trim() || isGenerating || !credits || credits.current_credits <= 0 || !consoleConnected}
-              size="icon"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {isListening && (
-            <div className="mt-2 text-center text-sm text-red-600 animate-pulse">
-              🎤 Listening... (Mock - speak now)
+              {!providerConnected && (
+                <div className="mt-2 text-center text-sm text-red-600">
+                  🔌 Provider disconnected. Check that it is configured correctly.
+                </div>
+              )}
             </div>
-          )}
-
-          {(!credits || credits.current_credits <= 0) && (
-            <div className="mt-2 text-center text-sm text-orange-600">
-              ⚠️ No credits remaining. Purchase more to continue chatting.
-            </div>
-          )}
-
-          {!consoleConnected && (
-            <div className="mt-2 text-center text-sm text-red-600">
-              🔌 ElectronConsole disconnected. Check that it's running on your PC.
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }
-
