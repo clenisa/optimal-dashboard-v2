@@ -5,7 +5,15 @@ import { Clock } from "@/components/clock"
 import { VolumeControl } from "@/components/volume-control"
 import { useWindowStore } from "@/store/window-store"
 import { useAuthState } from "@/hooks/use-auth-state"
-import { appDefinitions, getAIApps, getFinancialApps, getSystemApps, getToolApps } from "@/lib/app-definitions"
+import { useDesktopServiceStore } from "@/store/desktop-service-store"
+import {
+  appDefinitions,
+  getAIApps,
+  getFinancialApps,
+  getSystemApps,
+  getToolApps,
+  type AppDefinition,
+} from "@/lib/app-definitions"
 
 const categoryMenus = [
   { id: "ai", emoji: "🤖", apps: () => getAIApps() },
@@ -16,6 +24,7 @@ const categoryMenus = [
 export function MenuBar() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const { addWindow, focusWindow, windows } = useWindowStore()
+  const { selectedServiceId, isDesktopModeEnabled } = useDesktopServiceStore()
   const { user, loading } = useAuthState()
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -72,6 +81,14 @@ export function MenuBar() {
     openAppWindow("supabase-login")
   }
 
+  const filterAppsForMenu = (apps: AppDefinition[]) => {
+    if (!isDesktopModeEnabled) {
+      return apps
+    }
+
+    return apps.filter((app) => app.id !== selectedServiceId)
+  }
+
   return (
     <div
       ref={menuRef}
@@ -90,7 +107,7 @@ export function MenuBar() {
           </button>
           {activeMenu === "apple" && (
             <div className="absolute top-full left-0 bg-white border border-black shadow-lg min-w-48 z-40">
-              {getSystemApps().map((app) => (
+              {filterAppsForMenu(getSystemApps()).map((app) => (
                 <button
                   key={app.id}
                   className="block w-full text-left px-3 py-2 hover:bg-blue-500 hover:text-white border-b border-gray-200 last:border-b-0"
@@ -114,7 +131,7 @@ export function MenuBar() {
             </button>
             {activeMenu === menu.id && (
               <div className="absolute top-full left-0 bg-white border border-black shadow-lg min-w-48 z-40">
-                {menu.apps().map((app) => (
+                {filterAppsForMenu(menu.apps()).map((app) => (
                   <button
                     key={app.id}
                     className="block w-full text-left px-3 py-2 hover:bg-blue-500 hover:text-white border-b border-gray-200 last:border-b-0"
