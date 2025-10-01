@@ -7,6 +7,7 @@ export type AppId =
   | "category-line-chart"
   | "payment-source-balances"
   | "transaction-manager"
+  | "mortgage-calculator"
   | "ai-chat-console"
   | "credits-manager"
   | "service-app"
@@ -80,7 +81,16 @@ export const appDefinitions: AppDefinition[] = [
     description: "Manage and view financial transactions",
     canBeDesktop: true,
   },
-  
+  {
+    id: "mortgage-calculator",
+    title: "Mortgage Calculator",
+    defaultWidth: 500,
+    defaultHeight: 450,
+    category: 'financial',
+    description: "Calculate monthly mortgage payments",
+    canBeDesktop: false,
+  },
+
   // Tools
   {
     id: "csv-parser",
