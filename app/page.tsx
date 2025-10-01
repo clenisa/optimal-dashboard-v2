@@ -11,6 +11,7 @@ import { logger } from "@/lib/logger"
 // Import all components
 import { SupabaseLoginApp } from "@/components/supabase-login-app"
 import { CsvParserApp } from "@/components/csv-parser-app"
+import { CsvCombinerApp } from "@/components/csv-combiner-app"
 import { CategoryLineChart } from "@/components/category-line-chart"
 import { PaymentSourceBalances } from "@/components/payment-source-balances"
 import { TransactionManager } from "@/components/transaction-manager"
@@ -120,6 +121,8 @@ export default function Home() {
         return <SupabaseLoginApp />
       case "csv-parser":
         return <CsvParserApp />
+      case "csv-combiner":
+        return <CsvCombinerApp />
       case "category-line-chart":
         return <CategoryLineChart />
       case "payment-source-balances":

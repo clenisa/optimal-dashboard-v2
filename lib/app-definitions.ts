@@ -3,6 +3,7 @@ import { APP_DIMENSIONS } from './constants'
 export type AppId =
   | "supabase-login"
   | "csv-parser"
+  | "csv-combiner"
   | "category-line-chart"
   | "payment-source-balances"
   | "transaction-manager"
@@ -89,6 +90,16 @@ export const appDefinitions: AppDefinition[] = [
     requiresAuth: true,
     category: 'tools',
     description: "Parse and analyze CSV files",
+    canBeDesktop: true,
+  },
+  {
+    id: "csv-combiner",
+    title: "CSV Combiner",
+    defaultWidth: APP_DIMENSIONS.LARGE.width,
+    defaultHeight: APP_DIMENSIONS.LARGE.height,
+    requiresAuth: true,
+    category: 'tools',
+    description: "Combine multiple CSV files into a single file",
     canBeDesktop: true,
   },
   
