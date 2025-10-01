@@ -10,10 +10,12 @@ import { AIProvider } from './base'
 
 const DEFAULT_MODEL = 'gpt-4o-mini'
 
+// Pricing per 1M tokens (as of October 2024)
+// Source: https://openai.com/api/pricing/
 const MODEL_PRICING: Record<string, { prompt: number; completion: number }> = {
-  'gpt-4o-mini': { prompt: 0.00015, completion: 0.0006 },
-  'gpt-4o': { prompt: 0.0005, completion: 0.0015 },
-  'gpt-3.5-turbo': { prompt: 0.0005, completion: 0.0015 }
+  'gpt-4o-mini': { prompt: 0.15, completion: 0.6 },
+  'gpt-4o': { prompt: 2.5, completion: 10.0 },
+  'gpt-3.5-turbo': { prompt: 0.5, completion: 1.5 }
 }
 
 export class OpenAIProvider extends AIProvider {
@@ -40,7 +42,7 @@ export class OpenAIProvider extends AIProvider {
       pricing: {
         prompt: MODEL_PRICING[modelId].prompt,
         completion: MODEL_PRICING[modelId].completion,
-        unit: '1K_tokens',
+        unit: '1M_tokens',
         currency: 'USD'
       },
       description: index === 0 ? 'Fast and capable model suitable for financial insights' : undefined
@@ -126,10 +128,16 @@ export class OpenAIProvider extends AIProvider {
     }
   }
 
+  /**
+   * Calculate the cost in USD for a given token usage
+   * @param model - The model name
+   * @param usage - Token usage statistics
+   * @returns Cost in USD (pricing is per 1M tokens)
+   */
   private calculateCost(model: string, usage: TokenUsage): number {
     const pricing = MODEL_PRICING[model] || MODEL_PRICING[DEFAULT_MODEL]
-    const promptCost = (usage.promptTokens / 1000) * pricing.prompt
-    const completionCost = (usage.completionTokens / 1000) * pricing.completion
+    const promptCost = (usage.promptTokens / 1_000_000) * pricing.prompt
+    const completionCost = (usage.completionTokens / 1_000_000) * pricing.completion
     return Number((promptCost + completionCost).toFixed(6))
   }
 }
