@@ -84,10 +84,10 @@ export const appDefinitions: AppDefinition[] = [
   {
     id: "mortgage-calculator",
     title: "Mortgage Calculator",
-    defaultWidth: 500,
-    defaultHeight: 450,
+    defaultWidth: 600,
+    defaultHeight: 700,
     category: 'financial',
-    description: "Calculate monthly mortgage payments",
+    description: "Calculate monthly mortgage payments with taxes and costs",
     canBeDesktop: false,
   },
 
