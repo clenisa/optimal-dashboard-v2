@@ -14,10 +14,12 @@ services:
       - NEXT_PUBLIC_FINANCE_API_URL=http://finance-api:3001
       - NEXT_PUBLIC_AI_CLOUD_API_URL=http://ai-cloud:3002
       - NEXT_PUBLIC_CHAT_SERVER_URL=ws://chat-server:3003
+      - NEXT_PUBLIC_MORTGAGE_CALCULATOR_URL=http://mortgage-calculator:3004
     depends_on:
       - finance-api
       - ai-cloud
       - chat-server
+      - mortgage-calculator
     networks:
       - optimal-os-net
 
@@ -52,6 +54,16 @@ services:
       - "3003:3003"
     environment:
       - PORT=3003
+    networks:
+      - optimal-os-net
+
+  mortgage-calculator:
+    build:
+      context: ./services/mortgage-calculator
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
     networks:
       - optimal-os-net
 

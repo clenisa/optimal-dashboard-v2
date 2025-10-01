@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import CategoryLineChart from "./category-line-chart"
 import { PaymentSourceBalances } from "./payment-source-balances"
 import { CsvParserApp } from "./csv-parser-app"
+import { MortgageCalculatorApp } from "./mortgage-calculator-app"
 
 interface ServiceAppProps {
   serviceName: string
@@ -22,6 +23,10 @@ export function ServiceApp({ serviceName }: ServiceAppProps) {
 
     if (serviceName === "Credit") {
       return <PaymentSourceBalances />
+    }
+
+    if (serviceName === "Mortgage Calculator") {
+      return <MortgageCalculatorApp />
     }
 
     if (serviceName === "Voice Assistant") {
