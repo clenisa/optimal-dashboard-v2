@@ -67,7 +67,7 @@ interface ChatMessage {
 }
 
 interface UserCredits {
-  current_credits: number
+  total_credits: number
   total_earned: number
   total_spent: number
   last_daily_credit: string
@@ -244,7 +244,7 @@ export function AIChatConsole() {
           .from('user_credits')
           .insert({
             user_id: userId,
-            current_credits: 10,
+            total_credits: 10,
             total_earned: 10,
             last_daily_credit: new Date().toISOString().split('T')[0]
           })
@@ -269,18 +269,18 @@ export function AIChatConsole() {
 
       const { data } = await supabase
         .from('user_credits')
-        .select('last_daily_credit, daily_credit_amount, current_credits, total_earned')
+        .select('last_daily_credit, daily_credit_amount, total_credits, total_earned')
         .eq('user_id', userId)
         .single()
 
       if (data && data.last_daily_credit !== today) {
-        const newCurrentCredits = (data.current_credits || 0) + (data.daily_credit_amount || 0)
+        const newTotalCredits = (data.total_credits || 0) + (data.daily_credit_amount || 0)
         const newTotalEarned = (data.total_earned || 0) + (data.daily_credit_amount || 0)
 
         const { data: updated, error: updateError } = await supabase
           .from('user_credits')
           .update({
-            current_credits: newCurrentCredits,
+            total_credits: newTotalCredits,
             total_earned: newTotalEarned,
             last_daily_credit: today
           })
@@ -320,7 +320,7 @@ export function AIChatConsole() {
       const { data, error } = await supabase
         .from('user_credits')
         .update({
-          current_credits: Math.max(0, (credits?.current_credits || 0) - amount),
+          total_credits: Math.max(0, (credits?.total_credits || 0) - amount),
           total_spent: (credits?.total_spent || 0) + amount
         })
         .eq('user_id', userId)
@@ -359,7 +359,7 @@ export function AIChatConsole() {
       const { data, error } = await supabase
         .from('user_credits')
         .update({
-          current_credits: (credits?.current_credits || 0) + amount,
+          total_credits: (credits?.total_credits || 0) + amount,
           total_spent: Math.max(0, (credits?.total_spent || 0) - amount)
         })
         .eq('user_id', userId)
@@ -447,7 +447,7 @@ export function AIChatConsole() {
       return
     }
 
-    if (!credits || credits.current_credits <= 0) {
+    if (!credits || credits.total_credits <= 0) {
       setError('No credits remaining. Purchase more credits to continue chatting.')
       return
     }
@@ -647,9 +647,9 @@ export function AIChatConsole() {
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="flex items-center gap-1 text-xs">
                     <CreditCard className="w-3 h-3" />
-                    {credits?.current_credits || 0} credits
+                    {credits?.total_credits || 0} credits
                   </Badge>
-                  {(credits?.current_credits || 0) <= 2 && (
+                  {(credits?.total_credits || 0) <= 2 && (
                     <Button size="sm" variant="outline" className="flex items-center gap-1">
                       <DollarSign className="w-4 h-4 sm:hidden" />
                       <span className="hidden sm:inline">Buy Credits</span>
@@ -782,7 +782,7 @@ export function AIChatConsole() {
                   size="icon"
                   onClick={toggleVoiceRecognition}
                   className={isListening ? 'bg-red-100 border-red-300' : ''}
-                  disabled={isGenerating || !credits || credits.current_credits <= 0}
+                  disabled={isGenerating || !credits || credits.total_credits <= 0}
                 >
                   {isListening ? <Square className="w-4 h-4 text-red-600" /> : <Mic className="w-4 h-4" />}
                 </Button>
@@ -795,19 +795,19 @@ export function AIChatConsole() {
                   placeholder={
                     !providerConnected
                       ? 'Provider not reachable'
-                      : !credits || credits.current_credits <= 0
+                      : !credits || credits.total_credits <= 0
                       ? 'No credits remaining - purchase more to continue'
                       : isGenerating
                       ? 'AI is thinking...'
                       : 'Ask your AI assistant...'
                   }
-                  disabled={isGenerating || !credits || credits.current_credits <= 0 || !providerConnected}
+                  disabled={isGenerating || !credits || credits.total_credits <= 0 || !providerConnected}
                   className="flex-1"
                 />
 
                 <Button
                   onClick={sendMessage}
-                  disabled={!inputValue.trim() || isGenerating || !credits || credits.current_credits <= 0 || !providerConnected}
+                  disabled={!inputValue.trim() || isGenerating || !credits || credits.total_credits <= 0 || !providerConnected}
                   size="icon"
                 >
                   <Send className="w-4 h-4" />
@@ -820,7 +820,7 @@ export function AIChatConsole() {
                 </div>
               )}
 
-              {(!credits || credits.current_credits <= 0) && (
+              {(!credits || credits.total_credits <= 0) && (
                 <div className="mt-2 text-center text-sm text-orange-600">
                   ⚠️ No credits remaining. Purchase more to continue chatting.
                 </div>

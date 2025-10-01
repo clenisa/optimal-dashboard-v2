@@ -91,7 +91,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   try {
     const { data: currentCredits, error: fetchError } = await supabase
       .from('user_credits')
-      .select('current_credits, total_earned')
+      .select('total_credits, total_earned')
       .eq('user_id', userId)
       .single()
 
@@ -100,14 +100,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       throw fetchError
     }
 
-    const newCredits = (currentCredits?.current_credits ?? 0) + totalCredits
+    const newCredits = (currentCredits?.total_credits ?? 0) + totalCredits
     const newTotalEarned = (currentCredits?.total_earned ?? 0) + totalCredits
 
     if (currentCredits) {
       const { error: updateError } = await supabase
         .from('user_credits')
         .update({
-          current_credits: newCredits,
+          total_credits: newCredits,
           total_earned: newTotalEarned,
         })
         .eq('user_id', userId)
@@ -119,7 +119,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     } else {
       const { error: insertError } = await supabase.from('user_credits').insert({
         user_id: userId,
-        current_credits: newCredits,
+        total_credits: newCredits,
         total_earned: newTotalEarned,
         daily_credit_amount: 50,
       })

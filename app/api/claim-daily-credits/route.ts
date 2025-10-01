@@ -15,7 +15,7 @@ export async function POST() {
     // Get user credits - using correct column names
     const { data: userCredits, error: creditsError } = await supabase
       .from('user_credits')
-      .select('last_daily_credit, current_credits, total_earned, daily_credit_amount')
+      .select('last_daily_credit, total_credits, total_earned, daily_credit_amount')
       .eq('user_id', user.id)
       .single()
 
@@ -42,14 +42,14 @@ export async function POST() {
     }
 
     const creditAmount = userCredits?.daily_credit_amount || 50
-    const updatedCredits = (userCredits?.current_credits ?? 0) + creditAmount
+    const updatedCredits = (userCredits?.total_credits ?? 0) + creditAmount
     const updatedTotalEarned = (userCredits?.total_earned ?? 0) + creditAmount
 
     // Update using correct column names
     const { error: updateError } = await supabase
       .from('user_credits')
       .update({
-        current_credits: updatedCredits,
+        total_credits: updatedCredits,
         total_earned: updatedTotalEarned,
         last_daily_credit: todayEST,
       })

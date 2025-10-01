@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS user_credits (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
-    current_credits INTEGER DEFAULT 10, -- Starting credits
+    total_credits INTEGER DEFAULT 10, -- Starting credits
     total_earned INTEGER DEFAULT 10, -- Total credits earned
     total_spent INTEGER DEFAULT 0, -- Total credits spent
 last_daily_credit DATE, -- Last date daily credits were awarded (EST timezone)
@@ -167,13 +167,13 @@ CREATE OR REPLACE FUNCTION award_daily_credits()
 RETURNS TRIGGER AS $$
 BEGIN
     -- Award daily credits if user hasn't received them today
-    INSERT INTO user_credits (user_id, current_credits, total_earned, last_daily_credit, daily_credit_amount)
+    INSERT INTO user_credits (user_id, total_credits, total_earned, last_daily_credit, daily_credit_amount)
     VALUES (NEW.id, 10, 10, CURRENT_DATE, 5)
     ON CONFLICT (user_id) DO UPDATE SET
-        current_credits = CASE 
-            WHEN user_credits.last_daily_credit < CURRENT_DATE 
-            THEN user_credits.current_credits + user_credits.daily_credit_amount
-            ELSE user_credits.current_credits
+        total_credits = CASE
+            WHEN user_credits.last_daily_credit < CURRENT_DATE
+            THEN user_credits.total_credits + user_credits.daily_credit_amount
+            ELSE user_credits.total_credits
         END,
         total_earned = CASE 
             WHEN user_credits.last_daily_credit < CURRENT_DATE 
@@ -223,7 +223,7 @@ CREATE OR REPLACE VIEW user_credit_summary AS
 SELECT 
     u.id as user_id,
     u.email,
-    uc.current_credits,
+    uc.total_credits,
     uc.total_earned,
     uc.total_spent,
     uc.last_daily_credit,
