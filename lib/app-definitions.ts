@@ -6,13 +6,13 @@ export type AppId =
   | "category-line-chart"
   | "payment-source-balances"
   | "transaction-manager"
-  | "mortgage-calculator"
   | "ai-chat-console"
   | "credits-manager"
   | "service-app"
   | "debug-console"
   | "about-this-desktop"
   | "desktop-settings"
+  | "mortgage-calculator"
 
 export interface AppDefinition {
   id: AppId
@@ -70,7 +70,7 @@ export const appDefinitions: AppDefinition[] = [
     description: "Payment source balances with threshold filtering",
     canBeDesktop: true,
   },
-  { 
+  {
     id: "transaction-manager",
     title: "Transaction Manager",
     defaultWidth: APP_DIMENSIONS.XLARGE.width,
@@ -83,10 +83,11 @@ export const appDefinitions: AppDefinition[] = [
   {
     id: "mortgage-calculator",
     title: "Mortgage Calculator",
-    defaultWidth: APP_DIMENSIONS.LARGE.width,
+    defaultWidth: APP_DIMENSIONS.XLARGE.width,
     defaultHeight: APP_DIMENSIONS.LARGE.height,
+    requiresAuth: false,
     category: 'financial',
-    description: "Estimate mortgage payments with escrow details",
+    description: "Calculate mortgage payments with taxes and insurance",
     canBeDesktop: true,
   },
   

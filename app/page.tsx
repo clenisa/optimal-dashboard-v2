@@ -21,11 +21,11 @@ import { DebugConsole } from "@/components/debug-console"
 import { AboutThisDesktopApp } from "@/components/about-this-desktop-app"
 import { DesktopServiceSettings } from "@/components/desktop-service-settings"
 import { WindowFrame } from "@/components/window-frame"
-import { DesktopIcon } from "@/components/desktop-icon"
 import { useWindowStore, type WindowState, type WindowStore } from "@/store/window-store"
 import { useDesktopServiceStore } from "@/store/desktop-service-store"
 
 import { appDefinitions, type AppId } from "@/lib/app-definitions"
+import { MortgageCalculatorApp } from "@/components/mortgage-calculator-app"
 
 // Remove the local WindowState interface, as it's now imported from window-store.ts
 // interface WindowState {
@@ -98,10 +98,6 @@ export default function Home() {
     updateWindow(appId, { minimized: true })
   }
 
-  const bringToFront = (appId: AppId) => {
-    focusWindow(appId)
-  }
-
   // Remove these as they are handled by useWindowManager and updateWindow
   // const updateWindowPosition = (appId: AppId, position: { x: number; y: number }) => {
   //   setWindows(prev => prev.map(w =>
@@ -128,7 +124,7 @@ export default function Home() {
       case "transaction-manager":
         return <TransactionManager />
       case "mortgage-calculator":
-        return <ServiceApp serviceName="Mortgage Calculator" />
+        return <MortgageCalculatorApp />
       case "ai-chat-console":
         return <AIChatConsole />
       case "credits-manager":
@@ -183,16 +179,6 @@ export default function Home() {
       <div className="h-screen w-screen overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 relative">
         {/* Menu Bar */}
         <MenuBar />
-
-        {/* Desktop Icons */}
-        <div className="absolute top-16 left-4 flex flex-col gap-4 z-10">
-          <DesktopIcon
-            id="mortgage-calculator"
-            title="Mortgage Calculator"
-            icon="/icons/calculator.svg"
-            onClick={() => openWindow("mortgage-calculator")}
-          />
-        </div>
 
         {/* Desktop Content Area */}
         <div className="h-full pt-12 pb-20 px-4">

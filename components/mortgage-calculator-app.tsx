@@ -53,8 +53,8 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 })
 
 const getServiceUrl = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_MORTGAGE_CALCULATOR_URL || "http://localhost:3004"
-  return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl
+  // Use the Next.js API proxy so the browser never has to reach across the docker network
+  return "/api/mortgage-calculator"
 }
 
 const todayISO = () => new Date().toISOString().slice(0, 10)
@@ -98,7 +98,7 @@ export function MortgageCalculatorApp() {
     setError(null)
 
     try {
-      const response = await fetch(`${getServiceUrl()}/calculate`, {
+      const response = await fetch(getServiceUrl(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -131,7 +131,7 @@ export function MortgageCalculatorApp() {
     <div className="p-6 space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Mortgage Calculator 🤑</CardTitle>
+          <CardTitle>💰 Mortgage Calculator</CardTitle>
           <CardDescription>
             Estimate your monthly mortgage payment with taxes, insurance, PMI, and HOA fees included.
           </CardDescription>
