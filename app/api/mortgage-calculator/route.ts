@@ -22,7 +22,23 @@ export async function POST(request: NextRequest) {
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Mortgage calculator proxy error:', error)
-    return NextResponse.json({ error: 'Failed to calculate mortgage' }, { status: 500 })
+    console.error('Mortgage calculator proxy error:', {
+      error: error instanceof Error ? error.message : error,
+      serviceUrl: MORTGAGE_CALCULATOR_SERVICE_URL,
+      timestamp: new Date().toISOString(),
+    })
+
+    return NextResponse.json(
+      {
+        error: 'Failed to calculate mortgage',
+        details:
+          process.env.NODE_ENV === 'development'
+            ? error instanceof Error
+              ? error.message
+              : 'Unknown error'
+            : undefined,
+      },
+      { status: 500 },
+    )
   }
 }
