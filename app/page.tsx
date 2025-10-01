@@ -15,6 +15,7 @@ import { CsvCombinerApp } from "@/components/csv-combiner-app"
 import { CategoryLineChart } from "@/components/category-line-chart"
 import { PaymentSourceBalances } from "@/components/payment-source-balances"
 import { TransactionManager } from "@/components/transaction-manager"
+import { MortgageCalculatorApp } from "@/components/mortgage-calculator-app"
 import { AIChatConsole } from "@/components/ai-chat-console"
 import { CreditsManager } from "@/components/credits-manager"
 import { ServiceApp } from "@/components/service-app"
@@ -129,6 +130,8 @@ export default function Home() {
         return <PaymentSourceBalances />
       case "transaction-manager":
         return <TransactionManager />
+      case "mortgage-calculator":
+        return <MortgageCalculatorApp />
       case "ai-chat-console":
         return <AIChatConsole />
       case "credits-manager":
