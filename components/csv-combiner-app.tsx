@@ -299,7 +299,7 @@ export function CsvCombinerApp() {
         </CardHeader>
         <CardContent>
           <p className="text-gray-600 dark:text-gray-300">
-            Combine up to 5 CSV files into a single file. Duplicate transactions will be automatically removed based on date, amount, and description.
+            Combine up to 5 CSV files into a single file. Duplicate transactions will be automatically removed based on date, amount, description, type, category.
           </p>
         </CardContent>
       </Card>
