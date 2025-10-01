@@ -13,7 +13,6 @@ import { KpiDisplay } from './payment-source/kpi-display'
 import { ThresholdControl } from './payment-source/threshold-control'
 import type { PaymentSource, KpiData } from './payment-source/types'
 import { CreditUtilization } from "./credit-utilization"
-import { CategoryMatrix } from "./category-matrix"
 import { ApiDisplay } from "./payment-source/api-display"
 
 const TEST_SOURCES: PaymentSource[] = [
@@ -80,10 +79,9 @@ export function PaymentSourceBalances() {
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
       <Tabs defaultValue="balances" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="balances">Account Balances</TabsTrigger>
           <TabsTrigger value="utilization">Credit Utilization</TabsTrigger>
-          <TabsTrigger value="matrix">Category Matrix</TabsTrigger>
         </TabsList>
         
         <TabsContent value="balances" className="space-y-4">
@@ -115,9 +113,6 @@ export function PaymentSourceBalances() {
           <CreditUtilization />
         </TabsContent>
         
-        <TabsContent value="matrix">
-          <CategoryMatrix />
-        </TabsContent>
       </Tabs>
     </div>
   )
