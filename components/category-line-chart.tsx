@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Info, TrendingUp, TrendingDown, Target } from "lucide-react"
 import { logger } from "@/lib/logger"
+import { CategoryMatrix } from "./category-matrix"
 
 // Register Chart.js components
 ChartJS.register(
@@ -47,7 +48,7 @@ const CHART_DESCRIPTIONS = {
 export default function CategoryLineChart() {
   const { categories, transactions, loading, error } = useFinancialData()
   const [useTestData, setUseTestData] = useState(false)
-  const [chartType, setChartType] = useState<'line' | 'bar' | 'source'>('line')
+  const [chartType, setChartType] = useState<'line' | 'bar' | 'matrix'>('line')
   const [allVisible, setAllVisible] = useState(true)
   const chartRef = useRef<any>(null)
 
@@ -193,11 +194,7 @@ export default function CategoryLineChart() {
   }
 
   // Build chart data based on selected type
-  const chartData = chartType === 'line' 
-    ? generateMultiCategoryData(transactions, validCategories)
-    : chartType === 'bar'
-    ? generateMultiCategoryData(transactions, validCategories)
-    : { labels: ['Source Analysis'], datasets: [{ label: 'Coming Soon', data: [0] }] }
+  const chartData = generateMultiCategoryData(transactions, validCategories)
 
   logger.debug('CategoryLineChart', 'Chart data prepared', {
     labels: chartData.labels,
@@ -358,15 +355,15 @@ export default function CategoryLineChart() {
               <select
                 id="chart-type-select"
                 value={chartType}
-                onChange={(e) => setChartType(e.target.value as 'line' | 'bar' | 'source')}
+                onChange={(e) => setChartType(e.target.value as 'line' | 'bar' | 'matrix')}
                 className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="line">Category Breakdown (Line)</option>
                 <option value="bar">Category Breakdown (Bar)</option>
-                <option value="source">Source Analysis</option>
+                <option value="matrix">Category Breakdown (Matrix)</option>
               </select>
             </div>
-            {chartType !== 'source' && (
+            {(chartType === 'line' || chartType === 'bar') && (
               <button
                 onClick={toggleAllCategories}
                 className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -381,9 +378,7 @@ export default function CategoryLineChart() {
             ) : chartType === 'bar' ? (
               <Bar ref={chartRef} data={chartData} options={chartOptions} />
             ) : (
-              <div className="flex items-center justify-center h-64 text-gray-500">
-                Source Analysis - Coming Soon
-              </div>
+              <CategoryMatrix />
             )}
           </div>
         </CardContent>
