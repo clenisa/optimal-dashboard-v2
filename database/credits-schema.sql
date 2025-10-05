@@ -266,6 +266,7 @@ CREATE TABLE IF NOT EXISTS sources (
     user_id uuid NULL,
     current_balance numeric(10, 2) NULL DEFAULT 0,
     max_balance numeric(10, 2) NULL DEFAULT 0,
+    notes text NULL,
     CONSTRAINT sources_pkey PRIMARY KEY (id),
     CONSTRAINT sources_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users (id),
     CONSTRAINT sources_type_check CHECK (((type = ANY (ARRAY['credit'::text, 'debit'::text]))))
