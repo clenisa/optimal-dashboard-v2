@@ -1,0 +1,17 @@
+export const DEFAULT_MORTGAGE_INPUTS = {
+  homePrice: 450000,
+  downPayment: 90000,
+  interestRate: 6.25,
+  loanTerm: 30,
+  includeTaxesAndCosts: true,
+  propertyTaxes: 1.2,
+  propertyTaxType: 'percent' as const,
+  homeInsurance: 1500,
+  homeInsuranceType: 'dollar' as const,
+  pmiInsurance: 0,
+  pmiInsuranceType: 'dollar' as const,
+  hoaFee: 0,
+  hoaFeeType: 'dollar' as const,
+  otherCosts: 0,
+  otherCostsType: 'dollar' as const,
+}
