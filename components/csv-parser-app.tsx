@@ -1,438 +1,55 @@
 "use client"
-import type React from "react"
-import { useState, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { processCsvFile, type ParsedTransaction } from "@/lib/csv-parser"
-import { createClient } from "@/lib/supabase-client"
-import { useAuthState } from "@/hooks/use-auth-state"
-import { Upload, FileText, CheckCircle, AlertCircle, Info, Trash2 } from "lucide-react"
-import { CONTENT } from "@/lib/content"
-import { validateCsvFile, validateCsvHeaders, logCsvProcessing } from "@/lib/csv-utils"
-import { CategoryEditor } from "./editors/CategoryEditor"
-import { PaymentSourceEditor } from "./editors/PaymentSourceEditor"
 
-// CSV Upload Instructions and Requirements are provided by CONTENT.csvUpload
-
-interface ValidationResult {
-  isValid: boolean
-  errors: string[]
-  warnings: string[]
-  processedCount: number
-  skippedCount: number
-}
-
-interface ProcessingStats {
-  totalRows: number
-  validRows: number
-  invalidRows: number
-  duplicateRows: number
-  processingTime: number
-}
+import { useMemo } from 'react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { CategoryEditor } from '@/components/editors/CategoryEditor'
+import { PaymentSourceEditor } from '@/components/editors/PaymentSourceEditor'
+import { CsvUploadZone } from '@/components/csv-parser/upload-zone'
+import { CsvActionButtons } from '@/components/csv-parser/action-buttons'
+import { ValidationResults } from '@/components/csv-parser/validation-results'
+import { TransactionsPreview } from '@/components/csv-parser/transactions-preview'
+import { DebugInformation } from '@/components/csv-parser/debug-information'
+import { useAuthState } from '@/hooks/use-auth-state'
+import { useCsvParser } from '@/hooks/use-csv-parser'
+import { useFileDrop } from '@/hooks/use-file-drop'
 
 export function CsvParserApp() {
-  const [file, setFile] = useState<File | null>(null)
-  const [transactions, setTransactions] = useState<ParsedTransaction[]>([])
-  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
-  const [processingStats, setProcessingStats] = useState<ProcessingStats | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
-  const [debugInfo, setDebugInfo] = useState<string[]>([])
   const { user } = useAuthState()
+  const {
+    state: {
+      file,
+      transactions,
+      validationResult,
+      processingStats,
+      loading,
+      uploadProgress,
+      error,
+      success,
+      debugInfo,
+    },
+    onFileSelected,
+    parseFile,
+    uploadToSupabase,
+    deleteAll,
+  } = useCsvParser(user)
 
-  const validateTransaction = (transaction: ParsedTransaction): { isValid: boolean; errors: string[] } => {
-    const errors: string[] = []
-    
-    // Type validation - must match database constraint
-    const validTypes = ['income', 'expense', 'transfer']
-    const transactionType = transaction.type?.toLowerCase().trim()
-    
-    if (!transactionType || !validTypes.includes(transactionType)) {
-      errors.push(`Invalid transaction type: '${transaction.type}'. Must be one of: ${validTypes.join(', ')}`)
-    }
-    
-    // Amount validation
-    if (!transaction.amount || isNaN(Number(transaction.amount))) {
-      errors.push(`Invalid amount: '${transaction.amount}'. Must be a valid number.`)
-    } else if (Number(transaction.amount) === 0) {
-      errors.push("Amount cannot be zero")
-    }
-    
-    // Date validation
-    if (!transaction.date) {
-      errors.push("Date is required")
-    } else {
-      const date = new Date(transaction.date)
-      if (isNaN(date.getTime())) {
-        errors.push(`Invalid date format: '${transaction.date}'`)
-      } else if (date > new Date()) {
-        errors.push(`Future date not allowed: '${transaction.date}'`)
+  const dropHandlers = useFileDrop({
+    onFiles: (files) => {
+      const nextFile = files[0]
+      if (nextFile) {
+        onFileSelected(nextFile)
       }
-    }
-    
-    // Description validation
-    if (!transaction.description || transaction.description.trim().length === 0) {
-      errors.push("Description is required")
-    } else if (transaction.description.length > 255) {
-      errors.push(`Description too long: ${transaction.description.length} characters (max 255)`)
-    }
-    
-    // Category validation (if provided)
-    if (transaction.category && transaction.category.length > 100) {
-      errors.push(`Category name too long: ${transaction.category.length} characters (max 100)`)
-    }
-    
-    return {
-      isValid: errors.length === 0,
-      errors
-    }
-  }
+    },
+  })
 
-  const validateAllTransactions = (transactions: ParsedTransaction[]): ValidationResult => {
-    const errors: string[] = []
-    const warnings: string[] = []
-    let validCount = 0
-    let invalidCount = 0
-    
-    // Check for duplicate transactions
-    const duplicates = new Set<string>()
-    const seen = new Set<string>()
-    
-    transactions.forEach((transaction, index) => {
-      const key = `${transaction.date}-${transaction.amount}-${transaction.description}`
-      if (seen.has(key)) {
-        duplicates.add(key)
-        warnings.push(`Duplicate transaction at row ${index + 1}: ${transaction.description}`)
-      } else {
-        seen.add(key)
-      }
-      
-      const validation = validateTransaction(transaction)
-      if (validation.isValid) {
-        validCount++
-      } else {
-        invalidCount++
-        validation.errors.forEach(error => {
-          errors.push(`Row ${index + 1}: ${error}`)
-        })
-      }
-    })
-    
-    // Add summary warnings
-    if (duplicates.size > 0) {
-      warnings.push(`Found ${duplicates.size} potential duplicate transactions`)
-    }
-    
-    if (transactions.length === 0) {
-      errors.push("No transactions found in CSV file")
-    }
-    
-    return {
-      isValid: errors.length === 0,
-      errors,
-      warnings,
-      processedCount: validCount,
-      skippedCount: invalidCount
-    }
-  }
-
-  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0]
-    if (!selectedFile) {
-      setError(CONTENT.csvUpload.messages.noFile)
-      return
-    }
-
-    // Reset previous state
-    setError(null)
-    setSuccess(null)
-    setValidationResult(null)
-    setProcessingStats(null)
-    setTransactions([])
-    setDebugInfo([])
-
-    // File type validation
-    if (!selectedFile.type.includes('csv') && !selectedFile.name.toLowerCase().endsWith('.csv')) {
-      setError(CONTENT.csvUpload.messages.invalidFormat)
-      return
-    }
-
-    // File size validation (10MB limit)
-    const maxSize = 10 * 1024 * 1024
-    if (selectedFile.size > maxSize) {
-      setError(CONTENT.csvUpload.messages.fileTooLarge)
-      return
-    }
-
-    // Log file details for debugging
-    const fileInfo = [
-      `File selected: ${selectedFile.name}`,
-      `Size: ${(selectedFile.size / 1024).toFixed(2)} KB`,
-      `Type: ${selectedFile.type}`,
-      `Last modified: ${new Date(selectedFile.lastModified).toLocaleString()}`
-    ]
-    setDebugInfo(fileInfo)
-    logCsvProcessing('File selected', { fileName: selectedFile.name, size: selectedFile.size })
-    setFile(selectedFile)
-  }, [])
-
-  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-  }, [])
-
-  const handleDragEnter = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-  }, [])
-
-  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-  }, [])
-
-  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-    
-    const files = event.dataTransfer.files
-    if (files.length > 0) {
-      const file = files[0]
-      // Simulate file input change event
-      const fakeEvent = {
-        target: { files: [file] }
-      } as unknown as React.ChangeEvent<HTMLInputElement>
-      handleFileChange(fakeEvent)
-    }
-  }, [handleFileChange])
-
-  const handleParse = useCallback(async () => {
-    if (!file) {
-      setError(CONTENT.csvUpload.messages.noFile)
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-    setSuccess(null)
-    setUploadProgress(0)
-    
-    const startTime = Date.now()
-    
-    try {
-      // Add debug information
-      setDebugInfo(prev => [...prev, CONTENT.csvUpload.messages.loading])
-      
-      // Parse the CSV file
-      const parsedTransactions = await processCsvFile(file)
-      logCsvProcessing('Processing complete', { rowCount: parsedTransactions.length })
-      
-      setDebugInfo(prev => [...prev, `Parsed ${parsedTransactions.length} rows from CSV`])
-      
-      // Validate all transactions
-      logCsvProcessing('Validation started')
-      const validation = validateAllTransactions(parsedTransactions)
-      setValidationResult(validation)
-      
-      // Calculate processing statistics
-      const processingTime = Date.now() - startTime
-      const stats: ProcessingStats = {
-        totalRows: parsedTransactions.length,
-        validRows: validation.processedCount,
-        invalidRows: validation.skippedCount,
-        duplicateRows: validation.warnings.filter(w => w.includes('Duplicate')).length,
-        processingTime
-      }
-      setProcessingStats(stats)
-      
-      if (validation.isValid) {
-        setTransactions(parsedTransactions)
-        setSuccess(CONTENT.csvUpload.messages.success)
-        setDebugInfo(prev => [...prev, `Validation completed: ${validation.processedCount} valid transactions`])
-      } else {
-        setError(`Validation failed: ${validation.errors.length} errors found`)
-        setDebugInfo(prev => [...prev, `Validation failed with ${validation.errors.length} errors`])
-      }
-      
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
-      setError(CONTENT.csvUpload.messages.error)
-      setDebugInfo(prev => [...prev, `Parsing error: ${errorMessage}`])
-    } finally {
-      setLoading(false)
-    }
-  }, [file])
-
-  const handleUploadToSupabase = useCallback(async () => {
-    if (transactions.length === 0) {
-      setError("No transactions to upload")
-      return
-    }
-
-    if (!user?.id) {
-      setError("You must be logged in to upload transactions")
-      return
-    }
-
-    if (!validationResult?.isValid) {
-      setError("Cannot upload invalid transactions. Please fix validation errors first.")
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-    setSuccess(null)
-    setUploadProgress(0)
-
-    try {
-      const supabase = createClient()
-      if (!supabase) {
-        throw new Error("Supabase client not available")
-      }
-
-      setDebugInfo(prev => [...prev, "Starting upload to Supabase..."])
-
-      // First, get or create categories for the transactions
-      const uniqueCategories = [...new Set(transactions.map(txn => txn.category).filter(Boolean))]
-      const categoryMap = new Map<string, number>()
-      
-      for (const categoryName of uniqueCategories) {
-        if (categoryName) {
-          // Try to find existing category
-          const { data: existingCategory } = await supabase
-            .from("categories")
-            .select("id")
-            .eq("user_id", user.id)
-            .eq("name", categoryName)
-            .single()
-          
-          if (existingCategory) {
-            categoryMap.set(categoryName, existingCategory.id)
-          } else {
-            // Create new category if it doesn't exist
-            const { data: newCategory, error: createError } = await supabase
-              .from("categories")
-              .insert({
-                user_id: user.id,
-                name: categoryName,
-                color: `#${Math.floor(Math.random()*16777215).toString(16)}` // Random color
-              })
-              .select("id")
-              .single()
-            
-            if (createError) {
-              throw new Error(`Failed to create category '${categoryName}': ${createError.message}`)
-            }
-            
-            categoryMap.set(categoryName, newCategory.id)
-          }
-        }
-      }
-
-      // Prepare transactions for upload - match the actual database schema
-      const transactionsToUpload = transactions.map(txn => ({
-        user_id: user.id,
-        date: txn.date,
-        description: txn.description,
-        amount: parseFloat(txn.amount.toString()),
-        type: txn.type,
-        category_id: txn.category ? categoryMap.get(txn.category) : null,
-        mode: 'actual' // Default mode for CSV imports
-      }))
-
-      // Upload in batches to avoid timeout
-      const batchSize = 50
-      const batches = []
-      for (let i = 0; i < transactionsToUpload.length; i += batchSize) {
-        batches.push(transactionsToUpload.slice(i, i + batchSize))
-      }
-
-      let uploadedCount = 0
-      for (let i = 0; i < batches.length; i++) {
-        const batch = batches[i]
-        
-        const { data, error: uploadError } = await supabase
-          .from("transactions")
-          .insert(batch)
-
-        if (uploadError) {
-          throw new Error(`Upload error in batch ${i + 1}: ${uploadError.message}`)
-        }
-
-        uploadedCount += batch.length
-        const progress = Math.round((uploadedCount / transactionsToUpload.length) * 100)
-        setUploadProgress(progress)
-        
-        setDebugInfo(prev => [...prev, `Uploaded batch ${i + 1}/${batches.length} (${batch.length} transactions)`])
-      }
-
-      setSuccess(`Successfully uploaded ${uploadedCount} transactions to Supabase`)
-      setDebugInfo(prev => [...prev, `Upload completed: ${uploadedCount} transactions`])
-      
-      // Reset form after successful upload
-      setTransactions([])
-      setFile(null)
-      setValidationResult(null)
-      setProcessingStats(null)
-
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
-      setError(`Error uploading to Supabase: ${errorMessage}`)
-      setDebugInfo(prev => [...prev, `Upload error: ${errorMessage}`])
-    } finally {
-      setLoading(false)
-      setUploadProgress(0)
-    }
-  }, [transactions, user?.id, validationResult])
-
-  const handleDeleteAllTransactions = useCallback(async () => {
-    if (!user) {
-      setError('User not authenticated')
-      return
-    }
-
-    if (!confirm('Are you sure you want to delete ALL transactions? This cannot be undone.')) {
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-    setSuccess(null)
-
-    try {
-      const supabase = createClient()
-      
-      const { error } = await supabase
-        .from('transactions')
-        .delete()
-        .eq('user_id', user.id)
-
-      if (error) {
-        throw new Error('Failed to delete transactions')
-      }
-
-      setSuccess('Successfully deleted all transactions')
-      setTransactions([])
-      setValidationResult(null)
-      setProcessingStats(null)
-
-    } catch (error) {
-      console.error('Error deleting transactions:', error)
-      setError(error instanceof Error ? error.message : 'Failed to delete transactions')
-    } finally {
-      setLoading(false)
-    }
-  }, [user])
+  const canUpload = useMemo(
+    () => transactions.length > 0 && Boolean(validationResult?.isValid),
+    [transactions.length, validationResult?.isValid],
+  )
 
   if (!user) {
     return (
@@ -445,331 +62,122 @@ export function CsvParserApp() {
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4">
-      <Tabs defaultValue="csv" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="csv">CSV Parser</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="sources">Payment Sources</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="csv" className="space-y-4">
-          {/* Instructions and Requirements Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                {CONTENT.csvUpload.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-gray-600 dark:text-gray-300">
-                {CONTENT.csvUpload.description}
-              </p>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Requirements */}
-                <div className="space-y-3">
-                  <h4 className="font-medium flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    Requirements
-                  </h4>
-                  <ul className="space-y-2 text-sm">
-                    {CONTENT.csvUpload.requirements.map((req, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <span className="text-green-500 mt-0.5">•</span>
-                        <span>{req}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                
-                {/* Example Format */}
-                <div className="space-y-3">
-                  <h4 className="font-medium flex items-center gap-2">
-                    <Info className="h-4 w-4 text-blue-600" />
-                    Example Format
-                  </h4>
-                  <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm font-mono">
-                    {CONTENT.csvUpload.examples.map((line, index) => (
-                      <div key={index} className="text-gray-700 dark:text-gray-300">
-                        {line}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>CSV Transaction Importer</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-[2fr_3fr]">
+            <div className="space-y-4">
+              <CsvUploadZone
+                file={file}
+                loading={loading}
+                dropHandlers={dropHandlers}
+                onFileSelect={onFileSelected}
+              />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>CSV Transaction Parser</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* File Upload Section */}
-              <div className="space-y-2">
-                <Label htmlFor="csv-file">Select CSV File</Label>
-                <div
-                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
-                    loading 
-                      ? 'border-gray-300 bg-gray-50 dark:bg-gray-800' 
-                      : file
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'
-                  }`}
-                  onDragOver={handleDragOver}
-                  onDragEnter={handleDragEnter}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <Input
-                    id="csv-file"
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileChange}
-                    disabled={loading}
-                    className="hidden"
+              <CsvActionButtons
+                loading={loading}
+                hasFile={Boolean(file)}
+                canUpload={canUpload}
+                uploadProgress={uploadProgress}
+                error={error}
+                success={success}
+                onParse={() => void parseFile()}
+                onUpload={() => void uploadToSupabase()}
+                onDelete={() => void deleteAll()}
+              />
+            </div>
+
+            <div className="space-y-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Upload Checklist</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-muted-foreground">
+                  <ChecklistItem label="File must be CSV format" completed={Boolean(file)} />
+                  <ChecklistItem
+                    label="Parse CSV to run validation"
+                    completed={transactions.length > 0}
                   />
-                  <Label htmlFor="csv-file" className="cursor-pointer">
-                    {file ? (
-                      <div className="space-y-3">
-                        <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
-                        <div className="text-lg font-medium text-green-800 dark:text-green-200">{file.name}</div>
-                        <div className="text-sm text-green-600 dark:text-green-400">
-                          {(file.size / 1024).toFixed(2)} KB
-                        </div>
-                        <div className="text-xs text-green-500">File selected successfully!</div>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <Upload className="h-12 w-12 text-gray-400 mx-auto" />
-                        <div className="text-lg font-medium">Click to select or drag and drop a CSV file</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          Supports .csv files up to 10MB
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          Drag your file here or click to browse
-                        </div>
-                      </div>
-                    )}
-                  </Label>
-                </div>
-              </div>
+                  <ChecklistItem
+                    label="Fix validation errors before uploading"
+                    completed={Boolean(validationResult?.isValid)}
+                  />
+                </CardContent>
+              </Card>
 
-              {/* Action Buttons */}
-              <div className="flex space-x-2">
-                <Button 
-                  onClick={handleParse} 
-                  disabled={!file || loading}
-                  className="flex-1"
-                >
-                  {loading ? "Parsing..." : "Parse CSV"}
-                </Button>
-                
-                {transactions.length > 0 && validationResult?.isValid && (
-                  <Button 
-                    onClick={handleUploadToSupabase} 
-                    disabled={loading}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    {loading ? "Uploading..." : "Upload to Supabase"}
-                  </Button>
-                )}
-                
-                <Button 
-                  onClick={handleDeleteAllTransactions}
-                  disabled={loading}
-                  variant="destructive"
-                  className="flex items-center gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete All
-                </Button>
-              </div>
-
-              {/* Progress Indicator */}
-              {loading && uploadProgress > 0 && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Upload Progress</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <Progress value={uploadProgress} className="w-full" />
-                </div>
-              )}
-
-              {/* Status Messages */}
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              {success && (
-                <Alert>
-                  <AlertDescription>{success}</AlertDescription>
-                </Alert>
-              )}
-
-              {/* Validation Results */}
               {validationResult && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Validation Results</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    
-                    {/* Summary Statistics */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-600">
-                          {validationResult.processedCount}
-                        </div>
-                        <div className="text-sm text-gray-500">Valid</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-red-600">
-                          {validationResult.skippedCount}
-                        </div>
-                        <div className="text-sm text-gray-500">Invalid</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-yellow-600">
-                          {validationResult.warnings.length}
-                        </div>
-                        <div className="text-sm text-gray-500">Warnings</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">
-                          {processingStats?.processingTime || 0}ms
-                        </div>
-                        <div className="text-sm text-gray-500">Processing Time</div>
-                      </div>
-                    </div>
+                <ValidationResults validation={validationResult} processingStats={processingStats} />
+              )}
 
-                    {/* Validation Status */}
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={validationResult.isValid ? "default" : "destructive"}>
-                        {validationResult.isValid ? "Valid" : "Invalid"}
+              <TransactionsPreview transactions={transactions} />
+
+              <DebugInformation debugInfo={debugInfo} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>CSV Helpers</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="overview" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="categories">Categories</TabsTrigger>
+              <TabsTrigger value="sources">Payment Sources</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview">
+              <ScrollArea className="h-48">
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <p>
+                    Upload bank statements and transaction exports as CSV files. We validate data,
+                    surface duplicates, and offer quick editing tools via the tabs above.
+                  </p>
+                  <p>
+                    Once parsed you can review the first few transactions, fix validation errors,
+                    and upload directly into Supabase.
+                  </p>
+                  {validationResult && (
+                    <p className="flex items-center gap-2">
+                      <Badge variant={validationResult.isValid ? 'default' : 'destructive'}>
+                        {validationResult.isValid ? 'Ready to upload' : 'Needs attention'}
                       </Badge>
-                      {validationResult.warnings.length > 0 && (
-                        <Badge variant="secondary">
-                          {validationResult.warnings.length} Warning(s)
-                        </Badge>
-                      )}
-                    </div>
+                      {validationResult.isValid
+                        ? 'All validation checks passed.'
+                        : 'Resolve the issues above before uploading.'}
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
+            </TabsContent>
 
-                    {/* Error Messages */}
-                    {validationResult.errors.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="font-medium text-red-600">Validation Errors:</h4>
-                        <ScrollArea className="h-32 w-full border rounded p-2">
-                          <div className="space-y-1">
-                            {validationResult.errors.map((error, index) => (
-                              <div key={index} className="text-sm text-red-600">
-                                {error}
-                              </div>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </div>
-                    )}
+            <TabsContent value="categories">
+              <CategoryEditor />
+            </TabsContent>
 
-                    {/* Warning Messages */}
-                    {validationResult.warnings.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="font-medium text-yellow-600">Warnings:</h4>
-                        <ScrollArea className="h-24 w-full border rounded p-2">
-                          <div className="space-y-1">
-                            {validationResult.warnings.map((warning, index) => (
-                              <div key={index} className="text-sm text-yellow-600">
-                                {warning}
-                              </div>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+            <TabsContent value="sources">
+              <PaymentSourceEditor />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
 
-              {/* Transaction Preview */}
-              {transactions.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      Parsed Transactions ({transactions.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-64 w-full">
-                      <div className="space-y-2">
-                        {transactions.slice(0, 10).map((txn, index) => (
-                          <div key={index} className="border rounded p-2 text-sm">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                              <div>
-                                <span className="font-medium">Date:</span> {txn.date}
-                              </div>
-                              <div>
-                                <span className="font-medium">Amount:</span> ${txn.amount}
-                              </div>
-                              <div>
-                                <span className="font-medium">Type:</span> {txn.type || 'N/A'}
-                              </div>
-                              <div>
-                                <span className="font-medium">Category:</span> {txn.category || 'N/A'}
-                              </div>
-                            </div>
-                            <div className="mt-1">
-                              <span className="font-medium">Description:</span> {txn.description}
-                            </div>
-                          </div>
-                        ))}
-                        {transactions.length > 10 && (
-                          <div className="text-center text-sm text-gray-500 py-2">
-                            Showing first 10 of {transactions.length} transactions
-                          </div>
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Debug Information */}
-              {debugInfo.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Debug Information</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-32 w-full">
-                      <div className="space-y-1">
-                        {debugInfo.map((info, index) => (
-                          <div key={index} className="text-xs font-mono text-gray-600">
-                            {info}
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="categories">
-          <CategoryEditor />
-        </TabsContent>
-        
-        <TabsContent value="sources">
-          <PaymentSourceEditor />
-        </TabsContent>
-      </Tabs>
+function ChecklistItem({ label, completed }: { label: string; completed: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Badge variant={completed ? 'default' : 'secondary'} className="w-5 justify-center p-0">
+        {completed ? '✓' : '–'}
+      </Badge>
+      <span>{label}</span>
     </div>
   )
 }
