@@ -108,13 +108,12 @@ export async function fetchSources(userId: string): Promise<PaymentSourceData[]>
     }
 
     const { data, error } = await supabase
-      .from('payment_sources')
+      .from('sources')
       .select(`
         name,
-        balance,
+        current_balance,
         type,
-        max_balance,
-        transactions(count)
+        max_balance
       `)
       .eq('user_id', userId)
 
@@ -129,8 +128,8 @@ export async function fetchSources(userId: string): Promise<PaymentSourceData[]>
 
     const sourceData: PaymentSourceData[] = data.map((source: any) => ({
       source: source.name,
-      balance: source.balance ?? 0,
-      transactions: source.transactions?.[0]?.count ?? 0,
+      balance: source.current_balance ?? 0,
+      transactions: 0,
       max_balance: source.max_balance ?? undefined,
       type: source.type ?? undefined,
     }))
