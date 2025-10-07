@@ -6,6 +6,7 @@ import { useTheme } from "next-themes"
 import { Sun, Moon, Monitor } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ModeToggle } from "@/components/mode-toggle"
 import {
   ThemeProvider as NextThemesProvider,
   type ThemeProviderProps,
@@ -100,8 +101,7 @@ export function ThemeToggle() {
 export function ThemeManager() {
   return (
     <div className="flex items-center gap-2">
-      <ThemeToggle />
-      <ThemeSwitcher />
+      <ModeToggle />
     </div>
   )
 }

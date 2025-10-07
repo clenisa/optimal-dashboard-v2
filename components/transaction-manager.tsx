@@ -7,6 +7,7 @@ import { TransactionData } from '@/lib/chart-data'
 import { TransactionTable } from '@/components/transaction-table'
 import { TransactionFilters } from '@/components/transaction-filters'
 import { TransactionSummary } from '@/components/transaction-summary'
+import AutoCategorizeButton from '@/components/transactions/AutoCategorizeButton'
 
 export function TransactionManager() {
   const { user } = useAuthState()
@@ -43,7 +44,13 @@ export function TransactionManager() {
 
   return (
     <div className="p-2 h-full overflow-auto">
-      <h1 className="text-xl font-bold mb-2">Transactions</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+        <h1 className="text-xl font-bold">Transactions</h1>
+        <AutoCategorizeButton onDone={() => {
+          // Refresh transactions after auto-categorization
+          window.location.reload()
+        }} />
+      </div>
       <div className="mb-2">
         <TransactionSummary transactions={filteredTransactions} />
       </div>
