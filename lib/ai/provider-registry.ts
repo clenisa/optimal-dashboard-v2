@@ -11,7 +11,7 @@ const DEFAULT_CONFIG: Record<AIProviderId, ProviderConfig> = {
   ollama: {
     id: 'ollama',
     name: 'Local Ollama',
-    enabled: process.env.NEXT_PUBLIC_ENABLE_OLLAMA === 'true' || process.env.NEXT_PUBLIC_ENABLE_OLLAMA === undefined,
+    enabled: process.env.NEXT_PUBLIC_ENABLE_OLLAMA === 'true',
     defaultModel: 'llama3.1',
     metadata: {
       baseUrl: process.env.NEXT_PUBLIC_ELECTRON_CONSOLE_URL || 'http://localhost:3000',
@@ -21,7 +21,7 @@ const DEFAULT_CONFIG: Record<AIProviderId, ProviderConfig> = {
   openai: {
     id: 'openai',
     name: 'OpenAI ChatGPT',
-    enabled: process.env.NEXT_PUBLIC_ENABLE_OPENAI === 'true',
+    enabled: process.env.NEXT_PUBLIC_ENABLE_OPENAI === 'true' || process.env.NEXT_PUBLIC_ENABLE_OPENAI === undefined,
     defaultModel: process.env.NEXT_PUBLIC_OPENAI_DEFAULT_MODEL || 'gpt-4o-mini'
   }
 }

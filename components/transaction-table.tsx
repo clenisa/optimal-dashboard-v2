@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase-client"
 import { LLMBadge } from "@/components/transactions/LLMBadge"
+import { formatCurrencyDisplay } from "@/lib/currency-utils"
 
 interface TransactionTableProps {
   transactions: TransactionData[]
@@ -190,7 +191,7 @@ export function TransactionTable({ transactions, onTransactionUpdated }: Transac
                 {isEditing ? (
                   <Input type="number" step="0.01" value={formAmount} onChange={(e) => setFormAmount(e.target.value)} className="text-right" />
                 ) : (
-                  txn.amount.toFixed(2)
+                  formatCurrencyDisplay(txn.amount)
                 )}
               </TableCell>
               <TableCell className="text-right space-x-2">

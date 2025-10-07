@@ -2,6 +2,7 @@
 
 import { TransactionData } from "@/lib/chart-data"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatCurrencyDisplay } from "@/lib/currency-utils"
 
 interface TransactionSummaryProps {
   transactions: TransactionData[]
@@ -39,15 +40,15 @@ export function TransactionSummary({ transactions }: TransactionSummaryProps) {
         <div className="space-y-1">
           <div className="flex justify-between">
             <span>Income:</span>
-            <span className="text-green-500">{totalIncome.toFixed(2)}</span>
+            <span className="text-green-500">{formatCurrencyDisplay(totalIncome)}</span>
           </div>
           <div className="flex justify-between">
             <span>Expenses:</span>
-            <span className="text-red-500">{totalExpenses.toFixed(2)}</span>
+            <span className="text-red-500">{formatCurrencyDisplay(totalExpenses)}</span>
           </div>
           <div className="flex justify-between font-bold">
             <span>Balance:</span>
-            <span>{netBalance.toFixed(2)}</span>
+            <span className={netBalance >= 0 ? 'text-green-500' : 'text-red-500'}>{formatCurrencyDisplay(netBalance)}</span>
           </div>
         </div>
       </CardContent>

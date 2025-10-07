@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { ParsedTransaction } from '@/lib/csv-parser'
+import { formatCurrencyDisplay } from '@/lib/currency-utils'
 
 interface TransactionsPreviewProps {
   transactions: ParsedTransaction[]
@@ -25,7 +26,7 @@ export function TransactionsPreview({ transactions }: TransactionsPreviewProps) 
               <div key={`${txn.date}-${txn.description}-${index}`} className="border rounded p-2 text-sm">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <Field label="Date" value={txn.date} />
-                  <Field label="Amount" value={`$${txn.amount}`} />
+                  <Field label="Amount" value={formatCurrencyDisplay(txn.amount)} />
                   <Field label="Type" value={txn.type || 'N/A'} />
                   <Field label="Category" value={txn.category || 'N/A'} />
                 </div>
