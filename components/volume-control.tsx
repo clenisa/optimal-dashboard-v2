@@ -64,7 +64,7 @@ export function VolumeControl() {
           {getVolumeIcon()}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="p-2 pt-4 w-auto min-w-[32px] h-40 flex flex-col items-center justify-center bg-white border-black shadow-md rounded-none">
+      <DropdownMenuContent className="p-2 pt-4 w-auto min-w-[32px] h-40 flex flex-col items-center justify-center bg-card border-border shadow-md rounded-none">
         <Slider
           orientation="vertical"
           defaultValue={[volume]}
@@ -77,7 +77,7 @@ export function VolumeControl() {
         <Button
           variant="ghost"
           size="sm"
-          className="mt-2 h-6 w-6 text-sm border-none rounded-none hover:bg-gray-200 hover:text-black active:bg-gray-200 active:text-black focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="mt-2 h-6 w-6 text-sm border-none rounded-none hover:bg-accent hover:text-accent-foreground active:bg-accent active:text-accent-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
           onClick={() => alert("Volume settings placeholder")}
         >
           <Settings className="h-4 w-4" />

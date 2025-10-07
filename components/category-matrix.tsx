@@ -208,7 +208,7 @@ export function CategoryMatrix() {
           <CardTitle>Category Matrix</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8 text-red-600">
+          <div className="flex items-center justify-center py-8 text-red-600 dark:text-red-400">
             {error}
           </div>
         </CardContent>

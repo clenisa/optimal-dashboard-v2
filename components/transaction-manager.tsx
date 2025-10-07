@@ -37,7 +37,7 @@ export function TransactionManager() {
   if (error) {
     return (
       <div className="p-4 text-center">
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-500 dark:text-red-400">{error}</p>
       </div>
     )
   }

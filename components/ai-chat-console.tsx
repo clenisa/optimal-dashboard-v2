@@ -64,9 +64,9 @@ export function AIChatConsole() {
     return (
       <Card>
         <CardContent className="p-6 text-center">
-          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-lg font-medium mb-2">Authentication Required</p>
-          <p className="text-sm text-gray-600">Please log in to use the AI assistant.</p>
+          <p className="text-sm text-muted-foreground">Please log in to use the AI assistant.</p>
         </CardContent>
       </Card>
     )
