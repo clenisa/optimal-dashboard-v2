@@ -4,17 +4,11 @@ import { useCallback, useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import type { AIProviderId } from '@/lib/ai/types'
 import type { UserCredits } from '@/lib/ai/chat/types'
-import {
-  awardDailyCredits,
-  loadOrCreateCredits,
-  refundCredits,
-  spendCredits,
-} from '@/lib/ai/chat/credit-service'
+import { loadOrCreateCredits, refundCredits, spendCredits } from '@/lib/ai/chat/credit-service'
 
 interface UseAiChatCreditsResult {
   credits: UserCredits | null
   loadCredits: (userId: string) => Promise<UserCredits | null>
-  grantDailyCredits: (userId: string) => Promise<UserCredits | null>
   spend: (args: {
     userId: string
     amount: number
@@ -35,21 +29,6 @@ export function useAiChatCredits(user: User | null): UseAiChatCreditsResult {
       setCredits(next)
     }
     return next
-  }, [])
-
-  const grantDailyCredits = useCallback(async (userId: string) => {
-    const updated = await awardDailyCredits(userId)
-    if (updated) {
-      setCredits(updated)
-      return updated
-    }
-
-    // Fall back to existing credits to avoid wiping state.
-    const refreshed = await loadOrCreateCredits(userId)
-    if (refreshed) {
-      setCredits(refreshed)
-    }
-    return refreshed
   }, [])
 
   const spend = useCallback(
@@ -100,7 +79,6 @@ export function useAiChatCredits(user: User | null): UseAiChatCreditsResult {
   return {
     credits,
     loadCredits,
-    grantDailyCredits,
     spend,
     refund,
     reset,

@@ -48,7 +48,6 @@ export function useAiChatConsole(): UseAiChatConsoleResult {
   const {
     credits,
     loadCredits,
-    grantDailyCredits,
     spend,
     refund,
     reset: resetCredits,
@@ -82,10 +81,9 @@ export function useAiChatConsole(): UseAiChatConsoleResult {
   const initializeForUser = useCallback(
     async (userId: string) => {
       await loadCredits(userId)
-      await grantDailyCredits(userId)
       await loadHistory(userId)
     },
-    [loadCredits, grantDailyCredits, loadHistory],
+    [loadCredits, loadHistory],
   )
 
   useEffect(() => {
