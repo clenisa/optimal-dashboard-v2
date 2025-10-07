@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase-client"
+import { LLMBadge } from "@/components/transactions/LLMBadge"
 
 interface TransactionTableProps {
   transactions: TransactionData[]
@@ -116,6 +117,7 @@ export function TransactionTable({ transactions, onTransactionUpdated }: Transac
           <TableHead>Description</TableHead>
           <TableHead>Category</TableHead>
           <TableHead>Account</TableHead>
+          <TableHead>Provider</TableHead>
           <TableHead>Type</TableHead>
           <TableHead className="text-right">Amount</TableHead>
           <TableHead className="text-right">Actions</TableHead>
@@ -162,6 +164,15 @@ export function TransactionTable({ transactions, onTransactionUpdated }: Transac
                   </select>
                 ) : (
                   txn.account || 'Unknown Account'
+                )}
+              </TableCell>
+              <TableCell className="whitespace-nowrap">
+                <span>{txn.provider ?? "—"}</span>
+                {txn.provider_method === "llm" && (
+                  <LLMBadge
+                    confidence={txn.provider_confidence}
+                    inferredAt={txn.provider_inferred_at}
+                  />
                 )}
               </TableCell>
               <TableCell>

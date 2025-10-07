@@ -23,6 +23,10 @@ export interface TransactionData {
   category: string
   account: string
   type: string
+  provider?: string | null
+  provider_method?: string | null
+  provider_confidence?: number | null
+  provider_inferred_at?: string | null
 }
 
 export async function fetchCategories(userId: string): Promise<CategoryData[]> {
@@ -166,6 +170,10 @@ export async function fetchTransactions(userId: string): Promise<TransactionData
         type,
         category_id,
         source_id,
+        provider,
+        provider_method,
+        provider_confidence,
+        provider_inferred_at,
         categories(name),
         sources(name)
       `)
@@ -187,6 +195,10 @@ export async function fetchTransactions(userId: string): Promise<TransactionData
         category: txn.categories?.name || 'Uncategorized',
         account: txn.sources?.name || 'Unknown Account',
         type: txn.type || '',
+        provider: txn.provider || null,
+        provider_method: txn.provider_method || null,
+        provider_confidence: txn.provider_confidence || null,
+        provider_inferred_at: txn.provider_inferred_at || null,
       })) ?? []
 
     return transactionData
