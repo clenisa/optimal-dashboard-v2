@@ -13,6 +13,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js"
+import { useTheme } from "next-themes"
 import { useFinancialData } from "@/hooks/useFinancialData"
 import { generateMultiCategoryData } from "@/lib/chart-data"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -47,6 +48,7 @@ const CHART_DESCRIPTIONS = {
 
 export default function CategoryLineChart() {
   const { categories, transactions, loading, error } = useFinancialData()
+  const { theme, resolvedTheme } = useTheme()
   const [useTestData, setUseTestData] = useState(false)
   const [chartType, setChartType] = useState<'line' | 'bar' | 'matrix'>('line')
   const [allVisible, setAllVisible] = useState(true)
@@ -98,7 +100,7 @@ export default function CategoryLineChart() {
     logger.debug('CategoryLineChart', 'Showing loading state')
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-sm text-gray-500">Loading chart data...</div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">Loading chart data...</div>
       </div>
     )
   }
@@ -107,7 +109,7 @@ export default function CategoryLineChart() {
     logger.debug('CategoryLineChart', 'Showing error state', error)
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-sm text-red-500">Error: {error}</div>
+        <div className="text-sm text-red-500 dark:text-red-400">Error: {error}</div>
       </div>
     )
   }
@@ -123,7 +125,7 @@ export default function CategoryLineChart() {
           >
             {useTestData ? 'Hide Test Data' : 'Show Test Data'}
           </button>
-          <span className="text-sm text-gray-600">No real data available</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">No real data available</span>
         </div>
         {useTestData && (
           <div style={{ position: 'relative', height: '400px', width: '100%' }}>
@@ -131,13 +133,26 @@ export default function CategoryLineChart() {
               responsive: true,
               maintainAspectRatio: false,
               plugins: {
-                legend: { position: "top" as const },
-                title: { display: true, text: "Test Chart - Category Breakdown" },
+                legend: { 
+                  position: "top" as const,
+                  labels: { color: textColor }
+                },
+                title: { 
+                  display: true, 
+                  text: "Test Chart - Category Breakdown",
+                  color: textColor
+                },
               },
               scales: {
+                x: {
+                  grid: { color: gridColor },
+                  ticks: { color: textColor },
+                },
                 y: {
                   beginAtZero: true,
+                  grid: { color: gridColor },
                   ticks: {
+                    color: textColor,
                     callback: function(value: any) {
                       return "$" + value.toLocaleString()
                     },
@@ -165,7 +180,7 @@ export default function CategoryLineChart() {
           >
             {useTestData ? 'Hide Test Data' : 'Show Test Data'}
           </button>
-          <span className="text-sm text-gray-600">No valid category data found</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">No valid category data found</span>
         </div>
         {useTestData && (
           <div style={{ position: 'relative', height: '400px', width: '100%' }}>
@@ -173,13 +188,26 @@ export default function CategoryLineChart() {
               responsive: true,
               maintainAspectRatio: false,
               plugins: {
-                legend: { position: "top" as const },
-                title: { display: true, text: "Test Chart - Category Breakdown" },
+                legend: { 
+                  position: "top" as const,
+                  labels: { color: textColor }
+                },
+                title: { 
+                  display: true, 
+                  text: "Test Chart - Category Breakdown",
+                  color: textColor
+                },
               },
               scales: {
+                x: {
+                  grid: { color: gridColor },
+                  ticks: { color: textColor },
+                },
                 y: {
                   beginAtZero: true,
+                  grid: { color: gridColor },
                   ticks: {
+                    color: textColor,
                     callback: function(value: any) {
                       return "$" + value.toLocaleString()
                     },
@@ -204,6 +232,13 @@ export default function CategoryLineChart() {
     chartDataObject: chartData
   })
 
+  // Theme-aware colors
+  const isDark = resolvedTheme === 'dark'
+  const textColor = isDark ? '#e5e7eb' : '#111827'
+  const gridColor = isDark ? '#374151' : '#e5e7eb'
+  const tooltipBg = isDark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(0, 0, 0, 0.8)'
+  const tooltipBorder = isDark ? '#6b7280' : '#4ecdc4'
+
   const chartOptions: any = {
     responsive: true,
     maintainAspectRatio: false,
@@ -211,14 +246,14 @@ export default function CategoryLineChart() {
       title: {
         display: true,
         text: 'Category Analysis - actual mode',
-        color: '#111827',
+        color: textColor,
         font: { size: 16, weight: 'bold' as const },
       },
       legend: {
         display: true,
         position: 'top' as const,
         labels: {
-          color: '#111827',
+          color: textColor,
           font: { size: 12 },
           usePointStyle: true,
           pointStyle: 'line' as const,
@@ -228,10 +263,10 @@ export default function CategoryLineChart() {
       tooltip: {
         mode: 'point' as const,
         intersect: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backgroundColor: tooltipBg,
         titleColor: '#ffffff',
         bodyColor: '#ffffff',
-        borderColor: '#4ecdc4',
+        borderColor: tooltipBorder,
         borderWidth: 1,
         callbacks: {
           title: function(context: any) {
@@ -248,13 +283,13 @@ export default function CategoryLineChart() {
     },
     scales: {
       x: {
-        grid: { color: 'rgba(0, 0, 0, 0.05)', drawBorder: false },
-        ticks: { color: '#111827', font: { size: 11 } },
+        grid: { color: gridColor, drawBorder: false },
+        ticks: { color: textColor, font: { size: 11 } },
       },
       y: {
-        grid: { color: 'rgba(0, 0, 0, 0.05)', drawBorder: false },
+        grid: { color: gridColor, drawBorder: false },
         ticks: {
-          color: '#111827',
+          color: textColor,
           font: { size: 11 },
           callback: function(value: any) {
             return '$' + Number(value).toLocaleString()

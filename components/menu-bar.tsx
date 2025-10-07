@@ -92,7 +92,7 @@ export function MenuBar() {
   return (
     <div
       ref={menuRef}
-      className="fixed top-0 left-0 right-0 h-9 sm:h-7 bg-white border-b border-black flex items-center justify-between px-2 text-xs font-bold z-30"
+      className="fixed top-0 left-0 right-0 h-9 sm:h-7 bg-background border-b border-border flex items-center justify-between px-2 text-xs font-bold z-30"
       style={{ fontFamily: "Chicago, monospace" }}
     >
       {/* Left side - Menu items */}
@@ -106,11 +106,11 @@ export function MenuBar() {
             🍎
           </button>
           {activeMenu === "apple" && (
-            <div className="absolute top-full left-0 bg-white border border-black shadow-lg min-w-48 z-40">
+            <div className="absolute top-full left-0 bg-card border border-border shadow-lg min-w-48 z-40">
               {filterAppsForMenu(getSystemApps()).map((app) => (
                 <button
                   key={app.id}
-                  className="block w-full text-left px-3 py-2 hover:bg-blue-500 hover:text-white border-b border-gray-200 last:border-b-0"
+                  className="block w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground border-b border-border last:border-b-0 text-foreground"
                   onClick={() => openAppWindow(app.id)}
                 >
                   {app.title}
@@ -130,11 +130,11 @@ export function MenuBar() {
               {menu.emoji}
             </button>
             {activeMenu === menu.id && (
-              <div className="absolute top-full left-0 bg-white border border-black shadow-lg min-w-48 z-40">
+              <div className="absolute top-full left-0 bg-card border border-border shadow-lg min-w-48 z-40">
                 {filterAppsForMenu(menu.apps()).map((app) => (
                   <button
                     key={app.id}
-                    className="block w-full text-left px-3 py-2 hover:bg-blue-500 hover:text-white border-b border-gray-200 last:border-b-0"
+                    className="block w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground border-b border-border last:border-b-0 text-foreground"
                     onClick={() => {
                       if (app.requiresAuth && !user) {
                         openAppWindow("supabase-login")
@@ -160,7 +160,7 @@ export function MenuBar() {
         <button
           onClick={handleLoginClick}
           className={`px-2 py-1 text-xs font-bold transition-colors ${
-            user ? "bg-green-500 text-white hover:bg-green-600" : "bg-gray-200 hover:bg-gray-300"
+            user ? "bg-green-500 text-white hover:bg-green-600" : "bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground"
           }`}
           style={{ touchAction: "manipulation" }}
           disabled={loading}

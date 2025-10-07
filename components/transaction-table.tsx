@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase-client"
+import { LLMBadge } from "@/components/transactions/LLMBadge"
+import { formatCurrencyDisplay } from "@/lib/currency-utils"
 
 interface TransactionTableProps {
   transactions: TransactionData[]
@@ -116,6 +118,7 @@ export function TransactionTable({ transactions, onTransactionUpdated }: Transac
           <TableHead>Description</TableHead>
           <TableHead>Category</TableHead>
           <TableHead>Account</TableHead>
+          <TableHead>Provider</TableHead>
           <TableHead>Type</TableHead>
           <TableHead className="text-right">Amount</TableHead>
           <TableHead className="text-right">Actions</TableHead>
@@ -164,6 +167,15 @@ export function TransactionTable({ transactions, onTransactionUpdated }: Transac
                   txn.account || 'Unknown Account'
                 )}
               </TableCell>
+              <TableCell className="whitespace-nowrap">
+                <span>{txn.provider ?? "—"}</span>
+                {txn.provider_method === "llm" && (
+                  <LLMBadge
+                    confidence={txn.provider_confidence}
+                    inferredAt={txn.provider_inferred_at}
+                  />
+                )}
+              </TableCell>
               <TableCell>
                 {isEditing ? (
                   <select value={formType} onChange={(e) => setFormType(e.target.value)}>
@@ -179,7 +191,7 @@ export function TransactionTable({ transactions, onTransactionUpdated }: Transac
                 {isEditing ? (
                   <Input type="number" step="0.01" value={formAmount} onChange={(e) => setFormAmount(e.target.value)} className="text-right" />
                 ) : (
-                  txn.amount.toFixed(2)
+                  formatCurrencyDisplay(txn.amount)
                 )}
               </TableCell>
               <TableCell className="text-right space-x-2">

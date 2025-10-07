@@ -75,7 +75,7 @@ function Statistic({
   return (
     <div className="text-center">
       <div className={`${valueClassName} font-bold ${accent}`}>{value}</div>
-      <div className="text-sm text-gray-600">{label}</div>
+      <div className="text-sm text-muted-foreground">{label}</div>
     </div>
   )
 }
