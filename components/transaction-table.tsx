@@ -11,10 +11,11 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { createClient } from "@/lib/supabase-client"
 import { LLMBadge } from "@/components/transactions/LLMBadge"
 import { formatCurrencyDisplay } from "@/lib/currency-utils"
+import { cn } from "@/lib/utils"
 
 interface TransactionTableProps {
   transactions: TransactionData[]
@@ -110,42 +111,59 @@ export function TransactionTable({ transactions, onTransactionUpdated }: Transac
     fetchDropdownData()
   }, [])
 
+  const selectClassName = useMemo(
+    () =>
+      'w-full rounded-md border border-input bg-background px-2 py-1 text-sm shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+    [],
+  )
+
   return (
-    <Table>
+    <Table className="min-w-[900px] text-sm">
       <TableHeader>
-        <TableRow>
-          <TableHead>Date</TableHead>
-          <TableHead>Description</TableHead>
-          <TableHead>Category</TableHead>
-          <TableHead>Account</TableHead>
-          <TableHead>Provider</TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead className="text-right">Amount</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+        <TableRow className="border-border/60">
+          <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Date</TableHead>
+          <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Description</TableHead>
+          <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Category</TableHead>
+          <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Account</TableHead>
+          <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Provider</TableHead>
+          <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Type</TableHead>
+          <TableHead className="text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Amount
+          </TableHead>
+          <TableHead className="text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Actions
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {transactions.map((txn) => {
           const isEditing = editingId === txn.id
           return (
-            <TableRow key={txn.id} className={isEditing ? 'inline-edit-form' : ''}>
-              <TableCell>
+            <TableRow
+              key={txn.id}
+              className={cn('border-border/40 transition-colors hover:bg-muted/40', isEditing && 'bg-muted/50')}
+            >
+              <TableCell className="align-top">
                 {isEditing ? (
                   <Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} />
                 ) : (
                   formatDate(txn.date)
                 )}
               </TableCell>
-              <TableCell>
+              <TableCell className="align-top">
                 {isEditing ? (
                   <Input value={formDescription} onChange={(e) => setFormDescription(e.target.value)} />
                 ) : (
                   txn.description || ""
                 )}
               </TableCell>
-              <TableCell>
+              <TableCell className="align-top">
                 {isEditing ? (
-                  <select value={formCategory} onChange={(e) => setFormCategory(e.target.value)}>
+                  <select
+                    value={formCategory}
+                    onChange={(e) => setFormCategory(e.target.value)}
+                    className={selectClassName}
+                  >
                     <option value="">Select category</option>
                     {categories.map((cat) => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -155,9 +173,13 @@ export function TransactionTable({ transactions, onTransactionUpdated }: Transac
                   txn.category || 'Uncategorized'
                 )}
               </TableCell>
-              <TableCell>
+              <TableCell className="align-top">
                 {isEditing ? (
-                  <select value={formAccount} onChange={(e) => setFormAccount(e.target.value)}>
+                  <select
+                    value={formAccount}
+                    onChange={(e) => setFormAccount(e.target.value)}
+                    className={selectClassName}
+                  >
                     <option value="">Select account</option>
                     {accounts.map((acc) => (
                       <option key={acc.id} value={acc.id}>{acc.name}</option>
@@ -167,8 +189,8 @@ export function TransactionTable({ transactions, onTransactionUpdated }: Transac
                   txn.account || 'Unknown Account'
                 )}
               </TableCell>
-              <TableCell className="whitespace-nowrap">
-                <span>{txn.provider ?? "—"}</span>
+              <TableCell className="whitespace-nowrap text-muted-foreground">
+                <span className="font-medium text-foreground">{txn.provider ?? "—"}</span>
                 {txn.provider_method === "llm" && (
                   <LLMBadge
                     confidence={txn.provider_confidence}
@@ -176,9 +198,13 @@ export function TransactionTable({ transactions, onTransactionUpdated }: Transac
                   />
                 )}
               </TableCell>
-              <TableCell>
+              <TableCell className="align-top">
                 {isEditing ? (
-                  <select value={formType} onChange={(e) => setFormType(e.target.value)}>
+                  <select
+                    value={formType}
+                    onChange={(e) => setFormType(e.target.value)}
+                    className={selectClassName}
+                  >
                     <option value="">Select type</option>
                     <option value="income">Income</option>
                     <option value="expense">Expense</option>
@@ -187,14 +213,21 @@ export function TransactionTable({ transactions, onTransactionUpdated }: Transac
                   txn.type || ''
                 )}
               </TableCell>
-              <TableCell className={`text-right ${txn.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
+              <TableCell
+                className={cn(
+                  'text-right font-medium',
+                  txn.amount < 0
+                    ? 'text-destructive'
+                    : 'text-emerald-500 dark:text-emerald-400',
+                )}
+              >
                 {isEditing ? (
                   <Input type="number" step="0.01" value={formAmount} onChange={(e) => setFormAmount(e.target.value)} className="text-right" />
                 ) : (
                   formatCurrencyDisplay(txn.amount)
                 )}
               </TableCell>
-              <TableCell className="text-right space-x-2">
+              <TableCell className="space-x-2 text-right">
                 {isEditing ? (
                   <>
                     <Button size="sm" onClick={() => handleSave(txn)} disabled={saving}>Save</Button>

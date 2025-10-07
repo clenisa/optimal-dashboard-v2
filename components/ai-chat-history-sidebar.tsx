@@ -3,7 +3,8 @@
 import React from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Plus, Trash2 } from 'lucide-react'
 import type { ConversationSummary } from '@/lib/ai/types'
 
 interface ChatHistorySidebarProps {
@@ -11,19 +12,34 @@ interface ChatHistorySidebarProps {
   selectedConversationId?: string
   onSelect: (conversationId: string) => void
   onDelete: (conversationId: string) => void
+  onNewChat: () => void
 }
 
 export function AIChatHistorySidebar({
   conversations,
   selectedConversationId,
   onSelect,
-  onDelete
+  onDelete,
+  onNewChat,
 }: ChatHistorySidebarProps) {
   return (
     <aside className="hidden lg:flex lg:w-64 xl:w-72 flex-col border-r bg-muted/30">
       <div className="px-4 py-3 border-b">
-        <h3 className="text-sm font-medium">Chat History</h3>
-        <p className="text-xs text-muted-foreground">Your previous AI conversations</p>
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-medium">Chat History</h3>
+            <p className="text-xs text-muted-foreground">Your previous AI conversations</p>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onNewChat}
+            className="h-8 w-8 p-0"
+            aria-label="Start a new chat"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-2">

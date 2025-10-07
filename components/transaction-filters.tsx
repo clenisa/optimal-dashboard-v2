@@ -35,28 +35,32 @@ export function TransactionFilters({ allTransactions, setFilteredTransactions }:
   }
 
   return (
-    <div className="flex items-center space-x-2 mb-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-      <div className="flex items-center space-x-2">
-        <Label htmlFor="start-date">From:</Label>
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Label htmlFor="start-date" className="text-xs font-medium uppercase text-muted-foreground">
+          From
+        </Label>
         <Input
           id="start-date"
           type="date"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
-          className="w-auto"
+          className="w-[150px]"
         />
       </div>
-      <div className="flex items-center space-x-2">
-        <Label htmlFor="end-date">To:</Label>
+      <div className="flex flex-wrap items-center gap-2">
+        <Label htmlFor="end-date" className="text-xs font-medium uppercase text-muted-foreground">
+          To
+        </Label>
         <Input
           id="end-date"
           type="date"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
-          className="w-auto"
+          className="w-[150px]"
         />
       </div>
-      <Button onClick={clearFilters} variant="outline">
+      <Button onClick={clearFilters} variant="outline" size="sm">
         Clear Filters
       </Button>
     </div>

@@ -49,6 +49,7 @@ export function AIChatConsole() {
     handleModelChange,
     handleConversationSelect,
     handleConversationDelete,
+    handleNewConversation,
     sendMessage,
     formatTime,
   } = useAiChatConsole()
@@ -79,6 +80,10 @@ export function AIChatConsole() {
         selectedConversationId={selectedConversationId}
         onSelect={(conversationId) => void handleConversationSelect(conversationId)}
         onDelete={(conversationId) => void handleConversationDelete(conversationId)}
+        onNewChat={() => {
+          handleNewConversation()
+          inputRef.current?.focus()
+        }}
       />
 
       <div className="flex-1 flex flex-col">
@@ -118,10 +123,10 @@ export function AIChatConsole() {
                           .find((provider) => provider.id === activeProvider)
                           ?.models.map((model) => (
                             <SelectItem key={model.id} value={model.id}>
-                              <div className="flex flex-col">
+                              <div className="flex items-center justify-between w-full">
                                 <span>{model.name}</span>
                                 {model.pricing && (
-                                  <span className="text-xs text-muted-foreground">
+                                  <span className="text-xs text-muted-foreground ml-2">
                                     ${model.pricing.prompt.toFixed(4)}/{model.pricing.unit}
                                   </span>
                                 )}

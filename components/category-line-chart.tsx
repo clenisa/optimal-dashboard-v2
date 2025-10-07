@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useMemo, useRef, useState } from "react"
 import { Line, Bar } from "react-chartjs-2"
 import {
   Chart as ChartJS,
@@ -12,17 +12,25 @@ import {
   Title,
   Tooltip,
   Legend,
+  ChartOptions,
 } from "chart.js"
 import { useTheme } from "next-themes"
 import { useFinancialData } from "@/hooks/useFinancialData"
 import { generateMultiCategoryData } from "@/lib/chart-data"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Info, TrendingUp, TrendingDown, Target } from "lucide-react"
-import { logger } from "@/lib/logger"
+import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Info, TrendingUp, Target } from "lucide-react"
 import { CategoryMatrix } from "./category-matrix"
 
-// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -31,343 +39,198 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 )
 
-// Chart Descriptions and Insights
 const CHART_DESCRIPTIONS = {
-  title: "Spending Trends by Category",
-  description: "Track how your spending in different categories changes over time. Look for patterns, seasonal variations, and opportunities to optimize your budget.",
+  title: "Spending trends by category",
+  description:
+    "Track how your spending in different categories changes over time to uncover patterns and opportunities to optimize your budget.",
   insights: [
-    "Identify categories with increasing spending trends",
-    "Spot seasonal patterns in your expenses",
-    "Compare current month vs previous months",
-    "Set category-specific budget goals"
-  ]
+    "Identify categories with rising spend that may need attention",
+    "Spot seasonal patterns across travel, utilities, and discretionary categories",
+    "Compare current month performance against recent history",
+    "Set category targets and monitor progress toward each goal",
+  ],
 }
 
 export default function CategoryLineChart() {
-  const { categories, transactions, loading, error } = useFinancialData()
-  const { theme, resolvedTheme } = useTheme()
-  const [useTestData, setUseTestData] = useState(false)
+  const { categories = [], transactions, loading, error } = useFinancialData()
+  const { resolvedTheme } = useTheme()
   const [chartType, setChartType] = useState<'line' | 'bar' | 'matrix'>('line')
   const [allVisible, setAllVisible] = useState(true)
   const chartRef = useRef<any>(null)
 
-  // Debug: Validate data structure
-  useEffect(() => {
-    logger.debug('CategoryLineChart', 'Data validation', {
-      categoriesLength: categories.length,
-      categoriesData: categories,
-      hasValidData: categories.length > 0 && categories.every(cat => 
-        cat.category && typeof cat.amount === 'number'
-      )
+  const appearance = useMemo(() => {
+    const isDark = resolvedTheme === 'dark'
+    return {
+      text: isDark ? '#e5e7eb' : '#111827',
+      grid: isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(148, 163, 184, 0.32)',
+      tooltipBg: isDark ? 'rgba(15, 23, 42, 0.96)' : 'rgba(15, 23, 42, 0.9)',
+      tooltipBorder: isDark ? 'rgba(94, 234, 212, 0.45)' : 'rgba(37, 99, 235, 0.45)',
+    }
+  }, [resolvedTheme])
+
+  const validCategories = useMemo(
+    () => categories.filter((cat) => cat.category && typeof cat.amount === 'number'),
+    [categories],
+  )
+
+  const chartData = useMemo(() => {
+    if (validCategories.length === 0) return null
+    return generateMultiCategoryData(transactions, validCategories)
+  }, [transactions, validCategories])
+
+  const chartOptions: ChartOptions<'line' | 'bar'> = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: {
+          display: false,
+        },
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            color: appearance.text,
+            font: { size: 11 },
+            usePointStyle: true,
+            padding: 18,
+          },
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          backgroundColor: appearance.tooltipBg,
+          titleColor: '#f8fafc',
+          bodyColor: '#f8fafc',
+          borderColor: appearance.tooltipBorder,
+          borderWidth: 1,
+          callbacks: {
+            label: (context) => {
+              const value = context.parsed.y
+              return ` ${context.dataset.label ?? 'Amount'}: $${Number(value ?? 0).toLocaleString()}`
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: {
+            color: appearance.grid,
+            drawBorder: false,
+          },
+          ticks: {
+            color: appearance.text,
+            font: { size: 11 },
+          },
+        },
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: appearance.grid,
+            drawBorder: false,
+          },
+          ticks: {
+            color: appearance.text,
+            font: { size: 11 },
+            callback: (value) => `$${Number(value ?? 0).toLocaleString()}`,
+          },
+        },
+      },
+      interaction: {
+        mode: 'nearest',
+        intersect: false,
+      },
+    }),
+    [appearance],
+  )
+
+  const toggleAllCategories = () => {
+    if (!chartRef.current) return
+    const chart = chartRef.current
+    const nextVisibility = !allVisible
+    chart.data.datasets.forEach((_: any, index: number) => {
+      chart.setDatasetVisibility(index, nextVisibility)
     })
-  }, [categories])
-
-  // Debug: Verify Chart.js registration
-  useEffect(() => {
-    logger.debug('CategoryLineChart', 'Chart.js registered components', {
-      registry: ChartJS.registry,
-    })
-  }, [])
-
-  // Debug: Log every time the component renders
-  logger.debug('CategoryLineChart', 'Render triggered', {
-    categories,
-    loading,
-    error,
-    categoriesLength: categories?.length || 0,
-    useTestData
-  })
-
-  // Temporary test data to verify Chart.js works
-  const testData = {
-    labels: ['Test Category 1', 'Test Category 2', 'Test Category 3'],
-    datasets: [{
-      label: 'Test Data',
-      data: [100, 200, 150],
-      borderColor: 'rgb(75, 192, 192)',
-      backgroundColor: 'rgba(75, 192, 192, 0.2)',
-      tension: 0.1,
-      fill: false,
-      pointRadius: 4,
-      pointHoverRadius: 6,
-    }]
+    chart.update()
+    setAllVisible(nextVisibility)
   }
 
   if (loading) {
-    logger.debug('CategoryLineChart', 'Showing loading state')
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-sm text-gray-500 dark:text-gray-400">Loading chart data...</div>
-      </div>
+      <Card className="border-border/60 bg-card/80 p-6 text-center">
+        <span className="text-sm text-muted-foreground">Loading category insights…</span>
+      </Card>
     )
   }
 
   if (error) {
-    logger.debug('CategoryLineChart', 'Showing error state', error)
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-sm text-red-500 dark:text-red-400">Error: {error}</div>
-      </div>
+      <Card className="border-destructive/40 bg-destructive/10 p-6 text-center text-destructive">
+        <span className="text-sm">Unable to load category data: {error}</span>
+      </Card>
     )
   }
 
-  if (!categories || categories.length === 0) {
-    logger.debug('CategoryLineChart', 'Showing no data state', { categories })
+  if (!chartData || validCategories.length === 0) {
     return (
-      <div className="w-full h-full p-4 space-y-4">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setUseTestData(!useTestData)}
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            {useTestData ? 'Hide Test Data' : 'Show Test Data'}
-          </button>
-          <span className="text-sm text-gray-600 dark:text-gray-400">No real data available</span>
-        </div>
-        {useTestData && (
-          <div style={{ position: 'relative', height: '400px', width: '100%' }}>
-            <Line data={testData} options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: { 
-                  position: "top" as const,
-                  labels: { color: textColor }
-                },
-                title: { 
-                  display: true, 
-                  text: "Test Chart - Category Breakdown",
-                  color: textColor
-                },
-              },
-              scales: {
-                x: {
-                  grid: { color: gridColor },
-                  ticks: { color: textColor },
-                },
-                y: {
-                  beginAtZero: true,
-                  grid: { color: gridColor },
-                  ticks: {
-                    color: textColor,
-                    callback: function(value: any) {
-                      return "$" + value.toLocaleString()
-                    },
-                  },
-                },
-              },
-            }} />
-          </div>
-        )}
-      </div>
+      <Card className="border-border/60 bg-muted/40 p-8 text-center">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-semibold">No category data yet</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>Import transactions or sync a financial account to populate this visualization.</p>
+          <p>Once data is available, you will see month-over-month trends and insights here.</p>
+        </CardContent>
+      </Card>
     )
   }
 
-  // Prepare multi-category monthly datasets
-  const validCategories = categories.filter(cat => cat.category)
+  const totalAmount = validCategories.reduce((sum, cat) => sum + Number(cat.amount ?? 0), 0)
 
-  if (validCategories.length === 0) {
-    logger.debug('CategoryLineChart', 'No valid category data found')
-    return (
-      <div className="w-full h-full p-4 space-y-4">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setUseTestData(!useTestData)}
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            {useTestData ? 'Hide Test Data' : 'Show Test Data'}
-          </button>
-          <span className="text-sm text-gray-600 dark:text-gray-400">No valid category data found</span>
-        </div>
-        {useTestData && (
-          <div style={{ position: 'relative', height: '400px', width: '100%' }}>
-            <Line data={testData} options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: { 
-                  position: "top" as const,
-                  labels: { color: textColor }
-                },
-                title: { 
-                  display: true, 
-                  text: "Test Chart - Category Breakdown",
-                  color: textColor
-                },
-              },
-              scales: {
-                x: {
-                  grid: { color: gridColor },
-                  ticks: { color: textColor },
-                },
-                y: {
-                  beginAtZero: true,
-                  grid: { color: gridColor },
-                  ticks: {
-                    color: textColor,
-                    callback: function(value: any) {
-                      return "$" + value.toLocaleString()
-                    },
-                  },
-                },
-              },
-            }} />
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // Build chart data based on selected type
-  const chartData = generateMultiCategoryData(transactions, validCategories)
-
-  logger.debug('CategoryLineChart', 'Chart data prepared', {
-    labels: chartData.labels,
-    data: chartData.datasets[0].data,
-    rawCategories: categories,
-    validCategories: validCategories,
-    chartDataObject: chartData
-  })
-
-  // Theme-aware colors
-  const isDark = resolvedTheme === 'dark'
-  const textColor = isDark ? '#e5e7eb' : '#111827'
-  const gridColor = isDark ? '#374151' : '#e5e7eb'
-  const tooltipBg = isDark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(0, 0, 0, 0.8)'
-  const tooltipBorder = isDark ? '#6b7280' : '#4ecdc4'
-
-  const chartOptions: any = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      title: {
-        display: true,
-        text: 'Category Analysis - actual mode',
-        color: textColor,
-        font: { size: 16, weight: 'bold' as const },
-      },
-      legend: {
-        display: true,
-        position: 'top' as const,
-        labels: {
-          color: textColor,
-          font: { size: 12 },
-          usePointStyle: true,
-          pointStyle: 'line' as const,
-          padding: 20,
-        },
-      },
-      tooltip: {
-        mode: 'point' as const,
-        intersect: true,
-        backgroundColor: tooltipBg,
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: tooltipBorder,
-        borderWidth: 1,
-        callbacks: {
-          title: function(context: any) {
-            const datasetLabel = context[0].dataset.label
-            const month = context[0].label
-            return `${datasetLabel} - ${month}`
-          },
-          label: function(context: any) {
-            const value = context.parsed.y
-            return `Amount: $${Number(value).toLocaleString()}`
-          }
-        }
-      },
-    },
-    scales: {
-      x: {
-        grid: { color: gridColor, drawBorder: false },
-        ticks: { color: textColor, font: { size: 11 } },
-      },
-      y: {
-        grid: { color: gridColor, drawBorder: false },
-        ticks: {
-          color: textColor,
-          font: { size: 11 },
-          callback: function(value: any) {
-            return '$' + Number(value).toLocaleString()
-          },
-        },
-        beginAtZero: true,
-      },
-    },
-    interaction: {
-      mode: 'point' as const,
-      intersect: true,
-    },
-  }
-
-  const toggleAllCategories = () => {
-    if (chartRef.current) {
-      const chart = chartRef.current
-      const newVisibility = !allVisible
-      chart.data.datasets.forEach((_: any, index: number) => {
-        chart.setDatasetVisibility(index, newVisibility)
-      })
-      chart.update()
-      setAllVisible(newVisibility)
-    }
-  }
-
-  logger.debug('CategoryLineChart', 'About to render chart', { chartData })
-  
   return (
-    <div className="w-full h-full p-4 space-y-6">
-      {/* Chart Description and Insights */}
-      <Card>
+    <div className="flex h-full flex-col gap-6 p-4">
+      <Card className="border-border/60 bg-card/80 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/70">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <TrendingUp className="h-5 w-5 text-primary" />
             {CHART_DESCRIPTIONS.title}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-gray-600 dark:text-gray-300">
-            {CHART_DESCRIPTIONS.description}
-          </p>
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Key Insights */}
+        <CardContent className="space-y-6">
+          <p className="text-sm text-muted-foreground">{CHART_DESCRIPTIONS.description}</p>
+
+          <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-3">
-              <h4 className="font-medium flex items-center gap-2">
-                <Target className="h-4 w-4 text-blue-600" />
-                Key Insights
+              <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                <Target className="h-4 w-4 text-primary" /> Key insights
               </h4>
-              <ul className="space-y-2 text-sm">
-                {CHART_DESCRIPTIONS.insights.map((insight, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <span className="text-blue-500 mt-0.5">•</span>
-                    <span>{insight}</span>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                {CHART_DESCRIPTIONS.insights.map((insight) => (
+                  <li key={insight} className="flex items-start gap-2">
+                    <Badge variant="outline" className="mt-0.5 h-5 w-5 min-w-[1.25rem] rounded-full border-primary/40 bg-primary/10 text-[10px] text-primary">
+                      •
+                    </Badge>
+                    <span className="leading-relaxed">{insight}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            
-            {/* Chart Statistics */}
+
             <div className="space-y-3">
-              <h4 className="font-medium flex items-center gap-2">
-                <Info className="h-4 w-4 text-green-600" />
-                Chart Statistics
+              <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                <Info className="h-4 w-4 text-primary" /> Snapshot metrics
               </h4>
               <div className="grid grid-cols-2 gap-3">
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
-                  <div className="text-lg font-bold text-blue-600">
-                    {validCategories.length}
-                  </div>
-                  <div className="text-xs text-gray-500">Categories</div>
+                <div className="rounded-lg border border-border/60 bg-muted/40 p-4 text-center">
+                  <div className="text-2xl font-semibold text-foreground">{validCategories.length}</div>
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">Tracked categories</div>
                 </div>
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
-                  <div className="text-lg font-bold text-green-600">
-                    ${validCategories.reduce((sum, cat) => sum + Number(cat.amount), 0).toLocaleString()}
-                  </div>
-                  <div className="text-xs text-gray-500">Total Amount</div>
+                <div className="rounded-lg border border-border/60 bg-muted/40 p-4 text-center">
+                  <div className="text-2xl font-semibold text-foreground">${totalAmount.toLocaleString()}</div>
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">Total spend</div>
                 </div>
               </div>
             </div>
@@ -375,45 +238,41 @@ export default function CategoryLineChart() {
         </CardContent>
       </Card>
 
-      {/* Chart */}
-      <Card>
+      <Card className="flex-1 border-border/60 bg-card/80 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/70">
         <CardHeader>
-          <CardTitle>Spending Trends Visualization</CardTitle>
+          <CardTitle className="text-lg font-semibold">Spending trends visualization</CardTitle>
         </CardHeader>
-        <CardContent>
-          {/* Chart Type Selector and All Toggle */}
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <label htmlFor="chart-type-select" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Visualization Type:
-              </label>
-              <select
-                id="chart-type-select"
-                value={chartType}
-                onChange={(e) => setChartType(e.target.value as 'line' | 'bar' | 'matrix')}
-                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="line">Category Breakdown (Line)</option>
-                <option value="bar">Category Breakdown (Bar)</option>
-                <option value="matrix">Category Breakdown (Matrix)</option>
-              </select>
+        <CardContent className="flex h-full flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <Select value={chartType} onValueChange={(value: 'line' | 'bar' | 'matrix') => setChartType(value)}>
+                <SelectTrigger className="w-[240px]">
+                  <SelectValue placeholder="Visualization type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="line">Category breakdown (line)</SelectItem>
+                    <SelectItem value="bar">Category breakdown (bar)</SelectItem>
+                    <SelectItem value="matrix">Category breakdown (matrix)</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
+
             {(chartType === 'line' || chartType === 'bar') && (
-              <button
-                onClick={toggleAllCategories}
-                className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                {allVisible ? 'Hide All' : 'Show All'}
-              </button>
+              <Button variant="outline" size="sm" onClick={toggleAllCategories}>
+                {allVisible ? 'Hide all series' : 'Show all series'}
+              </Button>
             )}
           </div>
-          <div style={{ position: 'relative', height: '400px', width: '100%' }}>
-            {chartType === 'line' ? (
-              <Line ref={chartRef} data={chartData} options={chartOptions} />
-            ) : chartType === 'bar' ? (
-              <Bar ref={chartRef} data={chartData} options={chartOptions} />
-            ) : (
+
+          <div className="h-[420px] w-full overflow-hidden rounded-xl border border-border/60 bg-muted/30 p-3">
+            {chartType === 'matrix' ? (
               <CategoryMatrix />
+            ) : chartType === 'line' ? (
+              <Line ref={chartRef} data={chartData} options={chartOptions} />
+            ) : (
+              <Bar ref={chartRef} data={chartData} options={chartOptions} />
             )}
           </div>
         </CardContent>
@@ -422,5 +281,4 @@ export default function CategoryLineChart() {
   )
 }
 
-// Named export for compatibility
 export { CategoryLineChart }

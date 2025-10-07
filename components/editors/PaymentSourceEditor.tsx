@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import type React from "react"
 import { createClient } from "@/lib/supabase-client"
 import { Button } from "@/components/ui/button"
@@ -39,19 +39,10 @@ export function PaymentSourceEditor() {
     notes: ""
   })
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const { user } = useAuthState()
 
-  useEffect(() => {
-    if (!supabase || !user) {
-      setLoading(false)
-      return
-    }
-
-    fetchPaymentSources()
-  }, [supabase, user])
-
-  const fetchPaymentSources = async () => {
+  const fetchPaymentSources = useCallback(async () => {
     if (!supabase || !user) {
       setLoading(false)
       return
@@ -69,7 +60,16 @@ export function PaymentSourceEditor() {
       setPaymentSources(data || [])
     }
     setLoading(false)
-  }
+  }, [supabase, user])
+
+  useEffect(() => {
+    if (!user) {
+      setLoading(false)
+      return
+    }
+
+    fetchPaymentSources()
+  }, [fetchPaymentSources, user])
 
   const calculateAvailableBalance = (source: PaymentSource): number => {
     const currentBalance = source.current_balance ?? 0

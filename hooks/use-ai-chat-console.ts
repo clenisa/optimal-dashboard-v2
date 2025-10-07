@@ -32,6 +32,7 @@ interface UseAiChatConsoleResult {
   handleModelChange: (modelId: string) => void
   handleConversationSelect: (conversationId: string) => Promise<void>
   handleConversationDelete: (conversationId: string) => Promise<void>
+  handleNewConversation: () => void
   sendMessage: () => Promise<void>
   formatTime: (date: Date) => string
 }
@@ -187,6 +188,15 @@ export function useAiChatConsole(): UseAiChatConsoleResult {
     setSelectedConversation: (conversationId: string) => setSelectedConversation(conversationId),
   })
 
+  const handleNewConversation = useCallback(() => {
+    setMessages([])
+    setInputValue('')
+    setError(null)
+    setIsListening(false)
+    setIsGenerating(false)
+    setSelectedConversation(undefined)
+  }, [setSelectedConversation, setMessages, setInputValue, setError, setIsListening, setIsGenerating])
+
   return {
     user,
     credits,
@@ -209,6 +219,7 @@ export function useAiChatConsole(): UseAiChatConsoleResult {
     handleModelChange,
     handleConversationSelect,
     handleConversationDelete,
+    handleNewConversation,
     sendMessage,
     formatTime,
   }

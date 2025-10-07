@@ -1,7 +1,7 @@
 "use client"
 
 import { Combine } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -33,20 +33,18 @@ export function CsvCombinerApp() {
   })
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4 space-y-6">
-      <Card>
+    <div className="mx-auto w-full max-w-4xl space-y-6 p-4">
+      <Card className="border-border/60 bg-card/80 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/70">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
             <Combine className="h-5 w-5" />
             CSV Combiner
           </CardTitle>
+          <CardDescription className="text-sm text-muted-foreground">
+            Merge up to {FILE_LIMIT} CSV files, automatically remove duplicates, and export a clean consolidated dataset.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Merge up to {FILE_LIMIT} CSV files into one deduplicated export. We remove duplicates by
-            comparing date, amount, description, type, and category fields.
-          </p>
-
           <CombinerDropzone
             loading={loading}
             fileCount={files.length}
@@ -84,13 +82,13 @@ export function CsvCombinerApp() {
           )}
 
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="border-destructive/40 bg-destructive/10 text-destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
           {success && (
-            <Alert>
+            <Alert className="border-primary/40 bg-primary/10 text-primary">
               <AlertDescription>{success}</AlertDescription>
             </Alert>
           )}

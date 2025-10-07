@@ -28,21 +28,21 @@ export function AIProviderSelector({ providers, value, onChange, status }: Provi
         <SelectContent>
           {providers.map((provider) => (
             <SelectItem key={provider.id} value={provider.id}>
-              <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between w-full">
                 <span>{provider.name}</span>
-                <span className="text-xs text-muted-foreground">
+                <Badge
+                  variant={status?.[provider.id]?.ok ? 'default' : 'destructive'}
+                  className="ml-2 text-xs font-normal"
+                >
                   {status?.[provider.id]?.ok
                     ? `Online${status?.[provider.id]?.latency ? ` • ${status?.[provider.id]?.latency}ms` : ''}`
                     : status?.[provider.id]?.error || 'Offline'}
-                </span>
+                </Badge>
               </div>
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <Badge variant="outline" className="text-xs">
-        Provider
-      </Badge>
     </div>
   )
 }

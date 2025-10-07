@@ -54,7 +54,7 @@ export function CsvParserApp() {
   if (!user) {
     return (
       <div className="p-6">
-        <Alert>
+        <Alert className="border-border/60 bg-muted/40">
           <AlertDescription>Please log in to use the CSV Parser</AlertDescription>
         </Alert>
       </div>
@@ -63,7 +63,7 @@ export function CsvParserApp() {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="border-border/60 bg-card/80 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/70">
         <CardHeader>
           <CardTitle>CSV Transaction Importer</CardTitle>
         </CardHeader>
@@ -91,7 +91,7 @@ export function CsvParserApp() {
             </div>
 
             <div className="space-y-4">
-              <Card>
+              <Card className="border border-border/60 bg-muted/40">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Upload Checklist</CardTitle>
                 </CardHeader>
@@ -120,16 +120,22 @@ export function CsvParserApp() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-border/60 bg-card/80 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/70">
         <CardHeader>
           <CardTitle>CSV Helpers</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="categories">Categories</TabsTrigger>
-              <TabsTrigger value="sources">Payment Sources</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 gap-2 rounded-lg bg-muted/60 p-1">
+              <TabsTrigger value="overview" className="rounded-md text-sm font-medium">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="categories" className="rounded-md text-sm font-medium">
+                Categories
+              </TabsTrigger>
+              <TabsTrigger value="sources" className="rounded-md text-sm font-medium">
+                Payment Sources
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview">
@@ -173,8 +179,8 @@ export function CsvParserApp() {
 
 function ChecklistItem({ label, completed }: { label: string; completed: boolean }) {
   return (
-    <div className="flex items-center gap-2">
-      <Badge variant={completed ? 'default' : 'secondary'} className="w-5 justify-center p-0">
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <Badge variant={completed ? 'default' : 'outline'} className="w-5 justify-center p-0">
         {completed ? '✓' : '–'}
       </Badge>
       <span>{label}</span>

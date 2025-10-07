@@ -14,13 +14,13 @@ export function getTransactionIcon(type: CreditTransactionType) {
   switch (type) {
     case 'earned':
     case 'daily_bonus':
-      return <Gift className="w-4 h-4 text-green-600" />
+      return <Gift className="h-4 w-4 text-emerald-500 dark:text-emerald-300" />
     case 'purchased':
-      return <CreditCard className="w-4 h-4 text-blue-600" />
+      return <CreditCard className="h-4 w-4 text-primary" />
     case 'spent':
-      return <DollarSign className="w-4 h-4 text-orange-600" />
+      return <DollarSign className="h-4 w-4 text-rose-500 dark:text-rose-400" />
     default:
-      return <History className="w-4 h-4 text-gray-600" />
+      return <History className="h-4 w-4 text-muted-foreground" />
   }
 }
 
@@ -29,14 +29,14 @@ export function getTransactionColor(type: CreditTransactionType): string {
     case 'earned':
     case 'daily_bonus':
     case 'purchased':
-      return 'text-green-600'
+      return 'text-emerald-600 dark:text-emerald-400'
     case 'spent':
-      return 'text-red-600'
+      return 'text-rose-500 dark:text-rose-400'
     default:
-      return 'text-gray-600'
+      return 'text-muted-foreground'
   }
 }
 
 export function getStatusIcon() {
-  return <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+  return <AlertCircle className="mx-auto mb-4 h-12 w-12 text-muted-foreground/60" />
 }

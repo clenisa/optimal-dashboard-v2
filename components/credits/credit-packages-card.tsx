@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import type { CreditPackage } from '@/lib/credits/types'
 
 interface CreditPackagesCardProps {
@@ -22,27 +23,34 @@ export function CreditPackagesCard({ packages, isProcessing, onPurchase }: Credi
           {packages.map((pkg) => (
             <div
               key={pkg.id}
-              className={`relative rounded-lg border-2 p-4 ${
-                pkg.popular ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white'
-              }`}
+              className={cn(
+                'relative rounded-xl border p-4 transition-all duration-200 shadow-sm',
+                pkg.popular
+                  ? 'border-primary/70 bg-primary/5 dark:bg-primary/15 ring-1 ring-primary/20'
+                  : 'border-border bg-card hover:border-primary/40'
+              )}
             >
               {pkg.popular && (
-                <Badge className="absolute -top-2 left-1/2 -translate-x-1/2">Most Popular</Badge>
+                <Badge className="absolute -top-2 left-1/2 -translate-x-1/2" variant="default">
+                  Most Popular
+                </Badge>
               )}
-              <div className="text-center">
+              <div className="flex h-full flex-col items-center text-center">
                 <h3 className="text-lg font-semibold">{pkg.name}</h3>
-                <div className="my-2 text-2xl font-bold text-blue-600">${pkg.price}</div>
-                <div className="mb-4 text-sm text-gray-600">
+                <div className="my-2 text-2xl font-bold text-primary">${pkg.price}</div>
+                <div className="mb-4 text-sm text-muted-foreground">
                   {pkg.credits} credits
                   {pkg.bonus && (
-                    <div className="font-medium text-green-600">+{pkg.bonus} bonus credits!</div>
+                    <div className="font-medium text-emerald-600 dark:text-emerald-400">
+                      +{pkg.bonus} bonus credits!
+                    </div>
                   )}
                 </div>
                 <Button
                   onClick={() => void onPurchase(pkg.id)}
                   disabled={isProcessing}
                   className="w-full"
-                  variant={pkg.popular ? 'default' : 'outline'}
+                  variant={pkg.popular ? 'default' : 'secondary'}
                 >
                   {isProcessing ? 'Processing...' : 'Purchase'}
                 </Button>

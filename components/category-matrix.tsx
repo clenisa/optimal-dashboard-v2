@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
@@ -28,12 +28,6 @@ export function CategoryMatrix() {
   const [viewType, setViewType] = useState<ViewType>('6months')
   const [sortColumn, setSortColumn] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<SortOrder>(null)
-
-  useEffect(() => {
-    if (transactions.length > 0 && categories.length > 0) {
-      updateMatrix()
-    }
-  }, [transactions, categories, viewType])
 
   const generatePeriods = (type: ViewType): string[] => {
     const now = new Date()
@@ -63,7 +57,7 @@ export function CategoryMatrix() {
     return result
   }
 
-  const updateMatrix = () => {
+  const updateMatrix = useCallback(() => {
     const newPeriods = generatePeriods(viewType)
     setPeriods(newPeriods)
 
@@ -109,9 +103,14 @@ export function CategoryMatrix() {
         matrix[categoryName].total += amount
       }
     })
-
     setMatrixData(matrix)
-  }
+  }, [categories, transactions, viewType])
+
+  useEffect(() => {
+    if (transactions.length > 0 && categories.length > 0) {
+      updateMatrix()
+    }
+  }, [transactions, categories, updateMatrix])
 
   const formatCurrency = (amount: number): string => {
     if (amount === 0) return '-'

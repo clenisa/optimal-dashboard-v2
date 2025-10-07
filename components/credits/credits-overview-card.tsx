@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import type { UserCredits } from '@/lib/credits/types'
 import { CreditCard, Gift, RefreshCw } from 'lucide-react'
 
@@ -34,8 +35,8 @@ export function CreditsOverviewCard({
       </CardHeader>
       <CardContent>
         {isRetrying ? (
-          <div className="flex items-center justify-center p-8">
-            <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+          <div className="flex items-center justify-center gap-2 p-8 text-muted-foreground">
+            <RefreshCw className="h-6 w-6 animate-spin" />
             <span>Retrying{retryCount > 1 ? ` (attempt ${retryCount})` : '...'}</span>
           </div>
         ) : (
@@ -43,11 +44,19 @@ export function CreditsOverviewCard({
             <Statistic
               label="Available Credits"
               value={credits?.total_credits ?? 0}
-              accent="text-blue-600"
+              accent="text-primary"
               valueClassName="text-3xl"
             />
-            <Statistic label="Total Earned" value={credits?.total_earned ?? 0} accent="text-green-600" />
-            <Statistic label="Total Spent" value={credits?.total_spent ?? 0} accent="text-orange-600" />
+            <Statistic
+              label="Total Earned"
+              value={credits?.total_earned ?? 0}
+              accent="text-emerald-600 dark:text-emerald-400"
+            />
+            <Statistic
+              label="Total Spent"
+              value={credits?.total_spent ?? 0}
+              accent="text-rose-500 dark:text-rose-400"
+            />
             <ClaimAction
               canClaim={canClaim}
               isClaiming={isClaiming}
@@ -74,7 +83,7 @@ function Statistic({
 }) {
   return (
     <div className="text-center">
-      <div className={`${valueClassName} font-bold ${accent}`}>{value}</div>
+      <div className={cn(valueClassName, 'font-bold', accent)}>{value}</div>
       <div className="text-sm text-muted-foreground">{label}</div>
     </div>
   )

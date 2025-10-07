@@ -34,7 +34,7 @@ export function AIChatWelcome() {
             {AI_CHAT_WELCOME.exampleQueries.map((query, index) => (
               <li key={index} className="flex items-start gap-2">
                 <span className="text-green-500 mt-0.5">•</span>
-                <span className="italic">"{query}"</span>
+                <span className="italic">&ldquo;{query}&rdquo;</span>
               </li>
             ))}
           </ul>

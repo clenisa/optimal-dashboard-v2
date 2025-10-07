@@ -17,19 +17,22 @@ export function CreditTransactionsCard({ transactions }: CreditTransactionsCardP
       </CardHeader>
       <CardContent>
         {transactions.length === 0 ? (
-          <div className="py-8 text-center text-gray-500">
-            <History className="mx-auto mb-4 h-12 w-12 text-gray-300" />
+          <div className="py-8 text-center text-muted-foreground">
+            <History className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
             <p>No transactions yet</p>
           </div>
         ) : (
           <div className="space-y-3">
             {transactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between rounded-lg border p-3">
+              <div
+                key={transaction.id}
+                className="flex items-center justify-between gap-4 rounded-lg border border-border bg-card/80 p-3 transition-colors hover:border-primary/40"
+              >
                 <div className="flex items-center gap-3">
                   {getTransactionIcon(transaction.type)}
                   <div>
                     <div className="font-medium">{transaction.description}</div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-muted-foreground">
                       {formatCreditTimestamp(transaction.created_at)}
                     </div>
                   </div>

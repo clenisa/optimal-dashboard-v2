@@ -19,13 +19,20 @@ interface UseAiChatProvidersResult {
 }
 
 const STATUS_REFRESH_INTERVAL = 15_000
+const PREFERRED_PROVIDER_STORAGE_KEY = 'preferred-ai-provider'
 
 export function useAiChatProviders(): UseAiChatProvidersResult {
   const [providers, setProviders] = useState<ProviderOption[]>([])
   const [providerStatus, setProviderStatus] = useState<Record<string, ProviderStatus>>({})
-  const [activeProvider, setActiveProvider] = useState<AIProviderId>('ollama')
+  const [activeProvider, setActiveProviderState] = useState<AIProviderId>('ollama')
   const [modelSelections, setModelSelections] = useState<Record<string, string>>({})
   const mountedRef = useRef(true)
+
+  const persistPreferredProvider = useCallback((provider: AIProviderId) => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(PREFERRED_PROVIDER_STORAGE_KEY, provider)
+    }
+  }, [])
 
   const initializeProviders = useCallback(async () => {
     try {
@@ -43,16 +50,28 @@ export function useAiChatProviders(): UseAiChatProvidersResult {
       })
       setModelSelections((prev) => ({ ...initialSelections, ...prev }))
 
-      const preferred = providerList.find((provider) => provider.id === DEFAULT_PROVIDER)
+      const savedProvider =
+        typeof window !== 'undefined'
+          ? (window.localStorage.getItem(PREFERRED_PROVIDER_STORAGE_KEY) as AIProviderId | null)
+          : null
+
+      const preferredFromStorage = savedProvider
+        ? providerList.find((provider) => provider.id === savedProvider)
+        : undefined
+      const preferredDefault = providerList.find((provider) => provider.id === DEFAULT_PROVIDER)
       const fallback = providerList[0]
-      const nextProvider = preferred ?? fallback
+
+      const nextProvider =
+        preferredFromStorage?.id ?? preferredDefault?.id ?? fallback?.id
+
       if (nextProvider) {
-        setActiveProvider(nextProvider.id)
+        setActiveProviderState(nextProvider)
+        persistPreferredProvider(nextProvider)
       }
     } catch (error) {
       logger.error('AiChatProviders', 'Failed to load providers', error)
     }
-  }, [])
+  }, [persistPreferredProvider])
 
   const refreshStatuses = useCallback(async () => {
     if (providers.length === 0) return
@@ -107,6 +126,14 @@ export function useAiChatProviders(): UseAiChatProvidersResult {
   const selectModel = useCallback((providerId: AIProviderId, modelId: string) => {
     setModelSelections((prev) => ({ ...prev, [providerId]: modelId }))
   }, [])
+
+  const setActiveProvider = useCallback(
+    (provider: AIProviderId) => {
+      setActiveProviderState(provider)
+      persistPreferredProvider(provider)
+    },
+    [persistPreferredProvider],
+  )
 
   return {
     providers,
