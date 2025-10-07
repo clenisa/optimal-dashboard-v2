@@ -1,7 +1,12 @@
 import { createClient } from '@/lib/supabase-client'
 import { logger } from '@/lib/logger'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AIProviderId } from '@/lib/ai/types'
 import type { UserCredits } from './types'
+import { getCurrentESTDate } from '@/lib/timezone-utils'
+
+const DEFAULT_DAILY_CREDIT_AMOUNT = 50
+type GenericSupabaseClient = SupabaseClient<any, any, any>
 
 interface SpendCreditsArgs {
   userId: string
@@ -12,10 +17,14 @@ interface SpendCreditsArgs {
   currentCredits?: UserCredits | null
 }
 
-export async function loadOrCreateCredits(userId: string): Promise<UserCredits | null> {
+export async function loadOrCreateCredits(
+  userId: string,
+  client?: GenericSupabaseClient,
+): Promise<UserCredits | null> {
   try {
-    const supabase = createClient()
+    const supabase = (client ?? createClient()) as GenericSupabaseClient | null
     if (!supabase) return null
+    const todayEST = getCurrentESTDate()
 
     const { data, error } = await supabase
       .from('user_credits')
@@ -38,7 +47,8 @@ export async function loadOrCreateCredits(userId: string): Promise<UserCredits |
         user_id: userId,
         total_credits: 10,
         total_earned: 10,
-        last_daily_credit: new Date().toISOString().split('T')[0],
+        daily_credit_amount: DEFAULT_DAILY_CREDIT_AMOUNT,
+        last_daily_credit: todayEST,
       })
       .select()
       .single()
@@ -55,56 +65,90 @@ export async function loadOrCreateCredits(userId: string): Promise<UserCredits |
   }
 }
 
-export async function awardDailyCredits(userId: string): Promise<UserCredits | null> {
+interface ClaimDailyCreditsResult {
+  awarded: boolean
+  amount: number
+  claimDate: string
+  credits: UserCredits | null
+  previousLastClaimDate: string | null
+}
+
+export async function claimDailyCredits(
+  userId: string,
+  client?: GenericSupabaseClient,
+): Promise<ClaimDailyCreditsResult | null> {
   try {
-    const supabase = createClient()
+    const supabase = (client ?? createClient()) as GenericSupabaseClient | null
     if (!supabase) return null
 
-    const today = new Date().toISOString().split('T')[0]
+    const todayEST = getCurrentESTDate()
+    const existingCredits = await loadOrCreateCredits(userId, supabase)
 
-    const { data } = await supabase
-      .from('user_credits')
-      .select('last_daily_credit, daily_credit_amount, total_credits, total_earned')
-      .eq('user_id', userId)
-      .single()
-
-    if (!data) {
+    if (!existingCredits) {
       return null
     }
 
-    if (data.last_daily_credit === today) {
-      const refreshed = await loadOrCreateCredits(userId)
-      return refreshed
+    const previousLastClaimDate = existingCredits.last_daily_credit ?? null
+
+    if (previousLastClaimDate === todayEST) {
+      return {
+        awarded: false,
+        amount: 0,
+        claimDate: todayEST,
+        credits: existingCredits,
+        previousLastClaimDate,
+      }
     }
 
-    const bonus = data.daily_credit_amount || 0
-    const newTotalCredits = (data.total_credits || 0) + bonus
-    const newTotalEarned = (data.total_earned || 0) + bonus
+    const bonus = existingCredits.daily_credit_amount ?? DEFAULT_DAILY_CREDIT_AMOUNT
+    const newTotalCredits = (existingCredits.total_credits || 0) + bonus
+    const newTotalEarned = (existingCredits.total_earned || 0) + bonus
 
     const { data: updated, error: updateError } = await supabase
       .from('user_credits')
       .update({
         total_credits: newTotalCredits,
         total_earned: newTotalEarned,
-        last_daily_credit: today,
+        last_daily_credit: todayEST,
       })
       .eq('user_id', userId)
+      .or(`last_daily_credit.is.null,last_daily_credit.lt.${todayEST}`)
       .select()
       .single()
 
-    if (updateError) {
+    if (updateError && updateError.code !== 'PGRST116') {
       logger.error('ChatCreditService', 'Failed to update daily credits', updateError)
       return null
     }
 
-    await supabase.from('credit_transactions').insert({
+    if (!updated) {
+      return {
+        awarded: false,
+        amount: 0,
+        claimDate: todayEST,
+        credits: existingCredits,
+        previousLastClaimDate,
+      }
+    }
+
+    const { error: transactionError } = await supabase.from('credit_transactions').insert({
       user_id: userId,
-      type: 'earned',
+      type: 'daily_bonus',
       amount: bonus,
-      description: 'Daily login bonus',
+      description: `Daily free credits claimed (${todayEST})`,
     })
 
-    return updated
+    if (transactionError) {
+      logger.error('ChatCreditService', 'Failed to record daily bonus transaction', transactionError)
+    }
+
+    return {
+      awarded: true,
+      amount: bonus,
+      claimDate: todayEST,
+      credits: updated,
+      previousLastClaimDate,
+    }
   } catch (error) {
     logger.error('ChatCreditService', 'Unexpected error awarding daily credits', error)
     return null

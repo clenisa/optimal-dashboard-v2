@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentESTDate } from '@/lib/timezone-utils'
+import { claimDailyCredits } from '@/lib/ai/chat/credit-service'
 
 export async function POST() {
   const supabase = createClient()
@@ -12,80 +12,40 @@ export async function POST() {
   }
 
   try {
-    // Get user credits - using correct column names
-    const { data: userCredits, error: creditsError } = await supabase
-      .from('user_credits')
-      .select('last_daily_credit, total_credits, total_earned, daily_credit_amount')
-      .eq('user_id', user.id)
-      .single()
+    const result = await claimDailyCredits(user.id, supabase)
 
-    if (creditsError) {
-      console.error('Failed to retrieve user credits:', creditsError)
-      return NextResponse.json({ error: 'Failed to retrieve user credits' }, { status: 500 })
-    }
-
-    const todayEST = getCurrentESTDate()
-    const lastClaimDate = userCredits?.last_daily_credit
-
-    console.log('Credit claim attempt:', {
-      userId: user.id,
-      todayEST,
-      lastClaimDate,
-      canClaim: lastClaimDate !== todayEST
-    })
-
-    if (lastClaimDate === todayEST) {
-      return NextResponse.json({ 
-        error: 'Daily credits already claimed',
-        nextClaimDate: todayEST 
-      }, { status: 429 })
-    }
-
-    const creditAmount = userCredits?.daily_credit_amount || 50
-    const updatedCredits = (userCredits?.total_credits ?? 0) + creditAmount
-    const updatedTotalEarned = (userCredits?.total_earned ?? 0) + creditAmount
-
-    // Update using correct column names
-    const { error: updateError } = await supabase
-      .from('user_credits')
-      .update({
-        total_credits: updatedCredits,
-        total_earned: updatedTotalEarned,
-        last_daily_credit: todayEST,
-      })
-      .eq('user_id', user.id)
-
-    if (updateError) {
-      console.error('Failed to update user credits:', updateError)
+    if (!result) {
       return NextResponse.json({ error: 'Failed to update user credits' }, { status: 500 })
     }
 
-    // Record transaction
-    const { error: transactionError } = await supabase.from('credit_transactions').insert([
-      {
-        user_id: user.id,
-        type: 'daily_bonus',
-        amount: creditAmount,
-        description: `Daily free credits claimed (${todayEST})`,
-      },
-    ])
+    const { awarded, credits, amount, claimDate, previousLastClaimDate } = result
 
-    if (transactionError) {
-      console.error('Failed to record credit transaction:', transactionError)
+    console.log('Credit claim attempt:', {
+      userId: user.id,
+      claimDate,
+      lastClaimDate: previousLastClaimDate,
+      awarded,
+    })
+
+    if (!awarded) {
+      return NextResponse.json({ 
+        error: 'Daily credits already claimed',
+        nextClaimDate: claimDate 
+      }, { status: 429 })
     }
 
     console.log('Credits claimed successfully:', {
       userId: user.id,
-      amount: creditAmount,
-      newBalance: updatedCredits,
-      date: todayEST
+      amount,
+      newBalance: credits?.total_credits ?? 0,
+      date: claimDate
     })
 
     return NextResponse.json({ 
       message: 'Daily credits claimed successfully', 
-      newBalance: updatedCredits,
-      creditsAwarded: creditAmount,
-      claimDate: todayEST
+      newBalance: credits?.total_credits ?? 0,
+      creditsAwarded: amount,
+      claimDate,
     })
 
   } catch (error) {
