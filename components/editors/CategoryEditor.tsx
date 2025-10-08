@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { createClient } from "@/lib/supabase-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,35 +30,35 @@ export function CategoryEditor() {
   const [editingCategoryColor, setEditingCategoryColor] = useState("")
   const [loading, setLoading] = useState(true)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    setLoading(true)
-    await Promise.all([fetchCategories(), fetchTransactions()])
-    setLoading(false)
-  }
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     const { data, error } = await supabase.from("categories").select("*").order("name")
     if (error) {
       console.error("Error fetching categories:", error)
     } else {
       setCategories(data || [])
     }
-  }
+  }, [supabase])
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     const { data, error } = await supabase.from("transactions").select("id, category_id, amount, type")
     if (error) {
       console.error("Error fetching transactions:", error)
     } else {
       setTransactions(data || [])
     }
-  }
+  }, [supabase])
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    await Promise.all([fetchCategories(), fetchTransactions()])
+    setLoading(false)
+  }, [fetchCategories, fetchTransactions])
+
+  useEffect(() => {
+    void fetchData()
+  }, [fetchData])
 
   const calculateCategorySubtotal = (categoryId: number): number => {
     return transactions

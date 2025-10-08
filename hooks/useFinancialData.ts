@@ -10,47 +10,71 @@ export function useFinancialData() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { user } = useAuthState()
+  const shouldLog = process.env.NODE_ENV !== 'production'
 
   useEffect(() => {
     async function loadAllData() {
-      logger.debug('useFinancialData', 'Hook triggered', { userId: user?.id })
+      if (shouldLog) {
+        logger.debug('useFinancialData', 'Hook triggered', { userId: user?.id })
+      }
       
       if (!user?.id) {
-        logger.debug('useFinancialData', 'No user ID available')
+        if (shouldLog) {
+          logger.debug('useFinancialData', 'No user ID available')
+        }
         setLoading(false)
         return
       }
 
       try {
-        logger.debug('useFinancialData', 'Starting data load', { userId: user.id })
+        if (shouldLog) {
+          logger.debug('useFinancialData', 'Starting data load', { userId: user.id })
+        }
         setLoading(true)
         setError(null)
 
         // Sequential loading like legacy
-        logger.debug('useFinancialData', 'Fetching categories')
+        if (shouldLog) {
+          logger.debug('useFinancialData', 'Fetching categories')
+        }
         const categoriesData = await fetchCategories(user.id)
-        logger.debug('useFinancialData', 'Categories fetched', { count: categoriesData.length })
+        if (shouldLog) {
+          logger.debug('useFinancialData', 'Categories fetched', { count: categoriesData.length })
+        }
         setCategories(categoriesData)
-        logger.debug('useFinancialData', 'Categories loaded', { count: categoriesData.length })
+        if (shouldLog) {
+          logger.debug('useFinancialData', 'Categories loaded', { count: categoriesData.length })
+        }
 
-        logger.debug('useFinancialData', 'Fetching sources')
+        if (shouldLog) {
+          logger.debug('useFinancialData', 'Fetching sources')
+        }
         const sourcesData = await fetchSources(user.id)
-        logger.debug('useFinancialData', 'Sources fetched', { count: sourcesData.length })
+        if (shouldLog) {
+          logger.debug('useFinancialData', 'Sources fetched', { count: sourcesData.length })
+        }
         setSources(sourcesData)
-        logger.debug('useFinancialData', 'Sources loaded', { count: sourcesData.length })
+        if (shouldLog) {
+          logger.debug('useFinancialData', 'Sources loaded', { count: sourcesData.length })
+        }
 
-        logger.debug('useFinancialData', 'Fetching transactions')
+        if (shouldLog) {
+          logger.debug('useFinancialData', 'Fetching transactions')
+        }
         const transactionsData = await fetchTransactions(user.id)
-        logger.debug('useFinancialData', 'Transactions fetched', { count: transactionsData.length })
+        if (shouldLog) {
+          logger.debug('useFinancialData', 'Transactions fetched', { count: transactionsData.length })
+        }
         setTransactions(transactionsData)
-        logger.debug('useFinancialData', 'Transactions loaded', { count: transactionsData.length })
-
-        logger.debug('useFinancialData', 'All data loaded successfully')
-        logger.debug('useFinancialData', 'Final state', {
-          categories: categoriesData.length,
-          sources: sourcesData.length,
-          transactions: transactionsData.length
-        })
+        if (shouldLog) {
+          logger.debug('useFinancialData', 'Transactions loaded', { count: transactionsData.length })
+          logger.debug('useFinancialData', 'All data loaded successfully')
+          logger.debug('useFinancialData', 'Final state', {
+            categories: categoriesData.length,
+            sources: sourcesData.length,
+            transactions: transactionsData.length
+          })
+        }
       } catch (err) {
         logger.error(
           'useFinancialData',
@@ -67,13 +91,15 @@ export function useFinancialData() {
   }, [user?.id])
 
   // Debug: Log every time the hook returns data
-  logger.debug('useFinancialData', 'Hook returning', {
-    categories: categories.length,
-    sources: sources.length,
-    transactions: transactions.length,
-    loading,
-    error
-  })
+  if (shouldLog) {
+    logger.debug('useFinancialData', 'Hook returning', {
+      categories: categories.length,
+      sources: sources.length,
+      transactions: transactions.length,
+      loading,
+      error
+    })
+  }
 
   return { categories, sources, transactions, loading, error }
 }

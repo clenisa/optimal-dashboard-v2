@@ -137,8 +137,8 @@ export function TransactionSummary({ transactions }: TransactionSummaryProps) {
                   <TooltipContent side="top" className="max-w-xs">
                     <div className="text-sm">
                       <strong>Calculation:</strong> Income - Expenses<br/>
-                      <strong>Positive:</strong> You're saving money<br/>
-                      <strong>Negative:</strong> You're spending more than you earn
+                      <strong>Positive:</strong> You&rsquo;re saving money<br/>
+                      <strong>Negative:</strong> You&rsquo;re spending more than you earn
                     </div>
                   </TooltipContent>
                 </Tooltip>

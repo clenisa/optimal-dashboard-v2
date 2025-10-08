@@ -28,14 +28,14 @@ export function Clock() {
   // Don't render anything until mounted on client
   if (!mounted || !time) {
     return (
-      <div className="text-xs sm:text-sm text-black select-none px-1">
+      <div className="select-none px-1 text-xs sm:text-sm text-muted-foreground">
         --:--
       </div>
     )
   }
 
   return (
-    <div className="text-xs sm:text-sm text-black select-none px-1">
+    <div className="select-none px-1 text-xs sm:text-sm text-foreground">
       {formatTime(time)}
     </div>
   )

@@ -26,13 +26,15 @@ export function ServiceApp({ serviceName }: ServiceAppProps) {
 
     if (serviceName === "Voice Assistant") {
       return (
-        <div className="flex items-center justify-center h-full">
-          <Card className="w-full max-w-md">
+        <div className="flex h-full items-center justify-center p-4">
+          <Card className="w-full max-w-md border-border/60 bg-card/80">
             <CardHeader>
               <CardTitle>Voice Assistant</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-center text-gray-600 mb-4">Voice assistant functionality coming soon...</p>
+            <CardContent className="space-y-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Voice assistant functionality is coming soon. Stay tuned for hands-free financial insights.
+              </p>
               <Button className="w-full" disabled>
                 🎤 Start Voice Command
               </Button>
@@ -62,38 +64,56 @@ export function ServiceApp({ serviceName }: ServiceAppProps) {
 
       // Banking menu with Credit and Investment shortcuts
       return (
-        <div className="flex flex-col items-center justify-center h-full space-y-4 p-8">
-          <h2 className="text-2xl font-bold mb-6">Banking Services</h2>
+        <div className="flex h-full flex-col items-center justify-center space-y-6 p-8">
+          <h2 className="text-2xl font-semibold tracking-tight">Banking Services</h2>
 
-          <div className="grid grid-cols-1 gap-4 w-full max-w-md">
-            {/* Credit and Investment shortcuts */}
+          <div className="grid w-full max-w-xl grid-cols-1 gap-4">
             <Button
               onClick={() => setCurrentView("credit-analytics")}
-              className="px-8 py-4 font-mono text-sm border-2 border-red-500 hover:bg-red-500 hover:text-white transition-colors bg-transparent text-red-500"
+              variant="outline"
+              className="group flex items-center justify-between rounded-lg border-border/70 bg-card/80 px-6 py-4 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10"
             >
-              💳 Credit Analytics
+              <span className="flex items-center gap-3">
+                <span className="text-lg">💳</span>
+                Credit Analytics
+              </span>
+              <span className="text-xs text-muted-foreground">Track utilization & limits</span>
             </Button>
 
             <Button
               onClick={() => setCurrentView("investment-analytics")}
-              className="px-8 py-4 font-mono text-sm border-2 border-green-500 hover:bg-green-500 hover:text-white transition-colors bg-transparent text-green-500"
+              variant="outline"
+              className="group flex items-center justify-between rounded-lg border-border/70 bg-card/80 px-6 py-4 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10"
             >
-              📈 Investment Analytics
+              <span className="flex items-center gap-3">
+                <span className="text-lg">📈</span>
+                Investment Analytics
+              </span>
+              <span className="text-xs text-muted-foreground">Visualize growth trends</span>
             </Button>
 
-            {/* Original Banking options */}
             <Button
               onClick={() => setCurrentView("analytics")}
-              className="px-8 py-4 font-mono text-sm border-2 border-black hover:bg-black hover:text-white transition-colors bg-transparent text-black"
+              variant="outline"
+              className="flex items-center justify-between rounded-lg border-border/70 bg-card/80 px-6 py-4 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10"
             >
-              📊 Analytics
+              <span className="flex items-center gap-3">
+                <span className="text-lg">📊</span>
+                Banking Analytics
+              </span>
+              <span className="text-xs text-muted-foreground">Comprehensive dashboards</span>
             </Button>
 
             <Button
               onClick={() => setCurrentView("import-data")}
-              className="px-8 py-4 font-mono text-sm border-2 border-black hover:bg-black hover:text-white transition-colors bg-transparent text-black"
+              variant="outline"
+              className="flex items-center justify-between rounded-lg border-border/70 bg-card/80 px-6 py-4 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10"
             >
-              📁 Import Data
+              <span className="flex items-center gap-3">
+                <span className="text-lg">📁</span>
+                Import Data
+              </span>
+              <span className="text-xs text-muted-foreground">Clean & merge statements</span>
             </Button>
           </div>
         </div>
@@ -102,10 +122,10 @@ export function ServiceApp({ serviceName }: ServiceAppProps) {
 
     // Fallback
     return (
-      <div className="flex items-center justify-center h-full">
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-center text-gray-600">{serviceName} service is not available at this time.</p>
+      <div className="flex h-full items-center justify-center p-6">
+        <Card className="border-border/60 bg-card/80">
+          <CardContent className="p-6 text-center text-sm text-muted-foreground">
+            {serviceName} service is not available at this time.
           </CardContent>
         </Card>
       </div>
@@ -113,10 +133,10 @@ export function ServiceApp({ serviceName }: ServiceAppProps) {
   }
 
   return (
-    <div className="w-full h-full relative">
+    <div className="relative h-full w-full">
       {serviceName === "Banking" && currentView !== "menu" && (
-        <div className="absolute top-2 left-2 z-10">
-          <Button onClick={() => setCurrentView("menu")} variant="outline" size="sm">
+        <div className="absolute left-3 top-3 z-10">
+          <Button onClick={() => setCurrentView("menu")} variant="ghost" size="sm" className="gap-1">
             ← Back to Banking
           </Button>
         </div>
