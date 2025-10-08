@@ -1,13 +1,19 @@
 "use client"
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { MortgageInputGrid } from '@/components/mortgage/mortgage-input-grid'
 import { MortgageCostGrid } from '@/components/mortgage/mortgage-cost-grid'
 import { MortgageResultsCard } from '@/components/mortgage/mortgage-results-card'
 import { useMortgageCalculator } from '@/hooks/use-mortgage-calculator'
 import type { MortgageCostField } from '@/lib/mortgage/types'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 
 export function MortgageCalculatorApp() {
   const {
@@ -21,6 +27,24 @@ export function MortgageCalculatorApp() {
     loading,
     calculate,
   } = useMortgageCalculator()
+
+  const faqItems = [
+    {
+      question: 'How much should I put down on a home?',
+      answer:
+        'Many lenders prefer a 20% down payment to avoid private mortgage insurance (PMI), but programs exist with lower down payments. This calculator helps you see how different down payment amounts impact your total payment.',
+    },
+    {
+      question: 'What is PMI and when can I remove it?',
+      answer:
+        'Private Mortgage Insurance protects lenders when borrowers put down less than 20%. PMI can often be removed once you reach 20% equity through payments or home appreciation, reducing your monthly costs.',
+    },
+    {
+      question: 'Should property taxes and insurance be included in the estimate?',
+      answer:
+        'Including taxes, insurance, HOA fees, and other carrying costs provides a more realistic view of your monthly obligation. Toggle these in the calculator to see how they affect your total payment.',
+    },
+  ]
 
   const costFields: MortgageCostField[] = [
     {
@@ -72,9 +96,39 @@ export function MortgageCalculatorApp() {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="border-border/60 bg-card/80">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Mortgage FAQs</CardTitle>
+          <CardDescription className="text-muted-foreground">
+            Learn how different levers in this calculator impact your payment and financial planning.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Accordion type="single" collapsible className="space-y-2">
+            {faqItems.map((item, index) => (
+              <AccordionItem
+                key={item.question}
+                value={`faq-${index}`}
+                className="rounded-lg border border-border/60 bg-muted/40 px-3"
+              >
+                <AccordionTrigger className="text-left text-sm font-medium text-foreground">
+                  {item.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-sm text-muted-foreground">
+                  {item.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/60 bg-card/80">
         <CardHeader>
           <CardTitle>💰 Mortgage Calculator</CardTitle>
+          <CardDescription className="text-sm text-muted-foreground">
+            Adjust your inputs to see how your monthly payment responds.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <MortgageInputGrid
@@ -88,7 +142,7 @@ export function MortgageCalculatorApp() {
             onLoanTermChange={(value) => setInput('loanTerm', value)}
           />
 
-          <Separator />
+          <Separator className="bg-border/60" />
 
           <MortgageCostGrid
             includeTaxesAndCosts={inputs.includeTaxesAndCosts}

@@ -19,23 +19,23 @@ export function MortgageCostGrid({
 }: MortgageCostGridProps) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 p-3">
         <Checkbox
           id="includeTaxesAndCosts"
           checked={includeTaxesAndCosts}
           onCheckedChange={(checked) => onIncludeTaxesAndCostsChange(Boolean(checked))}
         />
-        <Label htmlFor="includeTaxesAndCosts" className="font-medium">
+        <Label htmlFor="includeTaxesAndCosts" className="text-sm font-medium text-foreground">
           Include Taxes & Costs Below
         </Label>
       </div>
 
       {includeTaxesAndCosts && (
-        <div className="space-y-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+        <div className="space-y-4 rounded-lg border border-border/60 bg-card/70 p-4 shadow-sm">
           {fields.map((field) => (
             <div key={field.inputId} className="grid grid-cols-1 gap-2 md:grid-cols-3 md:items-end">
               <div className="space-y-2">
-                <Label htmlFor={field.inputId} className="text-sm">
+                <Label htmlFor={field.inputId} className="text-sm text-muted-foreground">
                   {field.label}
                 </Label>
                 <Input

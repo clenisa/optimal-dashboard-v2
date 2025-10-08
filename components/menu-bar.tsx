@@ -6,6 +6,7 @@ import { VolumeControl } from "@/components/volume-control"
 import { useWindowStore } from "@/store/window-store"
 import { useAuthState } from "@/hooks/use-auth-state"
 import { useDesktopServiceStore } from "@/store/desktop-service-store"
+import { useCreditsManager } from "@/hooks/use-credits-manager"
 import {
   appDefinitions,
   getAIApps,
@@ -26,6 +27,7 @@ export function MenuBar() {
   const { addWindow, focusWindow, windows } = useWindowStore()
   const { selectedServiceId, isDesktopModeEnabled } = useDesktopServiceStore()
   const { user, loading } = useAuthState()
+  const { credits, canClaim, isClaiming, timeToNextClaim, claimDailyCredits } = useCreditsManager()
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -100,17 +102,17 @@ export function MenuBar() {
         {/* Apple Menu */}
         <div className="relative">
           <button
-            className="px-2 py-1 hover:bg-blue-500 hover:text-white"
+            className="px-2 py-1 transition-colors hover:bg-primary/20 hover:text-primary"
             onClick={() => handleMenuClick("apple")}
           >
             🍎
           </button>
           {activeMenu === "apple" && (
-            <div className="absolute top-full left-0 bg-card border border-border shadow-lg min-w-48 z-40">
+            <div className="absolute top-full left-0 z-40 min-w-48 border border-border bg-card shadow-lg">
               {filterAppsForMenu(getSystemApps()).map((app) => (
                 <button
                   key={app.id}
-                  className="block w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground border-b border-border last:border-b-0 text-foreground"
+                  className="block w-full border-b border-border px-3 py-2 text-left text-foreground transition-colors hover:bg-accent hover:text-accent-foreground last:border-b-0"
                   onClick={() => openAppWindow(app.id)}
                 >
                   {app.title}
@@ -124,17 +126,17 @@ export function MenuBar() {
         {categoryMenus.map((menu) => (
           <div key={menu.id} className="relative">
             <button
-              className="px-2 py-1 hover:bg-blue-500 hover:text-white"
+              className="px-2 py-1 transition-colors hover:bg-primary/20 hover:text-primary"
               onClick={() => handleMenuClick(menu.id)}
             >
               {menu.emoji}
             </button>
             {activeMenu === menu.id && (
-              <div className="absolute top-full left-0 bg-card border border-border shadow-lg min-w-48 z-40">
+              <div className="absolute top-full left-0 z-40 min-w-48 border border-border bg-card shadow-lg">
                 {filterAppsForMenu(menu.apps()).map((app) => (
                   <button
                     key={app.id}
-                    className="block w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground border-b border-border last:border-b-0 text-foreground"
+                    className="block w-full border-b border-border px-3 py-2 text-left text-foreground transition-colors hover:bg-accent hover:text-accent-foreground last:border-b-0"
                     onClick={() => {
                       if (app.requiresAuth && !user) {
                         openAppWindow("supabase-login")
@@ -154,13 +156,39 @@ export function MenuBar() {
 
       {/* Right side - System controls */}
       <div className="flex items-center space-x-2">
+        {user && (
+          <button
+            onClick={() => void claimDailyCredits()}
+            disabled={!canClaim || isClaiming}
+            className={`hidden items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors sm:flex ${
+              canClaim
+                ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/20"
+                : "border-border/60 bg-muted/60 text-muted-foreground"
+            }`}
+          >
+            {canClaim
+              ? isClaiming
+                ? "Claiming..."
+                : `Claim +${credits?.daily_credit_amount ?? 50}`
+              : `${credits?.total_credits ?? 0} credits`}
+          </button>
+        )}
+
+        {!canClaim && user && timeToNextClaim && (
+          <span className="hidden text-[10px] text-muted-foreground sm:block">
+            Refresh in {timeToNextClaim}
+          </span>
+        )}
+
         <VolumeControl />
 
         {/* Login Button */}
         <button
           onClick={handleLoginClick}
-          className={`px-2 py-1 text-xs font-bold transition-colors ${
-            user ? "bg-green-500 text-white hover:bg-green-600" : "bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground"
+          className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+            user
+              ? "bg-emerald-500 text-white hover:bg-emerald-600"
+              : "border border-border/60 bg-card/70 text-foreground hover:border-primary/50 hover:text-primary"
           }`}
           style={{ touchAction: "manipulation" }}
           disabled={loading}

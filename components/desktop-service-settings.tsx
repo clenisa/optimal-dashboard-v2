@@ -56,7 +56,7 @@ export function DesktopServiceSettings() {
               </SelectContent>
             </Select>
             <div className="text-xs text-gray-500">
-              Selected service will appear as your desktop background and won't show in dropdown menus
+              Selected service will appear as your desktop background and won&rsquo;t show in dropdown menus
             </div>
           </div>
         )}
