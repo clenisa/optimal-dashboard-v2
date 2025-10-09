@@ -4,6 +4,7 @@ import { memo } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { Button } from '@/components/ui/button'
 
 interface LoadingSkeletonProps {
   lines?: number
@@ -46,13 +47,9 @@ function LoadingSkeletonFallback({ retry }: { error?: Error; retry: () => void }
   return (
     <div className="space-y-2 rounded-md border border-dashed border-border/60 p-3 text-xs text-muted-foreground">
       <p>Unable to load placeholder content.</p>
-      <button
-        type="button"
-        className="underline"
-        onClick={retry}
-      >
+      <Button variant="outline" size="sm" onClick={retry}>
         Retry
-      </button>
+      </Button>
     </div>
   )
 }
