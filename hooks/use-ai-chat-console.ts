@@ -26,7 +26,7 @@ interface UseAiChatConsoleResult {
   error: string | null
   providerConnected: boolean
   setInputValue: (value: string) => void
-  handleKeyPress: (event: React.KeyboardEvent<HTMLInputElement>) => void
+  handleKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void
   toggleVoiceRecognition: () => void
   handleProviderChange: (provider: AIProviderId) => void
   handleModelChange: (modelId: string) => void
@@ -65,6 +65,7 @@ export function useAiChatConsole(): UseAiChatConsoleResult {
   const {
     history,
     selectedConversationId,
+    isLoadingHistory,
     loadHistory,
     selectConversation,
     deleteConversation,
@@ -168,7 +169,7 @@ export function useAiChatConsole(): UseAiChatConsoleResult {
     (date: Date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     [],
   )
-  const { sendMessage, handleKeyPress } = useAiChatSendMessage({
+  const { sendMessage, handleKeyDown } = useAiChatSendMessage({
     inputValue,
     setInputValue,
     messages,
@@ -187,6 +188,13 @@ export function useAiChatConsole(): UseAiChatConsoleResult {
     setSelectedConversation: (conversationId: string) => setSelectedConversation(conversationId),
   })
 
+  const startNewConversation = useCallback(() => {
+    setMessages([])
+    setInputValue('')
+    setError(null)
+    setSelectedConversation(undefined)
+  }, [setInputValue, setSelectedConversation])
+
   return {
     user,
     credits,
@@ -197,13 +205,14 @@ export function useAiChatConsole(): UseAiChatConsoleResult {
     messages,
     history,
     selectedConversationId,
+    isLoadingHistory,
     inputValue,
     isGenerating,
     isListening,
     error,
     providerConnected,
     setInputValue,
-    handleKeyPress,
+    handleKeyDown,
     toggleVoiceRecognition,
     handleProviderChange,
     handleModelChange,
@@ -211,5 +220,6 @@ export function useAiChatConsole(): UseAiChatConsoleResult {
     handleConversationDelete,
     sendMessage,
     formatTime,
+    startNewConversation,
   }
 }
