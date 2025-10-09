@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { FileDropHandlers } from '@/hooks/use-file-drop'
 import { cn } from '@/lib/utils'
+import { SPACING_TOKENS } from '@/lib/design-tokens'
 
 interface CsvUploadZoneProps {
   file: File | null
@@ -40,7 +41,7 @@ export function CsvUploadZone({ file, loading, dropHandlers, onFileSelect }: Csv
     }
   }
 
-  const baseClasses = 'rounded-lg border-2 border-dashed p-8 text-center transition-all duration-200'
+  const baseClasses = cn('rounded-lg border-2 border-dashed text-center transition-all duration-200', SPACING_TOKENS.container)
   const stateClasses = loading
     ? 'border-border/60 bg-muted/40'
     : file
@@ -61,6 +62,11 @@ export function CsvUploadZone({ file, loading, dropHandlers, onFileSelect }: Csv
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
+          inputRef.current?.click()
+        }
+      }}
+      onClick={() => {
+        if (!loading) {
           inputRef.current?.click()
         }
       }}

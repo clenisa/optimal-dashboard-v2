@@ -188,7 +188,7 @@ export function TransactionManager() {
                   <LoadingSkeleton lines={8} />
                 </div>
               ) : totalItems === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+                <div className={cn('flex h-full flex-col items-center justify-center gap-3 text-center', SPACING_TOKENS.container)}>
                   <p className="text-sm text-muted-foreground">
                     {transactions.length === 0
                       ? 'No transactions found yet. Connect an account or upload data to get started.'

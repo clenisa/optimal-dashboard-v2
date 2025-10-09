@@ -3,6 +3,8 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+import { SPACING_TOKENS, SURFACE_TOKENS, TYPOGRAPHY_TOKENS } from "@/lib/design-tokens"
 import CategoryLineChart from "./category-line-chart"
 import { PaymentSourceBalances } from "./payment-source-balances"
 import { CsvParserApp } from "./csv-parser-app"
@@ -27,9 +29,9 @@ export function ServiceApp({ serviceName }: ServiceAppProps) {
     if (serviceName === "Voice Assistant") {
       return (
         <div className="flex h-full items-center justify-center p-4">
-          <Card className="w-full max-w-md border-border/60 bg-card/80">
+          <Card className={cn("w-full max-w-md border", SURFACE_TOKENS.primary)}>
             <CardHeader>
-              <CardTitle>Voice Assistant</CardTitle>
+              <CardTitle className={TYPOGRAPHY_TOKENS.heading}>Voice Assistant</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-center">
               <p className="text-sm text-muted-foreground">
@@ -64,14 +66,17 @@ export function ServiceApp({ serviceName }: ServiceAppProps) {
 
       // Banking menu with Credit and Investment shortcuts
       return (
-        <div className="flex h-full flex-col items-center justify-center space-y-6 p-8">
+        <div className={cn('flex h-full flex-col items-center justify-center space-y-6', SPACING_TOKENS.container)}>
           <h2 className="text-2xl font-semibold tracking-tight">Banking Services</h2>
 
           <div className="grid w-full max-w-xl grid-cols-1 gap-4">
             <Button
               onClick={() => setCurrentView("credit-analytics")}
               variant="outline"
-              className="group flex items-center justify-between rounded-lg border-border/70 bg-card/80 px-6 py-4 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10"
+              className={cn(
+                "group flex items-center justify-between rounded-lg border px-6 py-4 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10",
+                SURFACE_TOKENS.primary,
+              )}
             >
               <span className="flex items-center gap-3">
                 <span className="text-lg">💳</span>
@@ -83,7 +88,10 @@ export function ServiceApp({ serviceName }: ServiceAppProps) {
             <Button
               onClick={() => setCurrentView("investment-analytics")}
               variant="outline"
-              className="group flex items-center justify-between rounded-lg border-border/70 bg-card/80 px-6 py-4 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10"
+              className={cn(
+                "group flex items-center justify-between rounded-lg border px-6 py-4 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10",
+                SURFACE_TOKENS.primary,
+              )}
             >
               <span className="flex items-center gap-3">
                 <span className="text-lg">📈</span>
@@ -95,7 +103,10 @@ export function ServiceApp({ serviceName }: ServiceAppProps) {
             <Button
               onClick={() => setCurrentView("analytics")}
               variant="outline"
-              className="flex items-center justify-between rounded-lg border-border/70 bg-card/80 px-6 py-4 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10"
+              className={cn(
+                "flex items-center justify-between rounded-lg border px-6 py-4 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10",
+                SURFACE_TOKENS.primary,
+              )}
             >
               <span className="flex items-center gap-3">
                 <span className="text-lg">📊</span>
@@ -107,7 +118,10 @@ export function ServiceApp({ serviceName }: ServiceAppProps) {
             <Button
               onClick={() => setCurrentView("import-data")}
               variant="outline"
-              className="flex items-center justify-between rounded-lg border-border/70 bg-card/80 px-6 py-4 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10"
+              className={cn(
+                "flex items-center justify-between rounded-lg border px-6 py-4 text-left text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/10",
+                SURFACE_TOKENS.primary,
+              )}
             >
               <span className="flex items-center gap-3">
                 <span className="text-lg">📁</span>
@@ -123,8 +137,8 @@ export function ServiceApp({ serviceName }: ServiceAppProps) {
     // Fallback
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <Card className="border-border/60 bg-card/80">
-          <CardContent className="p-6 text-center text-sm text-muted-foreground">
+        <Card className={cn('border', SURFACE_TOKENS.primary)}>
+          <CardContent className={cn('text-center text-sm text-muted-foreground', SPACING_TOKENS.card)}>
             {serviceName} service is not available at this time.
           </CardContent>
         </Card>

@@ -1,10 +1,14 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { AlertCircle } from 'lucide-react'
 import type { ProviderOption } from '@/lib/ai/chat/types'
 import type { AIModel, AIProviderId } from '@/lib/ai/types'
 import { cn } from '@/lib/utils'
 import { SPACING_TOKENS, SURFACE_TOKENS, TYPOGRAPHY_TOKENS } from '@/lib/design-tokens'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 interface AIChatPricingTableProps {
   providers: ProviderOption[]
@@ -42,7 +46,7 @@ function getRecommendation(model: AIModel) {
   return 'Balanced performance for day-to-day assistance'
 }
 
-export function AIChatPricingTable({ providers, activeProvider }: AIChatPricingTableProps) {
+function PricingTableContent({ providers, activeProvider }: AIChatPricingTableProps) {
   const providerModels = providers.flatMap((provider) =>
     provider.models.map((model) => ({
       providerId: provider.id,
@@ -51,6 +55,15 @@ export function AIChatPricingTable({ providers, activeProvider }: AIChatPricingT
       isDefault: provider.defaultModel === model.id || model.default === true,
     })),
   )
+
+  if (providerModels.length === 0) {
+    return (
+      <Alert variant="default" className={cn('border', SURFACE_TOKENS.primary)}>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>No provider pricing information available yet.</AlertDescription>
+      </Alert>
+    )
+  }
 
   return (
     <Card className={cn('border', SURFACE_TOKENS.primary)}>
@@ -82,7 +95,11 @@ export function AIChatPricingTable({ providers, activeProvider }: AIChatPricingT
               <div>
                 <p className="font-semibold text-foreground">
                   {model.name}
-                  {isDefault && <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">Default</span>}
+                  {isDefault && (
+                    <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
+                      Default
+                    </span>
+                  )}
                 </p>
                 <p className={TYPOGRAPHY_TOKENS.caption}>
                   {providerName}
@@ -97,5 +114,27 @@ export function AIChatPricingTable({ providers, activeProvider }: AIChatPricingT
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function PricingTableFallback({ retry }: { error?: Error; retry: () => void }) {
+  return (
+    <Alert variant="destructive" className={cn('border', SURFACE_TOKENS.primary)}>
+      <AlertCircle className="h-4 w-4" />
+      <AlertDescription className="flex flex-col gap-3">
+        <span>Unable to render pricing information right now.</span>
+        <Button variant="outline" size="sm" onClick={retry} className="self-start">
+          Retry
+        </Button>
+      </AlertDescription>
+    </Alert>
+  )
+}
+
+export function AIChatPricingTable(props: AIChatPricingTableProps) {
+  return (
+    <ErrorBoundary fallback={PricingTableFallback}>
+      <PricingTableContent {...props} />
+    </ErrorBoundary>
   )
 }

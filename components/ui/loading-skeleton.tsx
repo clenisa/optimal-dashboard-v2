@@ -3,6 +3,7 @@
 import { memo } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 interface LoadingSkeletonProps {
   lines?: number
@@ -14,7 +15,7 @@ interface LoadingSkeletonProps {
 
 const defaultWidths = ['100%', '92%', '85%', '78%', '88%']
 
-export const LoadingSkeleton = memo(function LoadingSkeleton({
+function LoadingSkeletonContent({
   lines = 3,
   pulse = true,
   className,
@@ -38,5 +39,28 @@ export const LoadingSkeleton = memo(function LoadingSkeleton({
         />
       ))}
     </div>
+  )
+}
+
+function LoadingSkeletonFallback({ retry }: { error?: Error; retry: () => void }) {
+  return (
+    <div className="space-y-2 rounded-md border border-dashed border-border/60 p-3 text-xs text-muted-foreground">
+      <p>Unable to load placeholder content.</p>
+      <button
+        type="button"
+        className="underline"
+        onClick={retry}
+      >
+        Retry
+      </button>
+    </div>
+  )
+}
+
+export const LoadingSkeleton = memo(function LoadingSkeleton(props: LoadingSkeletonProps) {
+  return (
+    <ErrorBoundary fallback={LoadingSkeletonFallback}>
+      <LoadingSkeletonContent {...props} />
+    </ErrorBoundary>
   )
 })

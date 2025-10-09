@@ -20,6 +20,7 @@ interface UseAiChatConsoleResult {
   messages: ChatMessage[]
   history: ReturnType<typeof useAiChatHistory>['history']
   selectedConversationId: ReturnType<typeof useAiChatHistory>['selectedConversationId']
+  isLoadingHistory: ReturnType<typeof useAiChatHistory>['isLoadingHistory']
   inputValue: string
   isGenerating: boolean
   isListening: boolean
@@ -34,6 +35,7 @@ interface UseAiChatConsoleResult {
   handleConversationDelete: (conversationId: string) => Promise<void>
   sendMessage: () => Promise<void>
   formatTime: (date: Date) => string
+  startNewConversation: () => void
 }
 
 export function useAiChatConsole(): UseAiChatConsoleResult {

@@ -10,6 +10,8 @@ import { PasswordUpdateModal } from "./auth/password-update-modal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { SPACING_TOKENS, SURFACE_TOKENS, TYPOGRAPHY_TOKENS } from "@/lib/design-tokens"
 
 export function SupabaseLoginApp() {
   const { user, loading } = useAuthState()
@@ -41,7 +43,7 @@ export function SupabaseLoginApp() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <Card className="w-full max-w-sm border-border/60 bg-card/80 text-center">
+        <Card className={cn("w-full max-w-sm border text-center", SURFACE_TOKENS.primary)}>
           <CardContent className="flex flex-col items-center gap-3 py-10">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             <p className="text-sm text-muted-foreground">Checking your session...</p>
@@ -54,10 +56,10 @@ export function SupabaseLoginApp() {
   if (user) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <Card className="w-full max-w-md border-border/60 bg-card/80 text-center">
+        <Card className={cn("w-full max-w-md border text-center", SURFACE_TOKENS.primary)}>
           <CardHeader className="space-y-1">
-            <CardTitle className="text-xl">You&rsquo;re signed in</CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
+            <CardTitle className={TYPOGRAPHY_TOKENS.heading}>You&rsquo;re signed in</CardTitle>
+            <CardDescription className={TYPOGRAPHY_TOKENS.subheading}>
               Manage your account preferences below.
             </CardDescription>
           </CardHeader>
@@ -77,16 +79,22 @@ export function SupabaseLoginApp() {
 
   return (
     <div className="flex h-full items-center justify-center p-6">
-      <Card className="w-full max-w-md border-border/60 bg-card/80">
+      <Card className={cn("w-full max-w-md border", SURFACE_TOKENS.primary)}>
         <CardHeader className="space-y-2 text-center">
-          <CardTitle className="text-lg">Login / Sign Up</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
+          <CardTitle className={TYPOGRAPHY_TOKENS.heading}>Login / Sign Up</CardTitle>
+          <CardDescription className={TYPOGRAPHY_TOKENS.subheading}>
             Access your Optimal dashboard experience with secure Supabase authentication.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className={SPACING_TOKENS.section}>
           <AuthForm onError={() => {}} />
-          <div className="rounded-lg border border-dashed border-border/60 bg-muted/40 p-3 text-center text-xs text-muted-foreground">
+          <div
+            className={cn(
+              "rounded-lg border border-dashed text-center text-xs text-muted-foreground",
+              SURFACE_TOKENS.secondary,
+              SPACING_TOKENS.compact,
+            )}
+          >
             <p className="truncate">
               Redirect URL: {typeof window !== "undefined" ? window.location.origin + "/auth/callback" : "/auth/callback"}
             </p>

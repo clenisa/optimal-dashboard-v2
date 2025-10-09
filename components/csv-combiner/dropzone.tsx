@@ -5,6 +5,7 @@ import { Upload } from 'lucide-react'
 import type { ChangeEvent } from 'react'
 import type { FileDropHandlers } from '@/hooks/use-file-drop'
 import { cn } from '@/lib/utils'
+import { SPACING_TOKENS } from '@/lib/design-tokens'
 
 interface CombinerDropzoneProps {
   loading: boolean
@@ -48,7 +49,10 @@ export function CombinerDropzone({
 
   const reachedLimit = fileCount >= limit
 
-  const baseClasses = 'cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-all duration-200'
+  const baseClasses = cn(
+    'cursor-pointer rounded-lg border-2 border-dashed text-center transition-all duration-200',
+    SPACING_TOKENS.container,
+  )
   const stateClasses = loading
     ? 'border-border/60 bg-muted/40'
     : reachedLimit
@@ -56,7 +60,7 @@ export function CombinerDropzone({
     : 'border-border/60 hover:border-primary/50 hover:bg-primary/10'
 
   return (
-    <label
+    <div
       className={cn(
         baseClasses,
         stateClasses,
@@ -70,6 +74,11 @@ export function CombinerDropzone({
       onKeyDown={(event) => {
         if ((event.key === 'Enter' || event.key === ' ') && !loading && !reachedLimit) {
           event.preventDefault()
+          inputRef.current?.click()
+        }
+      }}
+      onClick={() => {
+        if (!loading && !reachedLimit) {
           inputRef.current?.click()
         }
       }}
@@ -88,14 +97,14 @@ export function CombinerDropzone({
         id={inputId}
         ref={inputRef}
       />
-      <div className="space-y-3">
+      <label htmlFor={inputId} className="block space-y-3 focus-visible:outline-none">
         <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
         <div className="text-lg font-medium text-foreground">Drag & drop CSV files or click to browse</div>
         <div className="text-sm text-muted-foreground">
           {fileCount}/{limit} files selected (max {limit})
         </div>
         <div className="text-xs text-muted-foreground">Each file is validated before combining</div>
-      </div>
-    </label>
+      </label>
+    </div>
   )
 }
