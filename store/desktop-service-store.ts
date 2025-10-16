@@ -1,24 +1,25 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
+import type { AppId } from "@/lib/app-definitions"
 
 export interface DesktopServiceStore {
-  selectedServiceId: string
+  selectedServiceId: AppId | null
   isDesktopModeEnabled: boolean
-  setSelectedService: (serviceId: string) => void
+  setSelectedService: (serviceId: AppId | null) => void
   setDesktopMode: (enabled: boolean) => void
 }
 
 export const useDesktopServiceStore = create<DesktopServiceStore>()(
   persist(
     (set) => ({
-      selectedServiceId: "ai-chat-console",
+      selectedServiceId: "ai-chat-console" as AppId,
       isDesktopModeEnabled: true,
-      setSelectedService: (serviceId: string) => set({ selectedServiceId: serviceId }),
+      setSelectedService: (serviceId: AppId | null) => set({ selectedServiceId: serviceId }),
       setDesktopMode: (enabled: boolean) => set({ isDesktopModeEnabled: enabled }),
     }),
     {
       name: "desktop-service-store",
       storage: createJSONStorage(() => localStorage),
-    }
-  )
+    },
+  ),
 )

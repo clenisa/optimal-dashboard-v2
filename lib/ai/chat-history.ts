@@ -41,18 +41,29 @@ export class LocalStorageChatHistory implements ChatHistoryProvider {
     this.write(data)
   }
 
-  private read() {
+  private read(): { conversations: Record<string, { conversation: ConversationSummary; messages: ConversationMessage[] }> } {
     try {
       const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY)
-      if (!raw) return { conversations: {} as Record<string, { conversation: ConversationSummary; messages: ConversationMessage[] }> }
-      return JSON.parse(raw)
+      if (!raw) {
+        return { conversations: {} }
+      }
+      const parsed = JSON.parse(raw) as unknown
+      if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        'conversations' in parsed &&
+        typeof (parsed as any).conversations === 'object'
+      ) {
+        return parsed as { conversations: Record<string, { conversation: ConversationSummary; messages: ConversationMessage[] }> }
+      }
+      return { conversations: {} }
     } catch (error) {
       logger.error('LocalStorageChatHistory', 'Failed to read chat history from local storage', error)
-      return { conversations: {} as Record<string, { conversation: ConversationSummary; messages: ConversationMessage[] }> }
+      return { conversations: {} }
     }
   }
 
-  private write(data: any) {
+  private write(data: { conversations: Record<string, { conversation: ConversationSummary; messages: ConversationMessage[] }> }) {
     try {
       window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data))
     } catch (error) {

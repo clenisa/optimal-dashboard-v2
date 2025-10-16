@@ -96,6 +96,12 @@ export default function CategoryLineChart() {
     }]
   }
 
+  const isDark = resolvedTheme === 'dark'
+  const textColor = isDark ? '#e5e7eb' : '#111827'
+  const gridColor = isDark ? '#374151' : '#e5e7eb'
+  const tooltipBg = isDark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(0, 0, 0, 0.8)'
+  const tooltipBorder = isDark ? '#6b7280' : '#4ecdc4'
+
   if (loading) {
     logger.debug('CategoryLineChart', 'Showing loading state')
     return (
@@ -232,12 +238,7 @@ export default function CategoryLineChart() {
     chartDataObject: chartData
   })
 
-  // Theme-aware colors
-  const isDark = resolvedTheme === 'dark'
-  const textColor = isDark ? '#e5e7eb' : '#111827'
-  const gridColor = isDark ? '#374151' : '#e5e7eb'
-  const tooltipBg = isDark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(0, 0, 0, 0.8)'
-  const tooltipBorder = isDark ? '#6b7280' : '#4ecdc4'
+  // Theme-aware colors defined earlier (textColor, gridColor, tooltipBg, tooltipBorder)
 
   const chartOptions: any = {
     responsive: true,

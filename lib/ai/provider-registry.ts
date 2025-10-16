@@ -7,7 +7,7 @@ import type { AIProviderId, ProviderConfig } from './types'
 
 const registryCache = new Map<string, ProviderRegistry>()
 
-const DEFAULT_CONFIG: Record<AIProviderId, ProviderConfig> = {
+const DEFAULT_CONFIG = {
   ollama: {
     id: 'ollama',
     name: 'Local Ollama',
@@ -24,7 +24,7 @@ const DEFAULT_CONFIG: Record<AIProviderId, ProviderConfig> = {
     enabled: process.env.NEXT_PUBLIC_ENABLE_OPENAI === 'true' || process.env.NEXT_PUBLIC_ENABLE_OPENAI === undefined,
     defaultModel: process.env.NEXT_PUBLIC_OPENAI_DEFAULT_MODEL || 'gpt-4o-mini'
   }
-}
+} satisfies Record<AIProviderId, ProviderConfig>
 
 export class ProviderRegistry {
   private providers: Map<AIProviderId, AIProvider>
@@ -35,7 +35,7 @@ export class ProviderRegistry {
     const mergedConfig = {
       ...DEFAULT_CONFIG,
       ...config
-    }
+    } as Record<AIProviderId, ProviderConfig>
 
     Object.entries(mergedConfig).forEach(([id, cfg]) => {
       const typedId = id as AIProviderId
@@ -46,11 +46,11 @@ export class ProviderRegistry {
 
       let provider: AIProvider | null = null
 
-      if (typedId === 'ollama') {
+      if (typedId === 'ollama' && cfg.id === 'ollama') {
         provider = new OllamaProvider({ config: cfg })
       }
 
-      if (typedId === 'openai') {
+      if (typedId === 'openai' && cfg.id === 'openai') {
         provider = new OpenAIProvider({ config: cfg })
       }
 

@@ -29,6 +29,7 @@ interface UseCreditsManagerResult {
   success: string | null
   purchaseCredits: (packageId: string) => Promise<void>
   claimDailyCredits: () => Promise<void>
+  reload: () => Promise<void>
   setError: (message: string | null) => void
   setSuccess: (message: string | null) => void
 }
@@ -195,6 +196,13 @@ export function useCreditsManager(): UseCreditsManagerResult {
     },
     [loadUserCreditsWithRetry],
   )
+
+  const reload = useCallback(async () => {
+    if (!user?.id) return
+    clearRetryTimeout()
+    await loadCreditTransactions(user.id, false)
+    await loadUserCredits(user.id)
+  }, [loadCreditTransactions, loadUserCredits, user?.id])
 
   const refreshCountdown = useCallback(
     (currentCredits: UserCredits | null, currentUserId: string | null) => {
@@ -367,6 +375,7 @@ export function useCreditsManager(): UseCreditsManagerResult {
     success,
     purchaseCredits,
     claimDailyCredits,
+    reload,
     setError,
     setSuccess,
   }

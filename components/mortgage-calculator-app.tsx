@@ -8,6 +8,8 @@ import { MortgageCostGrid } from '@/components/mortgage/mortgage-cost-grid'
 import { MortgageResultsCard } from '@/components/mortgage/mortgage-results-card'
 import { useMortgageCalculator } from '@/hooks/use-mortgage-calculator'
 import type { MortgageCostField } from '@/lib/mortgage/types'
+import { cn } from '@/lib/utils'
+import { SPACING_TOKENS, SURFACE_TOKENS, TYPOGRAPHY_TOKENS } from '@/lib/design-tokens'
 import {
   Accordion,
   AccordionContent,
@@ -95,11 +97,11 @@ export function MortgageCalculatorApp() {
   ]
 
   return (
-    <div className="space-y-4">
-      <Card className="border-border/60 bg-card/80">
+    <div className={SPACING_TOKENS.section}>
+      <Card className={cn('border', SURFACE_TOKENS.primary)}>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Mortgage FAQs</CardTitle>
-          <CardDescription className="text-muted-foreground">
+          <CardTitle className={TYPOGRAPHY_TOKENS.heading}>Mortgage FAQs</CardTitle>
+          <CardDescription className={TYPOGRAPHY_TOKENS.subheading}>
             Learn how different levers in this calculator impact your payment and financial planning.
           </CardDescription>
         </CardHeader>
@@ -109,7 +111,7 @@ export function MortgageCalculatorApp() {
               <AccordionItem
                 key={item.question}
                 value={`faq-${index}`}
-                className="rounded-lg border border-border/60 bg-muted/40 px-3"
+                className={cn('rounded-lg border px-3', SURFACE_TOKENS.secondary)}
               >
                 <AccordionTrigger className="text-left text-sm font-medium text-foreground">
                   {item.question}
@@ -123,14 +125,14 @@ export function MortgageCalculatorApp() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/60 bg-card/80">
+      <Card className={cn('border', SURFACE_TOKENS.primary)}>
         <CardHeader>
-          <CardTitle>💰 Mortgage Calculator</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
+          <CardTitle className={TYPOGRAPHY_TOKENS.heading}>💰 Mortgage Calculator</CardTitle>
+          <CardDescription className={TYPOGRAPHY_TOKENS.subheading}>
             Adjust your inputs to see how your monthly payment responds.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className={SPACING_TOKENS.section}>
           <MortgageInputGrid
             homePrice={inputs.homePrice}
             downPayment={inputs.downPayment}

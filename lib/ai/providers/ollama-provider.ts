@@ -2,6 +2,7 @@ import { logger } from '@/lib/logger'
 import type {
   AIModel,
   ChatCompletionResult,
+  ProviderInitializationContext,
   ProviderMessageOptions,
   ProviderStatus
 } from '../types'
@@ -16,7 +17,7 @@ export class OllamaProvider extends AIProvider {
   private readonly baseUrl: string
   private readonly defaultModel: string
 
-  constructor(context: { config: { enabled: boolean; id: 'ollama'; name: string; metadata?: Record<string, unknown> } }) {
+  constructor(context: ProviderInitializationContext) {
     super(context)
 
     const metadata = (context.config.metadata || {}) as Partial<OllamaProviderMetadata>

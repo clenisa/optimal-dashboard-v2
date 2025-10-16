@@ -2,6 +2,7 @@ import { logger } from '@/lib/logger'
 import type {
   AIModel,
   ChatCompletionResult,
+  ProviderInitializationContext,
   ProviderMessageOptions,
   ProviderStatus,
   TokenUsage
@@ -22,7 +23,7 @@ export class OpenAIProvider extends AIProvider {
   private readonly apiKey: string
   private readonly apiUrl: string
 
-  constructor(context: { config: { enabled: boolean; id: 'openai'; name: string; metadata?: Record<string, unknown> } }) {
+  constructor(context: ProviderInitializationContext) {
     super(context)
 
     this.apiKey = process.env.OPENAI_API_KEY || ''

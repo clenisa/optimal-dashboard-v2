@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { UserCredits } from '@/lib/credits/types'
 import { CreditCard, Gift, RefreshCw } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { SPACING_TOKENS } from '@/lib/design-tokens'
 
 interface CreditsOverviewCardProps {
   credits: UserCredits | null
@@ -34,8 +36,8 @@ export function CreditsOverviewCard({
       </CardHeader>
       <CardContent>
         {isRetrying ? (
-          <div className="flex items-center justify-center p-8">
-            <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+          <div className={cn('flex items-center justify-center gap-2', SPACING_TOKENS.container)}>
+            <RefreshCw className="h-6 w-6 animate-spin" />
             <span>Retrying{retryCount > 1 ? ` (attempt ${retryCount})` : '...'}</span>
           </div>
         ) : (

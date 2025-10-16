@@ -1,12 +1,16 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { ChevronUp, ChevronDown, BarChart3 } from "lucide-react"
 import { useFinancialData } from '@/hooks/useFinancialData'
 import type { CategoryData, TransactionData } from '@/lib/chart-data'
+import { cn } from '@/lib/utils'
+import { SPACING_TOKENS, SURFACE_TOKENS, TYPOGRAPHY_TOKENS } from '@/lib/design-tokens'
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface CategoryPeriodData {
   values: Record<string, number>
@@ -22,12 +26,14 @@ type ViewType = '6months' | '12months' | 'currentYear'
 type SortOrder = 'asc' | 'desc' | null
 
 export function CategoryMatrix() {
-  const { transactions, categories, loading, error } = useFinancialData()
+  const { transactions, categories, loading, error, reload } = useFinancialData()
   const [matrixData, setMatrixData] = useState<MatrixData>({})
   const [periods, setPeriods] = useState<string[]>([])
   const [viewType, setViewType] = useState<ViewType>('6months')
   const [sortColumn, setSortColumn] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<SortOrder>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [scrollShadows, setScrollShadows] = useState({ left: false, right: false })
 
   const generatePeriods = (type: ViewType): string[] => {
     const now = new Date()
@@ -113,6 +119,29 @@ export function CategoryMatrix() {
     }
   }, [transactions, categories, updateMatrix])
 
+  const updateScrollIndicators = useCallback(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+    const { scrollLeft, scrollWidth, clientWidth } = container
+    const maxScrollLeft = Math.max(0, scrollWidth - clientWidth)
+    setScrollShadows({
+      left: scrollLeft > 0,
+      right: scrollLeft < maxScrollLeft - 1,
+    })
+  }, [])
+
+  useEffect(() => {
+    updateScrollIndicators()
+    const container = scrollContainerRef.current
+    container?.addEventListener('scroll', updateScrollIndicators)
+    window.addEventListener('resize', updateScrollIndicators)
+
+    return () => {
+      container?.removeEventListener('scroll', updateScrollIndicators)
+      window.removeEventListener('resize', updateScrollIndicators)
+    }
+  }, [updateScrollIndicators])
+
   const formatCurrency = (amount: number): string => {
     if (amount === 0) return '-'
     return new Intl.NumberFormat('en-US', {
@@ -186,16 +215,19 @@ export function CategoryMatrix() {
     return null
   }
 
+  const getAriaSort = (column: string): "none" | "ascending" | "descending" => {
+    if (sortColumn !== column || !sortOrder) return "none"
+    return sortOrder === 'asc' ? 'ascending' : 'descending'
+  }
+
   if (loading) {
     return (
-      <Card>
+      <Card className={cn('border', SURFACE_TOKENS.primary)}>
         <CardHeader>
           <CardTitle>Category Matrix</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            Loading category matrix...
-          </div>
+        <CardContent className={SPACING_TOKENS.card}>
+          <LoadingSkeleton lines={8} />
         </CardContent>
       </Card>
     )
@@ -203,14 +235,23 @@ export function CategoryMatrix() {
 
   if (error) {
     return (
-      <Card>
+      <Card className={cn('border', SURFACE_TOKENS.primary)}>
         <CardHeader>
           <CardTitle>Category Matrix</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8 text-red-600 dark:text-red-400">
-            {error}
-          </div>
+          <Alert
+            variant="destructive"
+            aria-live="assertive"
+            className={cn('border', SURFACE_TOKENS.primary, 'border-destructive/40')}
+          >
+            <AlertDescription>{error}</AlertDescription>
+            <div className="mt-3">
+              <Button variant="outline" size="sm" onClick={() => void reload()}>
+                Retry analysis
+              </Button>
+            </div>
+          </Alert>
         </CardContent>
       </Card>
     )
@@ -219,15 +260,15 @@ export function CategoryMatrix() {
   const sortedCategoryNames = getSortedCategories()
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className={cn('border', SURFACE_TOKENS.primary)}>
+      <CardHeader className="gap-3">
         <CardTitle className="flex items-center gap-2">
           <BarChart3 className="h-5 w-5" />
           Category Matrix
         </CardTitle>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">View:</span>
+            <span className={cn(TYPOGRAPHY_TOKENS.subheading, 'font-medium text-foreground')}>View:</span>
             <Select value={viewType} onValueChange={(value: ViewType) => setViewType(value)}>
               <SelectTrigger className="w-40">
                 <SelectValue />
@@ -241,65 +282,123 @@ export function CategoryMatrix() {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className={cn(SPACING_TOKENS.section)}>
         {Object.keys(matrixData).length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="py-8 text-center text-muted-foreground">
             No transaction data available for matrix analysis.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table key={`matrix-${Object.keys(matrixData).length}-${JSON.stringify(periods)}`} className="w-full border-collapse">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3 font-medium">Category</th>
-                  {periods.map((period: string) => (
-                    <th key={period} className="text-center p-3 font-medium">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleColumnSort(period)}
-                        className="flex items-center gap-1 h-auto p-1"
-                      >
-                        {period}
-                        {getSortIcon(period)}
-                      </Button>
-                    </th>
-                  ))}
-                  <th className="text-center p-3 font-medium">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleColumnSort('total')}
-                      className="flex items-center gap-1 h-auto p-1"
-                    >
-                      Total
-                      {getSortIcon('total')}
-                    </Button>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedCategoryNames.map((categoryName: string) => {
-                  const categoryData = matrixData[categoryName]
-                  if (!categoryData) return null
+          <>
+            <div className="space-y-3 md:hidden">
+              {sortedCategoryNames.map((categoryName) => {
+                const categoryData = matrixData[categoryName]
+                if (!categoryData) return null
 
-                  return (
-                    <tr key={categoryName} className="border-b hover:bg-muted/50">
-                      <td className="p-3 font-medium">{categoryData.categoryName}</td>
-                      {periods.map((period: string) => (
-                        <td key={period} className="p-3 text-center">
-                          {formatCurrency(categoryData.values[period] || 0)}
-                        </td>
+                return (
+                  <div
+                    key={categoryName}
+                    className={cn('rounded-lg border', SURFACE_TOKENS.primary, SPACING_TOKENS.compact)}
+                  >
+                    <div className={cn(TYPOGRAPHY_TOKENS.heading)}>{categoryData.categoryName}</div>
+                    <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                      {periods.map((period) => (
+                        <div key={period}>
+                          <dt className={TYPOGRAPHY_TOKENS.caption}>{period}</dt>
+                          <dd className="font-medium">{formatCurrency(categoryData.values[period] || 0)}</dd>
+                        </div>
                       ))}
-                      <td className="p-3 text-center font-medium">
-                        {formatCurrency(categoryData.total)}
-                      </td>
+                      <div className="col-span-2 border-t border-border/60 pt-2">
+                        <dt className={cn(TYPOGRAPHY_TOKENS.caption, 'uppercase tracking-wide')}>Total</dt>
+                        <dd className="text-base font-semibold">{formatCurrency(categoryData.total)}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="relative hidden md:block">
+              {scrollShadows.left && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-card to-transparent"
+                />
+              )}
+              {scrollShadows.right && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-card to-transparent"
+                />
+              )}
+              <div
+                ref={scrollContainerRef}
+                className="overflow-x-auto"
+                aria-label="Category spend matrix"
+              >
+                <table key={`matrix-${Object.keys(matrixData).length}-${JSON.stringify(periods)}`} className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="sticky left-0 z-10 bg-card p-3 text-left font-medium" aria-sort="none">
+                        Category
+                      </th>
+                      {periods.map((period: string) => (
+                        <th
+                          key={period}
+                          className="text-center p-3 font-medium"
+                          aria-sort={getAriaSort(period)}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleColumnSort(period)}
+                            className="flex h-auto items-center gap-1 p-1"
+                            aria-pressed={sortColumn === period}
+                          >
+                            {period}
+                            {getSortIcon(period)}
+                          </Button>
+                        </th>
+                      ))}
+                      <th className="text-center p-3 font-medium" aria-sort={getAriaSort('total')}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleColumnSort('total')}
+                          className="flex h-auto items-center gap-1 p-1"
+                          aria-pressed={sortColumn === 'total'}
+                        >
+                          Total
+                          {getSortIcon('total')}
+                        </Button>
+                      </th>
                     </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {sortedCategoryNames.map((categoryName: string) => {
+                      const categoryData = matrixData[categoryName]
+                      if (!categoryData) return null
+
+                      return (
+                        <tr key={categoryName} className="border-b hover:bg-muted/40">
+                          <td className="sticky left-0 z-10 bg-card p-3 font-medium">
+                            {categoryData.categoryName}
+                          </td>
+                          {periods.map((period: string) => (
+                            <td key={period} className="p-3 text-center">
+                              {formatCurrency(categoryData.values[period] || 0)}
+                            </td>
+                          ))}
+                          <td className="p-3 text-center font-medium">
+                            {formatCurrency(categoryData.total)}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

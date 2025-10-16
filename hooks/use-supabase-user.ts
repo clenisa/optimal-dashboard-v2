@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import type { User } from '@supabase/supabase-js'
+import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase-client'
 import { logger } from '@/lib/logger'
 
@@ -17,14 +17,19 @@ export function useSupabaseUser(onAuthChange?: (user: User | null) => void): Use
       return
     }
 
-    supabase.auth.getUser().then(({ data: { user: nextUser } }) => {
-      setUser(nextUser)
-      onAuthChange?.(nextUser)
-    })
+    const loadInitialUser = async () => {
+      const { data } = await supabase.auth.getUser()
+      const currentUser = data.user ?? null
+      setUser(currentUser)
+      onAuthChange?.(currentUser)
+    }
+
+    void loadInitialUser()
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      logger.debug('SupabaseUser', 'Auth state change', { event })
       const nextUser = session?.user ?? null
       setUser(nextUser)
       onAuthChange?.(nextUser)

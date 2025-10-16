@@ -12,11 +12,14 @@ This document tracks the current implementation status of features in the Optima
 - **AI Chat Console**: Basic chat interface with ElectronConsole integration
 - **Theme Management**: Light/dark mode switching
 - **Window Management**: Desktop-style application windows
+- **Design System Foundation**: Shared surface, typography, and spacing tokens applied across refreshed components
+- **Loading & Error Patterns**: Skeletons and retryable alerts standardised for credits, transactions, matrix, and chat history
 
 ### 🚧 Partially Implemented Features
 - **Stripe Integration**: Basic setup but incomplete checkout flow
 - **AI Financial Analysis**: Chat interface ready, but advanced analysis pending
-- **Credit System**: Basic structure in place, but limited functionality
+- **Credit System**: Daily claims, purchases, and retries wired; deeper reporting still pending
+- **Mobile Responsiveness**: Primary flows responsive; remaining gaps on secondary windows
 
 ### ❌ Not Yet Implemented
 - **Advanced Analytics**: Predictive spending analysis
@@ -56,21 +59,19 @@ This document tracks the current implementation status of features in the Optima
 
 ### 2. AI Chatbot Implementation
 
-**Status**: Partial Implementation (60% Complete)
+**Status**: Partial Implementation (75% Complete)
 
 **What's Implemented**:
-- Basic chat interface
-- Message history
-- User authentication integration
-- Credit system integration
-- ElectronConsole connection
+- Responsive console with mobile history sheet and “New Chat” workflow
+- OpenAI set as default provider, with live provider status checks
+- Pricing dialog summarising per-model costs and usage recommendations
+- Credit-aware input disablement, voice toggle, and accessible buttons
 
 **What's Missing**:
-- Financial context injection from database
-- Conversation persistence
-- AI response templates
-- Typing indicators and loading states
+- Financial context injection from the transactions dataset
+- Rich response templates and follow-up suggestions
 - Advanced financial analysis capabilities
+- Real microphone transcription (current implementation remains a mock)
 
 **Testing Needed**:
 - AI response accuracy
@@ -106,16 +107,17 @@ This document tracks the current implementation status of features in the Optima
 
 ### 4. Mobile Responsiveness
 
-**Status**: Basic Support (30% Complete)
+**Status**: Improved Support (60% Complete)
 
 **What's Implemented**:
-- Basic responsive grid layouts
-- Touch-friendly button sizes
+- Category matrix card layout on small screens with sticky headers on desktop
+- AI chat mobile history sheet and wrapping header actions
+- CSV dropzones upgraded with full-width layouts and keyboard activation
+- Menu bar controls wrap instead of overlapping on narrow widths
 
 **What's Missing**:
-- Mobile-optimized navigation
-- Touch gestures for charts
-- Mobile-specific UI components
+- Mobile-optimized navigation for secondary apps/windows
+- Touch gestures for interactive charts
 - Progressive Web App features
 
 **Priority**: Medium - User accessibility

@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { useDesktopServiceStore } from "@/store/desktop-service-store"
-import { getDesktopCapableApps } from "@/lib/app-definitions"
+import { getDesktopCapableApps, type AppId } from "@/lib/app-definitions"
 import { Monitor } from "lucide-react"
 
 export function DesktopServiceSettings() {
@@ -40,7 +40,10 @@ export function DesktopServiceSettings() {
         {isDesktopModeEnabled && (
           <div className="space-y-2">
             <Label htmlFor="service-select">Desktop Service</Label>
-            <Select value={selectedServiceId} onValueChange={setSelectedService}>
+            <Select
+              value={selectedServiceId ?? undefined}
+              onValueChange={(value) => setSelectedService(value as AppId)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a service for your desktop" />
               </SelectTrigger>

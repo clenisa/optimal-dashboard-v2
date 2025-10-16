@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useMemo, useState } from 'react'
-import type { User } from '@supabase/supabase-js'
 import { processCsvFile, type ParsedTransaction } from '@/lib/csv-parser'
 import { CONTENT } from '@/lib/content'
 import { logCsvProcessing, validateCsvFile } from '@/lib/csv-utils'
@@ -37,7 +36,7 @@ interface UseCsvParserResult {
   appendDebug: (message: string) => void
 }
 
-export function useCsvParser(user: User | null): UseCsvParserResult {
+export function useCsvParser(user: { id: string } | null): UseCsvParserResult {
   const [file, setFile] = useState<File | null>(null)
   const [transactions, setTransactions] = useState<ParsedTransaction[]>([])
   const [validationResult, setValidationResult] = useState<BatchValidationResult | null>(null)

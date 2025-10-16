@@ -23,7 +23,7 @@ const STATUS_REFRESH_INTERVAL = 15_000
 export function useAiChatProviders(): UseAiChatProvidersResult {
   const [providers, setProviders] = useState<ProviderOption[]>([])
   const [providerStatus, setProviderStatus] = useState<Record<string, ProviderStatus>>({})
-  const [activeProvider, setActiveProvider] = useState<AIProviderId>('ollama')
+  const [activeProvider, setActiveProvider] = useState<AIProviderId>(DEFAULT_PROVIDER)
   const [modelSelections, setModelSelections] = useState<Record<string, string>>({})
   const mountedRef = useRef(true)
 

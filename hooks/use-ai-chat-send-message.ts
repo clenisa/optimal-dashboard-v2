@@ -197,7 +197,7 @@ export function useAiChatSendMessage({
     setSelectedConversation,
   ])
 
-  const handleKeyPress = useCallback(
+  const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLInputElement>) => {
       if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault()
@@ -207,5 +207,5 @@ export function useAiChatSendMessage({
     [sendMessage],
   )
 
-  return { sendMessage, handleKeyPress }
+  return { sendMessage, handleKeyDown }
 }

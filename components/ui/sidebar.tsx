@@ -1,5 +1,6 @@
 export { useSidebar } from "@/components/ui/sidebar/context"
-export { SidebarProvider, type SidebarProviderProps } from "@/components/ui/sidebar/provider"
+export { SidebarProvider } from "@/components/ui/sidebar/provider"
+export type { SidebarProviderProps } from "@/components/ui/sidebar/provider"
 export {
   Sidebar,
   SidebarContent,
@@ -7,18 +8,20 @@ export {
   SidebarHeader,
   SidebarInput,
   SidebarInset,
-  SidebarProps,
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
 } from "@/components/ui/sidebar/base"
+export type { SidebarProps } from "@/components/ui/sidebar/base"
 export {
   SidebarGroup,
   SidebarGroupAction,
   SidebarGroupContent,
   SidebarGroupLabel,
-  type SidebarGroupActionProps,
-  type SidebarGroupLabelProps,
+} from "@/components/ui/sidebar/group"
+export type {
+  SidebarGroupActionProps,
+  SidebarGroupLabelProps,
 } from "@/components/ui/sidebar/group"
 export {
   SidebarMenu,
@@ -30,8 +33,10 @@ export {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  type SidebarMenuActionProps,
-  type SidebarMenuButtonProps,
-  type SidebarMenuSkeletonProps,
-  type SidebarMenuSubButtonProps,
+} from "@/components/ui/sidebar/menu"
+export type {
+  SidebarMenuActionProps,
+  SidebarMenuButtonProps,
+  SidebarMenuSkeletonProps,
+  SidebarMenuSubButtonProps,
 } from "@/components/ui/sidebar/menu"

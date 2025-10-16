@@ -45,11 +45,13 @@ export function buildCategoryChartOptions(): ChartOptions<'line'> {
     },
     scales: {
       x: {
-        grid: { color: 'rgba(0, 0, 0, 0.05)', drawBorder: false },
+        grid: { color: 'rgba(0, 0, 0, 0.05)' },
+        border: { display: false },
         ticks: { color: '#111827', font: { size: 11 } },
       },
       y: {
-        grid: { color: 'rgba(0, 0, 0, 0.05)', drawBorder: false },
+        grid: { color: 'rgba(0, 0, 0, 0.05)' },
+        border: { display: false },
         ticks: {
           color: '#111827',
           font: { size: 11 },
