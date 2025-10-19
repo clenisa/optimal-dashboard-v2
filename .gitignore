@@ -122,3 +122,18 @@ jspm_packages/
 .env.test.local
 .env.production.local 
 package-lock.json
+
+# Test results and artifacts
+test-results/
+playwright-report/
+test-results.xml
+test-results.json
+*.trace.zip
+
+# Playwright specific
+playwright/.cache/
+playwright/.cache/
+
+# Test environment files
+.env.test
+.env.test.local

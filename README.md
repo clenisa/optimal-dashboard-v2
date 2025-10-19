@@ -166,6 +166,7 @@ This application serves as a comprehensive financial command center, allowing us
 - Node.js 18+ (recommended: 20+)
 - pnpm (recommended) or npm
 - Supabase account and project
+- Playwright browsers for testing (run `npm run test:install`)
 - Stripe account (for payment features)
 - ElectronConsole (for local AI features)
 
@@ -278,11 +279,22 @@ pnpm build         # Production build verification
 pnpm type-check    # TypeScript type checking
 ```
 
+### Testing Commands
+```bash
+pnpm test          # Run all Playwright tests
+pnpm test:ui       # Interactive test UI
+pnpm test:headed   # Run tests with visible browser
+pnpm test:debug    # Debug mode
+pnpm test:report   # View test reports
+pnpm test:install  # Install Playwright browsers
+```
+
 ### Testing Strategy
+- **E2E Testing** - Comprehensive Playwright test suite with 135+ tests across 6 browsers
 - **Component Testing** - React Testing Library for UI components
 - **Integration Testing** - API route testing with test database
-- **E2E Testing** - Planned Playwright implementation for critical flows
 - **AI Testing** - Dedicated script for AI chat workflow validation
+- **Test Coverage** - Complete feature coverage map in `tests/test-coverage-map.md`
 
 ### Development Guidelines
 - Follow TypeScript strict mode for type safety

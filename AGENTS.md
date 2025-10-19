@@ -13,6 +13,7 @@
 - `npm run start`: Serve the build output locally to verify runtime behavior.
 - `npm run lint`: Execute `next lint` with the configured ESLint and TypeScript rules.
 - `scripts/test-ai-chat.sh`: Bash harness for validating the AI chat workflow end-to-end.
+- `tests/`: Comprehensive Playwright test suite with Page Object Model and utilities.
 
 ## Coding Style & Naming Conventions
 - TypeScript-first codebase; prefer `.tsx` for components and `.ts` for server utilities.
@@ -22,10 +23,12 @@
 - Run `npm run lint` before submitting to ensure ESLint, TypeScript, and formatting checks pass.
 
 ## Testing Guidelines
-- No dedicated unit suite yet; prioritize story-driven or integration tests when adding critical flows.
-- Mirror file names when creating tests (e.g., `component.spec.tsx` beside the source) to keep discovery simple.
-- Extend `scripts/test-ai-chat.sh` or add new scripts under `scripts/` for repeatable scenarios.
-- Document any manual verification steps in PR descriptions until automated coverage grows.
+- **E2E Testing**: Comprehensive Playwright test suite with 135+ tests across 6 browsers
+- **Test Coverage**: Complete feature coverage map in `tests/test-coverage-map.md`
+- **Test Structure**: Page Object Model with reusable utilities in `tests/` directory
+- **Test Commands**: Use `npm run test:*` commands for different testing scenarios
+- **Test Data**: Centralized test fixtures and environment configuration
+- **CI/CD Ready**: Tests configured for continuous integration with retry logic and reporting
 
 ## Commit & Pull Request Guidelines
 - Write concise commits in imperative mood (`feat: add payment notes column`, `fix: handle null session`).
