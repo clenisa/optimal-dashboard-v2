@@ -10,7 +10,7 @@ export interface AIModel {
   pricing?: {
     prompt: number
     completion: number
-    unit: '1K_tokens'
+    unit: '1K_tokens' | '1M_tokens'
     currency: 'USD'
   }
 }

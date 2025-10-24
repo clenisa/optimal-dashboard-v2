@@ -29,6 +29,7 @@ This application serves as a comprehensive financial command center, allowing us
 - **Financial Context Integration** - AI can analyze your spending patterns and provide personalized insights
 - **Credits Manager** - Sophisticated credit system for AI usage tracking with daily bonuses and purchasing options
 - **Multi-Model Support** - Seamlessly switch between different AI models based on your needs
+- **Model Pricing Overview** - Built-in pricing table clarifies per-model costs, usage recommendations, and credit impact
 
 ### 🛠️ Data Processing Tools
 - **CSV Parser** - Intelligent CSV import with validation, error reporting, and automatic data cleaning
@@ -40,6 +41,9 @@ This application serves as a comprehensive financial command center, allowing us
 - **Theme Management** - Comprehensive light/dark mode with system preference detection
 - **Window Management** - Multi-window environment with taskbar, focus management, and window stacking
 - **Authentication System** - Secure Supabase-based authentication with password recovery
+- **Design System Tokens** - Unified surface, typography, and spacing tokens applied across the dashboard for consistent light/dark themes
+- **Accessible Interactions** - Keyboard navigation, ARIA labelling, and screen reader support standardised across menus, dropzones, and controls
+- **Responsive Defaults** - Mobile-first layouts for category analysis, CSV tools, and header controls prevent UI cramping on smaller breakpoints
 
 ## 🔧 Current Integrations
 
@@ -72,55 +76,55 @@ This application serves as a comprehensive financial command center, allowing us
 
 ## 🆕 Last 10 Major Features & Improvements
 
-### 1. **Comprehensive Code Refactoring** (Latest)
-- **What**: Major modularization of components and hooks for better maintainability
-- **Impact**: Improved code organization, easier testing, and better developer experience
-- **Components**: AI chat, credits manager, CSV tools, mortgage calculator, and sidebar components
+### 1. **Design System Token Foundation** (Latest)
+- **What**: Introduced shared surface, typography, and spacing tokens in `lib/design-tokens.ts`
+- **Impact**: Consistent styling and theming across light/dark modes with easier future expansions
+- **Touchpoints**: Credits manager, AI chat console, transaction manager, category matrix, menu bar
 
-### 2. **Payment Sources Notes Feature**
+### 2. **Accessibility & Interaction Standardization**
+- **What**: Added accessible button primitives, ARIA-compliant menu bar, and keyboard friendly CSV dropzones
+- **Impact**: Screen reader parity and full keyboard navigation throughout the desktop shell
+- **Extras**: Voice control toggle labels, aria-live messaging, and improved focus management
+
+### 3. **AI Chat Console Refresh**
+- **What**: Responsive layout with mobile history sheet, "New Chat" workflow, default OpenAI provider, and pricing table dialog
+- **Impact**: Faster context switching, clearer cost visibility, and better small-screen usability
+- **Bonus**: Header actions wrap gracefully with history, pricing, and chat controls
+
+### 4. **Unified Loading & Error Handling**
+- **What**: Shared `LoadingSkeleton` component and standardized alert patterns with retry support
+- **Impact**: No more zero-value flashes; users get actionable retry paths with consistent messaging
+- **Coverage**: Credits, transactions, category matrix, and AI chat history
+
+### 5. **Category Matrix Responsive Upgrade**
+- **What**: Sticky category column, scroll indicators, and mobile card layout for monthly totals
+- **Impact**: Better readability on tablets/phones and clearer understanding of sortable columns via `aria-sort`
+- **Enhancement**: Gradient scroll hints signal additional data off-screen
+
+### 6. **Credits Manager UX Enhancements**
+- **What**: Balance skeletons, surface token adoption, and error retry button
+- **Impact**: Eliminates loading flickers, keeps alerts on-brand, and lets users resync without refreshing
+- **Status Messages**: Daily claim guidance and billing sync attempts surfaced consistently
+
+### 7. **Volume Control Settings Modal**
+- **What**: Added audio device selection, volume presets, and mute keyboard shortcuts with dialog UI
+- **Impact**: Converts placeholder alert into actionable controls aligned with the design system
+- **Integration**: Dropdown trigger now respects theme hover tokens and aria labels
+
+### 8. **Payment Sources Notes Feature**
 - **What**: Added notes field to payment sources/accounts for better organization
 - **Impact**: Users can now add custom notes and descriptions to their accounts
 - **Database**: New migration adds `notes` column to sources table
 
-### 3. **Multi-Provider AI System**
+### 9. **Multi-Provider AI System**
 - **What**: Complete overhaul of AI system to support multiple providers (Ollama + OpenAI)
 - **Impact**: Users can choose between local privacy-focused AI and cloud-based powerful models
 - **Features**: Provider switching, model selection, usage tracking, and cost management
 
-### 4. **Comprehensive Mortgage Calculator**
+### 10. **Comprehensive Mortgage Calculator**
 - **What**: Full-featured mortgage calculator with taxes, insurance, and detailed breakdowns
 - **Impact**: Advanced financial planning tool with multiple calculation scenarios
 - **API**: New backend API for complex mortgage calculations
-
-### 5. **Credits System Alignment**
-- **What**: Aligned the UI credit system with the actual database schema
-- **Impact**: Accurate credit tracking and billing with proper database consistency
-- **Fix**: Resolved discrepancies between frontend display and backend calculations
-
-### 6. **Category Matrix Enhancement**
-- **What**: Moved category matrix visualization to the category trends section
-- **Impact**: Better UI organization and more logical feature grouping
-- **UX**: Improved navigation and feature discoverability
-
-### 7. **OpenAI Pricing Updates**
-- **What**: Updated OpenAI provider pricing to reflect current API rates
-- **Impact**: Accurate cost calculations for AI usage and billing
-- **Billing**: Ensures proper cost attribution and user billing accuracy
-
-### 8. **Desktop Service Selection**
-- **What**: Added persistent desktop service selection with state management
-- **Impact**: Users can customize their desktop experience and maintain preferences
-- **Persistence**: Settings are saved and restored across sessions
-
-### 9. **Password Recovery Enhancement**
-- **What**: Improved password reset flow with proper redirect handling
-- **Impact**: Better user experience for account recovery scenarios
-- **Auth**: Complete password reset page and callback handling
-
-### 10. **Transaction UI Compaction**
-- **What**: Refined transaction manager interface for better space utilization
-- **Impact**: More transactions visible on screen with improved data density
-- **UX**: Better information hierarchy and visual organization
 
 ## 🛠️ Technology Stack
 
@@ -195,6 +199,13 @@ This application serves as a comprehensive financial command center, allowing us
    ```bash
    pnpm dev
    ```
+
+## 📚 Documentation
+
+- [Design System](DESIGN_SYSTEM.md) – Surface, typography, and spacing tokens with application patterns.
+- [Accessibility Playbook](ACCESSIBILITY.md) – Keyboard, ARIA, and screen reader conventions.
+- [Mobile Guidelines](MOBILE_GUIDELINES.md) – Responsive behaviours for key applications.
+- [Component Reference](docs/component-reference.md) – Props, styling notes, and interaction details for refreshed components.
 
 ### Required Environment Variables
 

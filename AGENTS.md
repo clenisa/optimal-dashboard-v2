@@ -41,6 +41,14 @@
 - Stripe and Supabase keys drive most integrations—recycle keys when rotating environments.
 - Docker Compose targets local dependencies; run `docker compose up database` when hacking on Supabase migrations.
 
+# AI Assistant Capabilities & Limits
+- **Multi-provider orchestration**: Chat console ships with OpenAI as the default provider while still supporting Ollama; providers expose status checks, model selection, and pricing metadata.
+- **Conversation management**: Users can start fresh chats, browse history (desktop sidebar or mobile sheet), and delete conversations with immediate UI feedback.
+- **Cost visibility**: The pricing dialog surfaces per-model prompt/completion rates, token units, and usage recommendations to help users pick the right cost profile.
+- **Credit governance**: Credits manager handles daily claims, purchase flows, and loading retries; chat input is disabled automatically when credits run out.
+- **Voice input sandbox**: Microphone toggle simulates speech capture for demo purposes only—no live transcription is wired yet.
+- **Limitations**: Financial data context enrichment and automated budgeting suggestions are still on the roadmap; watchdogs prevent requests if providers are offline or models unset.
+
 # Refactor Guardrails (Non-Breaking)
 - Do NOT change public APIs or externally visible behavior.
 - Keep exported function/class names and prop shapes used by other modules.

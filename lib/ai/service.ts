@@ -67,7 +67,12 @@ export class AIService {
 
     const result = await this.dispatchRequest(payload)
 
-    const conversationId = options.conversationId || result.message.metadata?.conversationId || `conv_${Date.now()}`
+    const metadataConversationId =
+      typeof result.message.metadata?.conversationId === 'string'
+        ? result.message.metadata.conversationId
+        : undefined
+
+    const conversationId = options.conversationId ?? metadataConversationId ?? `conv_${Date.now()}`
     const now = new Date().toISOString()
 
     const userMessageContent = options.messages[options.messages.length - 1]?.content ?? ''

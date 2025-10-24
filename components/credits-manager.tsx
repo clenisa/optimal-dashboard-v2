@@ -9,6 +9,9 @@ import { ErrorBoundary, CreditsErrorFallback } from '@/components/error-boundary
 import { useCreditsManager } from '@/hooks/use-credits-manager'
 import { AlertCircle, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton'
+import { SPACING_TOKENS, SURFACE_TOKENS, TYPOGRAPHY_TOKENS } from '@/lib/design-tokens'
 
 export function CreditsManager() {
   const {
@@ -26,42 +29,54 @@ export function CreditsManager() {
     success,
     purchaseCredits,
     claimDailyCredits,
+    reload,
   } = useCreditsManager()
 
   if (!user) {
     return <CreditsAuthRequiredCard />
   }
 
+  const isCreditsLoading = loading && !credits
   const remainingCredits = credits?.total_credits ?? 0
   const lifetimeCredits = credits?.total_earned ?? 0
   const dailyAmount = credits?.daily_credit_amount ?? 50
 
   return (
     <ErrorBoundary fallback={CreditsErrorFallback}>
-      <div className="space-y-6 lg:space-y-8">
-        <div className="rounded-2xl border border-border/60 bg-card/80 p-6 shadow-sm">
+      <div className={cn(SPACING_TOKENS.section, 'lg:space-y-6')}>
+        <div className={cn('rounded-xl border', SURFACE_TOKENS.elevated, 'sm:p-6', SPACING_TOKENS.card)}>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-2">
-              <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className={cn(TYPOGRAPHY_TOKENS.caption, 'font-semibold uppercase tracking-wide')}>
                 Available Credits
               </p>
               <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-bold tracking-tight text-foreground">
-                  {remainingCredits.toLocaleString()}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Lifetime earned: {lifetimeCredits.toLocaleString()}
-                </span>
+                {isCreditsLoading ? (
+                  <LoadingSkeleton lines={1} widths={['6rem']} lineClassName="h-8" />
+                ) : (
+                  <span className="text-3xl font-bold tracking-tight text-foreground">
+                    {remainingCredits.toLocaleString()}
+                  </span>
+                )}
+                {isCreditsLoading ? (
+                  <LoadingSkeleton lines={1} widths={['7rem']} lineClassName="h-3" />
+                ) : (
+                  <span className={TYPOGRAPHY_TOKENS.caption}>
+                    Lifetime earned: {lifetimeCredits.toLocaleString()}
+                  </span>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground">
-                {canClaim
+              <p className={TYPOGRAPHY_TOKENS.body}>
+                {isCreditsLoading
+                  ? 'Checking your credit balance...'
+                  : canClaim
                   ? `You can claim ${dailyAmount} daily credits right now.`
                   : timeToNextClaim
                   ? `Next daily credits available in ${timeToNextClaim}.`
                   : 'Daily credits refresh automatically at midnight (EST).'}
               </p>
               {isRetrying && (
-                <p className="text-xs text-amber-500">
+                <p className={cn(TYPOGRAPHY_TOKENS.caption, 'text-amber-500')}>
                   Syncing with billing... (attempt {retryCount})
                 </p>
               )}
@@ -76,7 +91,7 @@ export function CreditsManager() {
               >
                 {canClaim ? (isClaiming ? 'Claiming credits...' : `Claim +${dailyAmount}`) : 'Daily claim unavailable'}
               </Button>
-              <p className="text-xs text-muted-foreground">
+              <p className={TYPOGRAPHY_TOKENS.caption}>
                 Need more power? Choose a package to top up instantly.
               </p>
             </div>
@@ -84,21 +99,37 @@ export function CreditsManager() {
         </div>
 
         {error && (
-          <Alert variant="destructive" className="border-destructive/50">
+          <Alert
+            variant="destructive"
+            aria-live="assertive"
+            className={cn('border text-destructive', SURFACE_TOKENS.primary, 'border-destructive/40')}
+          >
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+            <div className="flex flex-1 flex-col gap-2">
+              <AlertDescription>{error}</AlertDescription>
+              <div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void reload()}
+                  className="w-fit"
+                >
+                  Retry sync
+                </Button>
+              </div>
+            </div>
           </Alert>
         )}
 
         {success && (
-          <Alert className="border-primary/40 bg-primary/10 text-primary">
+          <Alert aria-live="polite" className={cn('border text-primary', SURFACE_TOKENS.primary, 'border-primary/40')}>
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
 
         <Tabs defaultValue="purchase" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 gap-2 rounded-lg bg-muted/60 p-1">
+          <TabsList className={cn('grid w-full grid-cols-2 gap-2 rounded-lg p-1', SURFACE_TOKENS.secondary)}>
             <TabsTrigger value="purchase" className="text-sm font-medium">
               Purchase Credits
             </TabsTrigger>
